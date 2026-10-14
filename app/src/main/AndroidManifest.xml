@@ -28,6 +28,10 @@
         </activity>
 
         <activity
+            android:name=".SetupActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".AlarmActivity"
             android:exported="false"
             android:excludeFromRecents="true"

@@ -1,36 +1,31 @@
 package com.whynotyou.alarm
 
-import android.Manifest
-import android.app.AlarmManager
 import android.app.TimePickerDialog
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import android.os.PowerManager
-import android.provider.Settings
+import android.view.View
 import android.widget.Button
 import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.ContextCompat
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-/** MVP control panel: permissions checklist, "fire in 1 min" test, and a real time-of-day alarm. */
+/** Home: next alarm, the chosen video, and a 1-minute test. Setup lives on its own screen. */
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var status: TextView
-    private lateinit var permNotif: Button
-    private lateinit var permExact: Button
-    private lateinit var permBattery: Button
-    private lateinit var permOverlay: Button
-    private lateinit var videoLabel: TextView
+    private lateinit var nextTime: TextView
+    private lateinit var nextSub: TextView
+    private lateinit var videoName: TextView
+    private lateinit var videoSub: TextView
+    private lateinit var warning: View
+    private lateinit var warningText: TextView
+    private lateinit var statusLine: TextView
+    private lateinit var cancelBtn: Button
+    private lateinit var resetVideoBtn: Button
 
     private val pickVideo = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri == null) return@registerForActivityResult
@@ -43,53 +38,18 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        status = findViewById(R.id.txt_status)
-        permNotif = findViewById(R.id.btn_perm_notif)
-        permExact = findViewById(R.id.btn_perm_exact)
-        permBattery = findViewById(R.id.btn_perm_battery)
-        permOverlay = findViewById(R.id.btn_perm_overlay)
-        videoLabel = findViewById(R.id.txt_video)
+        nextTime = findViewById(R.id.txt_next_time)
+        nextSub = findViewById(R.id.txt_next_sub)
+        videoName = findViewById(R.id.txt_video)
+        videoSub = findViewById(R.id.txt_video_sub)
+        warning = findViewById(R.id.row_warning)
+        warningText = findViewById(R.id.txt_warning)
+        statusLine = findViewById(R.id.txt_status_line)
+        cancelBtn = findViewById(R.id.btn_cancel)
+        resetVideoBtn = findViewById(R.id.btn_reset_video)
 
-        findViewById<Button>(R.id.btn_pick_video).setOnClickListener {
-            pickVideo.launch(arrayOf("video/*"))
-        }
-        findViewById<Button>(R.id.btn_reset_video).setOnClickListener {
-            VideoStore.clear(this)
-            refresh()
-        }
+        warning.setOnClickListener { startActivity(Intent(this, SetupActivity::class.java)) }
 
-        permNotif.setOnClickListener {
-            if (Build.VERSION.SDK_INT >= 33) {
-                ActivityCompat.requestPermissions(
-                    this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1
-                )
-            }
-        }
-        permExact.setOnClickListener {
-            if (Build.VERSION.SDK_INT >= 31) {
-                startActivity(
-                    Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, Uri.parse("package:$packageName"))
-                )
-            }
-        }
-        permBattery.setOnClickListener {
-            startActivity(
-                Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:$packageName"))
-            )
-        }
-        permOverlay.setOnClickListener {
-            startActivity(
-                Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
-            )
-        }
-
-        findViewById<Button>(R.id.btn_test_1min).setOnClickListener {
-            AlarmScheduler.scheduleInMinutes(this, 1)
-            refresh()
-        }
-        findViewById<Button>(R.id.btn_test_now).setOnClickListener {
-            startActivity(Intent(this, AlarmActivity::class.java))
-        }
         findViewById<Button>(R.id.btn_set_time).setOnClickListener {
             val now = Calendar.getInstance()
             TimePickerDialog(this, { _, h, m ->
@@ -97,9 +57,23 @@ class MainActivity : AppCompatActivity() {
                 refresh()
             }, now.get(Calendar.HOUR_OF_DAY), now.get(Calendar.MINUTE), false).show()
         }
-        findViewById<Button>(R.id.btn_cancel).setOnClickListener {
-            AlarmScheduler.cancel(this)
+        cancelBtn.setOnClickListener { AlarmScheduler.cancel(this); refresh() }
+
+        findViewById<Button>(R.id.btn_preview).setOnClickListener {
+            startActivity(Intent(this, AlarmActivity::class.java).putExtra(AlarmActivity.EXTRA_PREVIEW, true))
+        }
+        findViewById<Button>(R.id.btn_pick_video).setOnClickListener { pickVideo.launch(arrayOf("video/*")) }
+        resetVideoBtn.setOnClickListener { VideoStore.clear(this); refresh() }
+
+        findViewById<Button>(R.id.btn_test_1min).setOnClickListener {
+            AlarmScheduler.scheduleInMinutes(this, 1)
+            Toast.makeText(this, "Lock the phone now. Firing in 60 s.", Toast.LENGTH_LONG).show()
             refresh()
+        }
+
+        // First run: go straight to setup.
+        if (savedInstanceState == null && !Permissions.allGranted(this)) {
+            startActivity(Intent(this, SetupActivity::class.java))
         }
     }
 
@@ -110,29 +84,41 @@ class MainActivity : AppCompatActivity() {
 
     private fun refresh() {
         val next = AlarmScheduler.nextTime(this)
-        status.text = if (next == null) "No alarm set" else {
-            val fmt = SimpleDateFormat("EEE d MMM, HH:mm", Locale.getDefault())
-            "Next alarm: ${fmt.format(Date(next))}"
+        if (next == null) {
+            nextTime.text = "None"
+            nextSub.text = "Tap below to set one"
+            cancelBtn.visibility = View.GONE
+        } else {
+            nextTime.text = SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(next))
+            nextSub.text = SimpleDateFormat("EEEE d MMM", Locale.getDefault()).format(Date(next)) +
+                " · " + untilText(next)
+            cancelBtn.visibility = View.VISIBLE
         }
 
-        videoLabel.text = VideoStore.customName(this)?.let { "Playing: $it" } ?: "Playing: bundled placeholder"
+        val custom = VideoStore.customName(this)
+        videoName.text = custom ?: "Bundled placeholder"
+        videoSub.text = formatDuration(VideoStore.playbackDurationMs(this)) + if (custom != null) " · from your phone" else ""
+        resetVideoBtn.visibility = if (custom != null) View.VISIBLE else View.GONE
 
-        val notifOk = Build.VERSION.SDK_INT < 33 ||
-            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
-            PackageManager.PERMISSION_GRANTED
-        val exactOk = AlarmScheduler.canScheduleExact(this)
-        val pm = getSystemService(POWER_SERVICE) as PowerManager
-        val batteryOk = pm.isIgnoringBatteryOptimizations(packageName)
-        val overlayOk = Settings.canDrawOverlays(this)
-
-        mark(permNotif, "Notifications", notifOk)
-        mark(permExact, "Exact alarms", exactOk)
-        mark(permBattery, "Ignore battery optimisation", batteryOk)
-        mark(permOverlay, "Show over other apps", overlayOk)
+        val missing = Permissions.missingCount(this)
+        if (missing == 0) {
+            warning.visibility = View.GONE
+            statusLine.text = "✓ Phone is set up to wake you"
+        } else {
+            warning.visibility = View.VISIBLE
+            warningText.text = "$missing permission${if (missing > 1) "s" else ""} missing — the alarm may not fire"
+            statusLine.text = ""
+        }
     }
 
-    private fun mark(b: Button, label: String, ok: Boolean) {
-        b.text = (if (ok) "✓  " else "!  ") + label
-        b.isEnabled = !ok
+    private fun untilText(t: Long): String {
+        val mins = ((t - System.currentTimeMillis()) / 60_000L).coerceAtLeast(0)
+        val h = mins / 60; val m = mins % 60
+        return if (h > 0) "in ${h}h ${m}m" else "in ${m}m"
+    }
+
+    private fun formatDuration(ms: Long): String {
+        val s = ms / 1000
+        return "%d:%02d".format(s / 60, s % 60)
     }
 }

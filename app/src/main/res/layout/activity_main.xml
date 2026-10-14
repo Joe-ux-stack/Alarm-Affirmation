@@ -2,104 +2,75 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0F1320">
+    android:background="#0F1320"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="24dp">
+        android:padding="24dp"
+        android:paddingTop="48dp">
+
+        <!-- Warning strip: only visible when a permission is missing -->
+        <LinearLayout
+            android:id="@+id/row_warning"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            android:background="@drawable/bg_card_amber"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="14dp"
+            android:visibility="gone">
+            <TextView
+                android:id="@+id/txt_warning"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="1 permission missing — the alarm may not fire"
+                android:textColor="#F2F4F8"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Fix"
+                android:textColor="#F5A524"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+        </LinearLayout>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Why Not You"
+            android:text="NEXT WAKE-UP"
+            android:textColor="#9AA3B5"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/txt_next_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="None"
             android:textColor="#F2F4F8"
-            android:textSize="30sp"
+            android:textSize="56sp"
             android:textStyle="bold" />
 
         <TextView
-            android:id="@+id/txt_status"
+            android:id="@+id/txt_next_sub"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:text="No alarm set"
-            android:textColor="#F5A524"
-            android:textSize="16sp" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
-            android:text="1. PERMISSIONS (all must be ✓)"
+            android:text="Tap below to set one"
             android:textColor="#9AA3B5"
-            android:textSize="12sp"
-            android:textStyle="bold" />
-
-        <Button android:id="@+id/btn_perm_notif" style="@style/PermButton" android:text="Notifications" />
-        <Button android:id="@+id/btn_perm_exact" style="@style/PermButton" android:text="Exact alarms" />
-        <Button android:id="@+id/btn_perm_battery" style="@style/PermButton" android:text="Ignore battery optimisation" />
-        <Button android:id="@+id/btn_perm_overlay" style="@style/PermButton" android:text="Show over other apps" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
-            android:text="2. WAKE-UP VIDEO"
-            android:textColor="#9AA3B5"
-            android:textSize="12sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/txt_video"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:text="Playing: bundled placeholder"
-            android:textColor="#F2F4F8"
-            android:textSize="14sp" />
-
-        <Button
-            android:id="@+id/btn_pick_video"
-            style="@style/PrimaryButton"
-            android:text="Choose video from phone" />
-
-        <Button
-            android:id="@+id/btn_reset_video"
-            style="@style/SecondaryButton"
-            android:text="Back to bundled clip" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
-            android:text="3. TEST"
-            android:textColor="#9AA3B5"
-            android:textSize="12sp"
-            android:textStyle="bold" />
-
-        <Button
-            android:id="@+id/btn_test_now"
-            style="@style/SecondaryButton"
-            android:text="Preview alarm screen now" />
-
-        <Button
-            android:id="@+id/btn_test_1min"
-            style="@style/PrimaryButton"
-            android:text="Fire in 1 minute — then lock the phone" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
-            android:text="4. REAL ALARM"
-            android:textColor="#9AA3B5"
-            android:textSize="12sp"
-            android:textStyle="bold" />
+            android:textSize="15sp" />
 
         <Button
             android:id="@+id/btn_set_time"
             style="@style/PrimaryButton"
+            android:layout_marginTop="16dp"
             android:text="Set wake-up time" />
 
         <Button
@@ -107,11 +78,91 @@
             style="@style/SecondaryButton"
             android:text="Cancel alarm" />
 
+        <!-- Video card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="18dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="WAKE-UP VIDEO"
+                android:textColor="#9AA3B5"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/txt_video"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="Bundled placeholder"
+                android:textColor="#F2F4F8"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/txt_video_sub"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0:10"
+                android:textColor="#9AA3B5"
+                android:textSize="13sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:orientation="horizontal">
+                <Button
+                    android:id="@+id/btn_preview"
+                    style="@style/SecondaryButton"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="0dp"
+                    android:layout_marginEnd="8dp"
+                    android:layout_weight="1"
+                    android:text="Preview" />
+                <Button
+                    android:id="@+id/btn_pick_video"
+                    style="@style/PrimaryButton"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="0dp"
+                    android:layout_weight="1"
+                    android:text="Change" />
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/btn_reset_video"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:layout_gravity="center_horizontal"
+                android:background="@android:color/transparent"
+                android:text="Back to bundled clip"
+                android:textAllCaps="false"
+                android:textColor="#9AA3B5"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <!-- Test row -->
+        <Button
+            android:id="@+id/btn_test_1min"
+            style="@style/SecondaryButton"
+            android:layout_marginTop="24dp"
+            android:text="Test: fire in 1 min, then lock the phone" />
+
         <TextView
+            android:id="@+id/txt_status_line"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="Samsung tip: Settings → Apps → Why Not You → Battery → Unrestricted. Also check Device care → Battery → Background usage limits → Never sleeping apps."
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="28dp"
+            android:text="✓ Phone is set up to wake you"
             android:textColor="#6B7488"
             android:textSize="12sp" />
     </LinearLayout>
