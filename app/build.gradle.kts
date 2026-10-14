@@ -11,8 +11,21 @@ android {
         applicationId = "com.whynotyou.alarm"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "0.4"
+        versionCode = 5
+        versionName = "0.5"
+    }
+
+    // Stable dev key: CI decodes it from a repo secret into keystore/whynotyou-dev.jks.
+    // If it's absent (local builds without the secret) we fall back to the throwaway debug key.
+    val devKeystore = rootProject.file("keystore/whynotyou-dev.jks")
+    val devPass = System.getenv("DEV_KEYSTORE_PASS") ?: "whynotyou"
+    signingConfigs {
+        create("dev") {
+            storeFile = if (devKeystore.exists()) devKeystore else null
+            storePassword = devPass
+            keyAlias = "dev"
+            keyPassword = devPass
+        }
     }
 
     buildTypes {
@@ -21,8 +34,8 @@ android {
         }
         release {
             isMinifyEnabled = false
-            // Signed with the debug key so the APK installs without a keystore. Replace before Play Store.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (devKeystore.exists()) signingConfigs.getByName("dev")
+                            else signingConfigs.getByName("debug")
         }
     }
 

@@ -23,9 +23,23 @@ jobs:
       - name: Accept SDK licenses
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
 
+      - name: Restore dev signing key from secrets (if set)
+        env:
+          KS_B64: ${{ secrets.DEV_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KS_B64" ]; then
+            mkdir -p keystore
+            echo "$KS_B64" | base64 -d > keystore/whynotyou-dev.jks
+            echo "Using stable dev key"
+          else
+            echo "No DEV_KEYSTORE_B64 secret; using throwaway debug key"
+          fi
+
       - uses: gradle/actions/setup-gradle@v5
 
-      - name: Build release APK (debug-signed)
+      - name: Build release APK
+        env:
+          DEV_KEYSTORE_PASS: ${{ secrets.DEV_KEYSTORE_PASS }}
         run: ./gradlew assembleRelease --no-daemon
 
       - name: Publish as "latest" release
