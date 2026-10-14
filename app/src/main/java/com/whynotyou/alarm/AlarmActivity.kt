@@ -85,7 +85,7 @@ class AlarmActivity : AppCompatActivity() {
                 .setContentType(AudioAttributes.CONTENT_TYPE_MOVIE)
                 .build()
         )
-        video.setVideoURI(Uri.parse("android.resource://$packageName/${R.raw.wakeup}"))
+        video.setVideoURI(VideoStore.playbackUri(this))
         video.setOnPreparedListener { mp ->
             mp.isLooping = true
             video.start()
@@ -95,7 +95,7 @@ class AlarmActivity : AppCompatActivity() {
         // "Must watch to the end": dismiss unlocks after the first full play.
         dismiss.isEnabled = false
         dismiss.alpha = 0.4f
-        video.postDelayed({ unlockDismiss(dismiss, hint) }, PLACEHOLDER_LENGTH_MS)
+        video.postDelayed({ unlockDismiss(dismiss, hint) }, VideoStore.playbackDurationMs(this))
 
         dismiss.setOnClickListener { finishAlarm() }
     }
@@ -127,8 +127,4 @@ class AlarmActivity : AppCompatActivity() {
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() { }
 
-    companion object {
-        /** Length of the bundled clip; replace with the real duration once the video is swapped. */
-        private const val PLACEHOLDER_LENGTH_MS = 10_000L
-    }
 }

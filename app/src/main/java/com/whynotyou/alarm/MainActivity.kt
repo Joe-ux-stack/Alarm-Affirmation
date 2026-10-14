@@ -14,7 +14,9 @@ import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import android.widget.Toast
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -28,6 +30,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var permExact: Button
     private lateinit var permBattery: Button
     private lateinit var permOverlay: Button
+    private lateinit var videoLabel: TextView
+
+    private val pickVideo = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri == null) return@registerForActivityResult
+        val ok = VideoStore.importFrom(this, uri)
+        Toast.makeText(this, if (ok) "Video saved" else "Couldn't read that file", Toast.LENGTH_SHORT).show()
+        refresh()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,6 +48,15 @@ class MainActivity : AppCompatActivity() {
         permExact = findViewById(R.id.btn_perm_exact)
         permBattery = findViewById(R.id.btn_perm_battery)
         permOverlay = findViewById(R.id.btn_perm_overlay)
+        videoLabel = findViewById(R.id.txt_video)
+
+        findViewById<Button>(R.id.btn_pick_video).setOnClickListener {
+            pickVideo.launch(arrayOf("video/*"))
+        }
+        findViewById<Button>(R.id.btn_reset_video).setOnClickListener {
+            VideoStore.clear(this)
+            refresh()
+        }
 
         permNotif.setOnClickListener {
             if (Build.VERSION.SDK_INT >= 33) {
@@ -95,6 +114,8 @@ class MainActivity : AppCompatActivity() {
             val fmt = SimpleDateFormat("EEE d MMM, HH:mm", Locale.getDefault())
             "Next alarm: ${fmt.format(Date(next))}"
         }
+
+        videoLabel.text = VideoStore.customName(this)?.let { "Playing: $it" } ?: "Playing: bundled placeholder"
 
         val notifOk = Build.VERSION.SDK_INT < 33 ||
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
