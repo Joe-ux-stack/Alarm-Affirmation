@@ -34,6 +34,8 @@ class AlarmActivity : AppCompatActivity() {
     private var wakeLock: PowerManager.WakeLock? = null
     private var savedAlarmVolume = -1
     private var unlocked = false
+    private var speaker: BriefSpeaker? = null
+    private var briefStarted = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -100,7 +102,7 @@ class AlarmActivity : AppCompatActivity() {
             }
             override fun onPositionDiscontinuity(old: Player.PositionInfo, new: Player.PositionInfo, reason: Int) {
                 // First loop completed → the viewer has seen the whole message.
-                if (reason == Player.DISCONTINUITY_REASON_AUTO_TRANSITION) unlock(dismiss, hint)
+                if (reason == Player.DISCONTINUITY_REASON_AUTO_TRANSITION) startBrief(dismiss, hint)
             }
         })
         playerView.player = exo
@@ -114,10 +116,31 @@ class AlarmActivity : AppCompatActivity() {
             dismiss.isEnabled = false
             dismiss.alpha = 0.4f
             // Safety net in case the discontinuity callback never fires.
-            dismiss.postDelayed({ unlock(dismiss, hint) }, VideoStore.playbackDurationMs(this) + 1_500L)
+            dismiss.postDelayed({ startBrief(dismiss, hint) }, VideoStore.playbackDurationMs(this) + 1_500L)
         }
 
         dismiss.setOnClickListener { finishAlarm() }
+    }
+
+    /** After the video's first play: lower the video, read the day, then unlock. */
+    private fun startBrief(dismiss: Button, hint: TextView) {
+        if (briefStarted) return
+        briefStarted = true
+        val text = Brief.compose(this)
+        if (text.isBlank()) { unlock(dismiss, hint); return }
+        player?.volume = 0.15f
+        hint.text = "Listen…"
+        val briefView = findViewById<TextView>(R.id.txt_brief)
+        briefView.text = text.replace("Phone down.", "").trim()
+        briefView.visibility = View.VISIBLE
+        speaker = BriefSpeaker(this) {
+            runOnUiThread {
+                player?.volume = 1f
+                briefView.text = "Phone down."
+                unlock(dismiss, hint)
+                Brief.clearIntention(this)
+            }
+        }.also { it.speak(text) }
     }
 
     private fun unlock(dismiss: Button, hint: TextView) {
@@ -136,6 +159,7 @@ class AlarmActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        speaker?.release()
         player?.release()
         player = null
         if (savedAlarmVolume >= 0) {

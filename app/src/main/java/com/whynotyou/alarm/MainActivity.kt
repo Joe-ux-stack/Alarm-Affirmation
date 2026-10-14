@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
+import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -26,6 +27,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var statusLine: TextView
     private lateinit var cancelBtn: Button
     private lateinit var resetVideoBtn: Button
+    private lateinit var intention: EditText
 
     private val pickVideo = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri == null) return@registerForActivityResult
@@ -49,6 +51,9 @@ class MainActivity : AppCompatActivity() {
         resetVideoBtn = findViewById(R.id.btn_reset_video)
 
         warning.setOnClickListener { startActivity(Intent(this, SetupActivity::class.java)) }
+
+        intention = findViewById(R.id.edit_intention)
+        intention.setText(Brief.intention(this))
 
         findViewById<Button>(R.id.btn_set_time).setOnClickListener {
             val now = Calendar.getInstance()
@@ -80,6 +85,11 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         refresh()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        Brief.setIntention(this, intention.text.toString())
     }
 
     private fun refresh() {

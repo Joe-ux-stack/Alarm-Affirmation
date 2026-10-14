@@ -78,6 +78,45 @@
             style="@style/SecondaryButton"
             android:text="Cancel alarm" />
 
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:text="TOMORROW I WILL…"
+            android:textColor="#9AA3B5"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <EditText
+            android:id="@+id/edit_intention"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:background="@android:color/transparent"
+            android:hint="one thing, read to you after the video"
+            android:imeOptions="actionDone"
+            android:inputType="textCapSentences"
+            android:maxLines="2"
+            android:paddingVertical="8dp"
+            android:textColor="#F2F4F8"
+            android:textColorHint="#3A4458"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#2A3245" />
+
+        <TextView
+            android:id="@+id/txt_brief_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Calendar: not connected yet"
+            android:textColor="#6B7488"
+            android:textSize="12sp" />
+
         <!-- Video card -->
         <LinearLayout
             android:layout_width="match_parent"
