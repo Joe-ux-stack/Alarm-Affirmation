@@ -38,3 +38,27 @@ jobs:
           gh release create latest "$NAME" \
             --title "Build ${GITHUB_RUN_NUMBER} (${GITHUB_SHA::7})" \
             --notes "Built from commit ${GITHUB_SHA}. Tap the .apk to download and install."
+
+      - name: Publish APK as a plain static file (apk branch)
+        run: |
+          NAME="WhyNotYou-${GITHUB_RUN_NUMBER}.apk"
+          mkdir -p /tmp/apkbranch && cd /tmp/apkbranch
+          git init -q -b apk
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          cp "$GITHUB_WORKSPACE/$NAME" .
+          cp "$GITHUB_WORKSPACE/$NAME" WhyNotYou-latest.apk
+          cat > index.html <<HTML
+          <!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
+          <title>Why Not You – install</title>
+          <body style="font-family:system-ui;background:#0F1320;color:#F2F4F8;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;gap:24px">
+          <h1 style="margin:0">Why Not You</h1>
+          <p style="color:#9AA3B5;margin:0">Build ${GITHUB_RUN_NUMBER} · ${GITHUB_SHA::7}</p>
+          <a href="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/apk/${NAME}" style="background:#F5A524;color:#0F1320;padding:18px 32px;border-radius:14px;font-weight:800;font-size:18px;text-decoration:none">Download ${NAME}</a>
+          </body>
+          HTML
+          git add -A
+          git commit -q -m "APK build ${GITHUB_RUN_NUMBER} (${GITHUB_SHA::7})"
+          git push -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" apk
+        env:
+          GH_TOKEN: ${{ github.token }}
