@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0F1320">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Why Not You"
+            android:textColor="#F2F4F8"
+            android:textSize="30sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/txt_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="No alarm set"
+            android:textColor="#F5A524"
+            android:textSize="16sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:text="1. PERMISSIONS (all must be ✓)"
+            android:textColor="#9AA3B5"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <Button android:id="@+id/btn_perm_notif" style="@style/PermButton" android:text="Notifications" />
+        <Button android:id="@+id/btn_perm_exact" style="@style/PermButton" android:text="Exact alarms" />
+        <Button android:id="@+id/btn_perm_battery" style="@style/PermButton" android:text="Ignore battery optimisation" />
+        <Button android:id="@+id/btn_perm_overlay" style="@style/PermButton" android:text="Show over other apps" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:text="2. TEST"
+            android:textColor="#9AA3B5"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btn_test_now"
+            style="@style/SecondaryButton"
+            android:text="Preview alarm screen now" />
+
+        <Button
+            android:id="@+id/btn_test_1min"
+            style="@style/PrimaryButton"
+            android:text="Fire in 1 minute — then lock the phone" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:text="3. REAL ALARM"
+            android:textColor="#9AA3B5"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btn_set_time"
+            style="@style/PrimaryButton"
+            android:text="Set wake-up time" />
+
+        <Button
+            android:id="@+id/btn_cancel"
+            style="@style/SecondaryButton"
+            android:text="Cancel alarm" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Samsung tip: Settings → Apps → Why Not You → Battery → Unrestricted. Also check Device care → Battery → Background usage limits → Never sleeping apps."
+            android:textColor="#6B7488"
+            android:textSize="12sp" />
+    </LinearLayout>
+</ScrollView>
