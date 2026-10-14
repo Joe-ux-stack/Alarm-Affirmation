@@ -32,8 +32,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/release/app-release.apk WhyNotYou.apk
+          NAME="WhyNotYou-${GITHUB_RUN_NUMBER}.apk"
+          cp app/build/outputs/apk/release/app-release.apk "$NAME"
           gh release delete latest --yes --cleanup-tag || true
-          gh release create latest WhyNotYou.apk \
-            --title "Latest build (${GITHUB_SHA::7})" \
-            --notes "Built from commit ${GITHUB_SHA}. Tap WhyNotYou.apk to download and install."
+          gh release create latest "$NAME" \
+            --title "Build ${GITHUB_RUN_NUMBER} (${GITHUB_SHA::7})" \
+            --notes "Built from commit ${GITHUB_SHA}. Tap the .apk to download and install."
