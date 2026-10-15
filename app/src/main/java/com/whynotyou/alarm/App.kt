@@ -20,8 +20,6 @@ class App : Application(), androidx.work.Configuration.Provider {
             } catch (_: Throwable) {}
             prev?.uncaughtException(t, e)
         }
-        try { VoiceWarmup.start(this) } catch (_: Throwable) {}
-        try { GuardService.start(this) } catch (_: Throwable) {}
         try { EveningPlan.schedule(this) } catch (_: Throwable) {}
     }
     companion object {

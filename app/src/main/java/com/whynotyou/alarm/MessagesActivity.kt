@@ -109,6 +109,10 @@ class MessagesActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume(); refresh(); renderVoiceRows()
+        AlarmScheduler.lastFireLog(this)?.let { log ->
+            val p = findViewById<TextView>(R.id.txt_probe); p.visibility = View.VISIBLE
+            if (!p.text.contains("Last alarm")) p.text = log + (if (p.text.isNotBlank()) "\n" + p.text else "")
+        }
         findViewById<TextView>(R.id.txt_plan_setting).text = if (EveningPlan.isOn(this)) EveningPlan.hour(this).let { h -> "%d:%02d %s".format(if (h % 12 == 0) 12 else h % 12, EveningPlan.minute(this), if (h < 12) "am" else "pm") } else "Off"
         findViewById<TextView>(R.id.txt_phonedown).text = if (PhoneDown.isEnabled(this)) "${PhoneDown.limitMin(this)} min" else "Off"
     }

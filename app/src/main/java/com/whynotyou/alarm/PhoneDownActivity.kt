@@ -98,8 +98,13 @@ class PhoneDownActivity : AppCompatActivity() {
         row("Add a message", null) {
             addView(value("+"))
             setOnClickListener {
-                val et = EditText(this@PhoneDownActivity).apply { inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES; hint = "Write it like a friend would" }
-                AlertDialog.Builder(this@PhoneDownActivity).setTitle("New message").setView(et)
+                val et = EditText(this@PhoneDownActivity).apply {
+                    inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES or InputType.TYPE_TEXT_FLAG_MULTI_LINE
+                    minLines = 3; maxLines = 6; gravity = Gravity.TOP; textSize = 20f
+                    hint = "e.g. Go outside. The feed will still be here."
+                }
+                val box = android.widget.FrameLayout(this@PhoneDownActivity).apply { setPadding(dp(20), dp(8), dp(20), 0); addView(et) }
+                AlertDialog.Builder(this@PhoneDownActivity).setTitle("New message").setView(box)
                     .setPositiveButton("Add") { _, _ -> val t = et.text.toString().trim(); if (t.isNotEmpty()) { msgs.add(t); PhoneDown.setMessages(this@PhoneDownActivity, msgs); render() } }
                     .setNegativeButton("Cancel", null).show()
             }

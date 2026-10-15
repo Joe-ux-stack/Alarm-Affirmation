@@ -38,8 +38,8 @@ class OrbView @JvmOverloads constructor(context: Context, attrs: AttributeSet? =
     private val ticker = ValueAnimator.ofFloat(0f, 1f).apply {
         duration = 1000; repeatCount = ValueAnimator.INFINITE; interpolator = LinearInterpolator()
         addUpdateListener {
-            t += (1f / 60f) * (if (mode == Mode.SPEAK) 0.6f + 2.4f * level else 1f)
-            level += (targetLevel - level) * (if (targetLevel > level) 0.8f else 0.3f)
+            t += (1f / 60f) * (if (mode == Mode.SPEAK) 0.8f + 3.2f * level else 1f)
+            level += (targetLevel - level) * (if (targetLevel > level) 0.30f else 0.10f)
             invalidate()
         }
     }
@@ -103,10 +103,10 @@ float3 ribbon(float2 p,float seed,float t,float3 colA,float3 colB,float w){
 }
 half4 main(float2 fragCoord){
   float2 uv=(fragCoord-0.5*iResolution)/min(iResolution.x,iResolution.y);
-  float R=(0.22+0.15*iEnergy)*iScale;
+  float R=(0.27+0.045*iEnergy)*iScale;
   float ang=atan(uv.y,uv.x);
   // strongly deformed: big slow lobes
-  float wob=(sin(ang*2.0+iTime*0.5)*0.5+sin(ang*3.0-iTime*0.4)*0.6+sin(ang*5.0+iTime*0.7)*0.25+sin(ang*6.0-iTime*0.9)*0.1)*(0.008+0.040*iEnergy);
+  float wob=(sin(ang*2.0+iTime*0.5)*0.5+sin(ang*3.0-iTime*0.4)*0.6+sin(ang*5.0+iTime*0.7)*0.25+sin(ang*6.0-iTime*0.9)*0.1)*(0.010+0.060*iEnergy);
   float r=length(uv);
   float Rw=R+wob;
   float aa=1.5/min(iResolution.x,iResolution.y);

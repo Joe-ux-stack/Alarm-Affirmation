@@ -30,6 +30,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        try { VoiceWarmup.start(this) } catch (_: Throwable) {}
+        try { GuardService.start(this) } catch (_: Throwable) {}
         setContentView(R.layout.activity_main)
 
         tabAlarm = findViewById(R.id.tab_alarm); tabTimer = findViewById(R.id.tab_timer); tabStopwatch = findViewById(R.id.tab_stopwatch)

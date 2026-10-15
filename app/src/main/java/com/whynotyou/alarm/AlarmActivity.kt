@@ -72,6 +72,7 @@ class AlarmActivity : AppCompatActivity() {
         alarm = AlarmStore.get(this, id) ?: Alarm.new()
 
         showOverLockScreen()
+        if (!preview && !timerMode) AlarmScheduler.onShown(this)
 
         snooze = findViewById(R.id.btn_snooze); dismiss = findViewById(R.id.btn_dismiss)
         ringControls = findViewById(R.id.ring_controls); snoozeRow = findViewById(R.id.row_snooze)
@@ -79,7 +80,9 @@ class AlarmActivity : AppCompatActivity() {
         briefView = findViewById(R.id.txt_brief)
         orb = findViewById(R.id.orb)
 
-        clock.text = SimpleDateFormat("H:mm", Locale.getDefault()).format(Date())
+        val clockFmt = SimpleDateFormat(if (android.text.format.DateFormat.is24HourFormat(this)) "H:mm" else "h:mm", Locale.getDefault())
+        val clockTick = object : Runnable { override fun run() { clock.text = clockFmt.format(Date()); ui.postDelayed(this, 10_000) } }
+        clockTick.run()
         sub.text = if (timerMode) "Timer" else SimpleDateFormat("EEEE", Locale.getDefault()).format(Date())
 
         if (!preview) {
@@ -185,22 +188,22 @@ class AlarmActivity : AppCompatActivity() {
      */
     private fun followFile(uri: Uri, during: Phase) {
         visualizer?.release(); visualizer = null
-        Thread {
-            val env = Envelope.of(this, uri)
-            runOnUiThread {
-                if (phase != during || isFinishing) return@runOnUiThread
-                if (env == null || env.isEmpty()) { attachVisualizer(player?.audioSessionId ?: 0); return@runOnUiThread }
-                val r = object : Runnable {
-                    override fun run() {
-                        if (phase != during) return
-                        val p = player ?: return
-                        orb.setLevel(if (p.isPlaying) Envelope.at(env, p.currentPosition + 40) else 0f)
-                        ui.postDelayed(this, 16)
-                    }
+        val env = Envelope.stream(this, uri)
+        val r = object : Runnable {
+            override fun run() {
+                if (phase != during) return
+                val p = player ?: return
+                val v = env.at(p.currentPosition + 40)
+                when {
+                    !p.isPlaying -> orb.setLevel(0f)
+                    v >= 0f -> orb.setLevel(v)
+                    env.finished && env.available == 0 -> { attachVisualizer(p.audioSessionId); return }  // couldn't decode
+                    else -> orb.setLevel(0.25f)  // decoder hasn't reached this point yet
                 }
-                ui.post(r)
+                ui.postDelayed(this, 16)
             }
-        }.start()
+        }
+        ui.post(r)
     }
 
     private var peak = 0.02

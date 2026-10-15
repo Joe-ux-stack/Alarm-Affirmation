@@ -95,7 +95,18 @@ class WheelView @JvmOverloads constructor(context: Context, attrs: AttributeSet?
                 velocity?.computeCurrentVelocity(1000)
                 val vy = velocity?.yVelocity ?: 0f
                 velocity?.recycle(); velocity = null
-                if (abs(vy) > 400) fling(vy / rowH) else snap()
+                if (!dragging && e.actionMasked == MotionEvent.ACTION_UP) {
+                    // tap: the row above is value+1, the row below value-1; a 2-value wheel just flips
+                    val rel = (e.y - height / 2f) / rowH
+                    offset = offset.roundToInt().toFloat()
+                    when {
+                        range == 2 && !wrap -> offset = if (offset.roundToInt() == 0) 1f else 0f
+                        rel < -0.5f -> offset += 1f
+                        rel > 0.5f -> offset -= 1f
+                    }
+                    clampOffset(); invalidate(); onChange?.invoke(value)
+                    performClick()
+                } else if (abs(vy) > 400) fling(vy / rowH) else snap()
                 return true
             }
         }
@@ -117,6 +128,8 @@ class WheelView @JvmOverloads constructor(context: Context, attrs: AttributeSet?
             } else snap()
         }
     }
+
+    override fun performClick(): Boolean { super.performClick(); return true }
 
     private fun snap() {
         clampOffset()

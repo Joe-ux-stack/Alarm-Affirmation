@@ -98,7 +98,7 @@ object Brief {
             if (rest > 0) parts += "And $rest more ${if (rest == 1) "thing" else "things"} later."
         }
 
-        intention(c).takeIf { it.isNotBlank() }?.let { parts += "Today you will $it." }
+        intention(c).takeIf { it.isNotBlank() }?.let { parts += Phrase.intention(it, now) }
         return parts.joinToString(" ")
     }
 

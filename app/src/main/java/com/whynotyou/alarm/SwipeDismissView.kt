@@ -24,12 +24,12 @@ class SwipeDismissView @JvmOverloads constructor(context: Context, attrs: Attrib
     var onDismiss: (() -> Unit)? = null
 
     private val d = resources.displayMetrics.density
-    private val baseR = 50f * d
-    private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL; color = 0x1FFFFFFF }
-    private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 1.5f * d; color = 0xB3FFFFFF.toInt() }
-    private val halo = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL; color = 0x14FFFFFF }
+    private val baseR = 42f * d
+    private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL; color = 0x14FFFFFF }
+    private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 1f * d; color = 0x4DFFFFFF }
+    private val halo = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL; color = 0x0AFFFFFF }
     private val ring = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 1.5f * d; color = 0x66FFFFFF }
-    private val xPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 2.5f * d; strokeCap = Paint.Cap.ROUND; color = 0xFFF2F4F8.toInt() }
+    private val xPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 2f * d; strokeCap = Paint.Cap.ROUND; color = 0xE6F2F4F8.toInt() }
 
     private var drag = 0f          // current ring radius beyond the circle, px
     private var dragging = false
@@ -49,21 +49,21 @@ class SwipeDismissView @JvmOverloads constructor(context: Context, attrs: Attrib
     override fun onDraw(c: Canvas) {
         val cx = width / 2f; val cy = height / 2f
         val breathe = (sin(t * 2 * PI / 2.4).toFloat() + 1f) / 2f
-        val haloR = baseR + 10 * d + 8 * d * breathe
+        val haloR = baseR + 8 * d + 6 * d * breathe
         val progress = if (threshold() > 0) (drag / threshold()).coerceIn(0f, 1f) else 0f
 
         // idle halo, then the drag ring that follows the finger
-        halo.alpha = (0x14 + 0x20 * progress).toInt()
+        halo.alpha = (0x0A + 0x18 * progress).toInt()
         c.drawCircle(cx, cy, max(haloR, baseR + drag), halo)
         if (drag > 0f) {
             ring.alpha = (0x40 + 0xBF * progress).toInt()
             c.drawCircle(cx, cy, baseR + drag, ring)
         }
         // glass button
-        fill.alpha = (0x1F + 0x30 * progress).toInt()
+        fill.alpha = (0x14 + 0x24 * progress).toInt()
         c.drawCircle(cx, cy, baseR, fill)
         c.drawCircle(cx, cy, baseR, stroke)
-        val s = 11 * d
+        val s = 9 * d
         c.drawLine(cx - s, cy - s, cx + s, cy + s, xPaint)
         c.drawLine(cx + s, cy - s, cx - s, cy + s, xPaint)
     }

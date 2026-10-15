@@ -50,7 +50,19 @@ object AlarmScheduler {
         BriefAudio.scheduleAll(c)
     }
 
-    fun onFired(c: Context) { prefs(c).edit().remove(KEY_PENDING_AT).apply() }
+    fun onFired(c: Context) {
+        val due = prefs(c).getLong(KEY_PENDING_AT, -1L)
+        prefs(c).edit().putLong("log_due", due).putLong("log_fired", System.currentTimeMillis()).remove("log_shown").remove(KEY_PENDING_AT).apply()
+    }
+    fun onShown(c: Context) { prefs(c).edit().putLong("log_shown", System.currentTimeMillis()).apply() }
+    /** "due 6:30:00 · fired +1s · screen +2s" for the last alarm, or null. */
+    fun lastFireLog(c: Context): String? {
+        val p = prefs(c); val due = p.getLong("log_due", -1L); val fired = p.getLong("log_fired", -1L); val shown = p.getLong("log_shown", -1L)
+        if (fired < 0) return null
+        val f = java.text.SimpleDateFormat("EEE H:mm:ss", java.util.Locale.getDefault())
+        fun d(x: Long) = if (x < 0 || due < 0) "?" else { val s = (x - due) / 1000; if (s >= 120) "+${s / 60} min" else "+${s}s" }
+        return "Last alarm: due ${if (due > 0) f.format(java.util.Date(due)) else "?"} · fired ${d(fired)} · screen ${d(shown)}"
+    }
 
     fun restore(c: Context) {
         val at = prefs(c).getLong(KEY_PENDING_AT, -1L)

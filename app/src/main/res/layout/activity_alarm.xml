@@ -68,8 +68,8 @@
 
         <com.whynotyou.alarm.SwipeDismissView
             android:id="@+id/btn_dismiss"
-            android:layout_width="232dp"
-            android:layout_height="232dp"
+            android:layout_width="210dp"
+            android:layout_height="210dp"
             android:contentDescription="Swipe to stop"
             android:layout_marginBottom="20dp" />
 
