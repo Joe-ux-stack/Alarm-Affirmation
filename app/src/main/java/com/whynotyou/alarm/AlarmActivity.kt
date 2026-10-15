@@ -55,6 +55,7 @@ class AlarmActivity : AppCompatActivity() {
 
     private lateinit var btn: Button
     private lateinit var snooze: Button
+    private lateinit var dismiss: android.widget.ImageButton
     private lateinit var clock: TextView
     private lateinit var sub: TextView
     private lateinit var briefView: TextView
@@ -71,7 +72,7 @@ class AlarmActivity : AppCompatActivity() {
 
         showOverLockScreen()
 
-        btn = findViewById(R.id.btn_main); snooze = findViewById(R.id.btn_snooze)
+        btn = findViewById(R.id.btn_main); snooze = findViewById(R.id.btn_snooze); dismiss = findViewById(R.id.btn_dismiss)
         clock = findViewById(R.id.txt_clock); sub = findViewById(R.id.txt_sub)
         briefView = findViewById(R.id.txt_brief); phoneDown = findViewById(R.id.txt_phone_down)
         orb = findViewById(R.id.orb)
@@ -101,12 +102,8 @@ class AlarmActivity : AppCompatActivity() {
         }
 
         snooze.setOnClickListener { AlarmScheduler.snooze(this, alarm.id); finishAlarm(false) }
-        btn.setOnClickListener {
-            when (phase) {
-                Phase.RINGING -> if (timerMode) finishAlarm(false) else startMessage()
-                else -> finishAlarm(true)
-            }
-        }
+        dismiss.setOnClickListener { if (timerMode) finishAlarm(false) else startMessage() }
+        btn.setOnClickListener { finishAlarm(true) }
         enterRinging()
     }
 
@@ -131,10 +128,11 @@ class AlarmActivity : AppCompatActivity() {
     private fun enterRinging() {
         phase = Phase.RINGING
         orb.mode = OrbView.Mode.BREATHE
-        btn.text = if (timerMode) "Done" else "Stop"
+        dismiss.visibility = View.VISIBLE
+        btn.visibility = View.GONE
         val canSnooze = !preview && !timerMode && alarm.snooze && AlarmScheduler.snoozesLeft(this) > 0
-        snooze.visibility = if (canSnooze) View.VISIBLE else View.GONE
-        snooze.text = "Snooze 5 min · ${AlarmScheduler.snoozesLeft(this)} left"
+        snooze.visibility = if (canSnooze) View.VISIBLE else View.INVISIBLE
+        snooze.text = "Snooze 5 min"
 
         val p = player ?: return
         p.repeatMode = Player.REPEAT_MODE_ONE
@@ -156,6 +154,8 @@ class AlarmActivity : AppCompatActivity() {
     private fun startMessage() {
         phase = Phase.MESSAGE
         snooze.visibility = View.GONE
+        dismiss.visibility = View.GONE
+        btn.visibility = View.VISIBLE
         btn.text = "I'm up"
         orb.mode = OrbView.Mode.SPEAK
 

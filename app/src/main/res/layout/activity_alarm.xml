@@ -72,6 +72,18 @@
             android:textStyle="bold"
             android:visibility="gone" />
 
+        <ImageButton
+            android:id="@+id/btn_dismiss"
+            android:layout_width="104dp"
+            android:layout_height="104dp"
+            android:layout_marginBottom="40dp"
+            android:background="@drawable/bg_circle_dismiss"
+            android:contentDescription="Stop"
+            android:padding="34dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_close"
+            android:tint="#F2F4F8" />
+
         <Button
             android:id="@+id/btn_main"
             android:layout_width="match_parent"
@@ -87,13 +99,14 @@
 
         <Button
             android:id="@+id/btn_snooze"
-            android:layout_width="wrap_content"
-            android:layout_height="48dp"
-            android:layout_marginTop="8dp"
-            android:background="@android:color/transparent"
-            android:text="Snooze 5 min · 2 left"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:backgroundTint="#15181F"
+            android:text="Snooze 5 min"
             android:textAllCaps="false"
-            android:textColor="#7A8294"
-            android:textSize="15sp" />
+            android:textColor="#F2F4F8"
+            android:textSize="17sp"
+            android:textStyle="bold"
+            app:cornerRadius="32dp" />
     </LinearLayout>
 </FrameLayout>

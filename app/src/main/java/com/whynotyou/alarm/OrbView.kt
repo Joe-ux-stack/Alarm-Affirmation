@@ -50,7 +50,7 @@ class OrbView @JvmOverloads constructor(context: Context, attrs: AttributeSet? =
     private fun energy(): Float = when (mode) {
         Mode.BREATHE -> 0.35f + 0.25f * ((sin(t * 2 * PI / 4.0).toFloat() + 1f) / 2f)
         Mode.SPEAK -> 0.1f + 0.9f * level
-        Mode.STILL -> 0.12f
+        Mode.STILL -> 0.22f
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -61,7 +61,7 @@ class OrbView @JvmOverloads constructor(context: Context, attrs: AttributeSet? =
             s.setFloatUniform("iResolution", w, h)
             s.setFloatUniform("iTime", t)
             s.setFloatUniform("iEnergy", e)
-            s.setFloatUniform("iScale", if (mode == Mode.STILL) 0.55f else 1f)
+            s.setFloatUniform("iScale", 1f)
             paint.shader = s
             canvas.drawRect(0f, 0f, w, h, paint)
         } else {
