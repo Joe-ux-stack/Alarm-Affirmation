@@ -1,208 +1,132 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0F1320"
-    android:fillViewport="true">
+    android:background="#000000">
 
-    <LinearLayout
+    <!-- ALARM TAB -->
+    <ScrollView
+        android:id="@+id/tab_alarm"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingStart="28dp"
-        android:paddingTop="56dp"
-        android:paddingEnd="28dp"
-        android:paddingBottom="40dp">
-
-        <!-- Warning: only when a permission is missing -->
-        <TextView
-            android:id="@+id/txt_warning"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
-            android:background="@drawable/bg_card_amber"
-            android:padding="14dp"
-            android:text="1 permission missing — fix"
-            android:textColor="#F2F4F8"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            android:visibility="gone" />
-
-        <!-- Alarm -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <TextView
-                android:id="@+id/txt_time"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="7:00"
-                android:textColor="#F2F4F8"
-                android:textSize="64sp"
-                android:textStyle="bold" />
-
-            <androidx.appcompat.widget.SwitchCompat
-                android:id="@+id/switch_alarm"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:minWidth="48dp"
-                android:minHeight="48dp" />
-        </LinearLayout>
-
-        <TextView
-            android:id="@+id/txt_sub"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Every day · tap the time to change"
-            android:textColor="#9AA3B5"
-            android:textSize="14sp" />
-
-        <!-- Intention -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="40dp"
-            android:text="Tomorrow I will"
-            android:textColor="#9AA3B5"
-            android:textSize="13sp" />
-
-        <EditText
-            android:id="@+id/edit_intention"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@android:color/transparent"
-            android:hint="one thing"
-            android:imeOptions="actionDone"
-            android:inputType="textCapSentences"
-            android:maxLines="2"
-            android:paddingVertical="6dp"
-            android:textColor="#F2F4F8"
-            android:textColorHint="#3A4458"
-            android:textSize="22sp"
-            android:textStyle="bold" />
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="#2A3245" />
-
-        <TextView
-            android:id="@+id/txt_calendar"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:minHeight="32dp"
-            android:gravity="center_vertical"
-            android:text="Read my calendar too →"
-            android:textColor="#F5A524"
-            android:textSize="13sp"
-            android:textStyle="bold" />
-
-        <!-- Messages -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="40dp"
-            android:text="Messages from people you love"
-            android:textColor="#9AA3B5"
-            android:textSize="13sp" />
+        android:layout_height="match_parent"
+        android:paddingBottom="88dp"
+        android:clipToPadding="false">
 
         <LinearLayout
-            android:id="@+id/list_messages"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical" />
-
-        <TextView
-            android:id="@+id/txt_no_messages"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:text="None yet. Add a voice memo from your partner, a parent, a friend. It plays after you stop the alarm."
-            android:textColor="#6B7488"
-            android:textSize="14sp" />
-
-        <Button
-            android:id="@+id/btn_add_message"
-            style="@style/PrimaryButton"
-            android:layout_marginTop="14dp"
-            android:text="Add a message" />
-
-        <!-- Less important -->
-        <TextView
-            android:id="@+id/btn_more"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="40dp"
-            android:minHeight="40dp"
-            android:gravity="center_vertical"
-            android:text="More ▾"
-            android:textColor="#9AA3B5"
-            android:textSize="13sp"
-            android:textStyle="bold" />
-
-        <LinearLayout
-            android:id="@+id/panel_more"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:visibility="gone">
-
-            <TextView
-                android:id="@+id/txt_video"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="Alarm sound: bundled clip"
-                android:textColor="#F2F4F8"
-                android:textSize="14sp" />
+            android:paddingStart="24dp"
+            android:paddingTop="56dp"
+            android:paddingEnd="24dp"
+            android:paddingBottom="100dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_height="44dp"
+                android:gravity="center_vertical"
                 android:orientation="horizontal">
-                <Button
-                    android:id="@+id/btn_pick_video"
-                    style="@style/SecondaryButton"
+                <TextView
+                    android:id="@+id/txt_next"
                     android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_marginTop="0dp"
-                    android:layout_marginEnd="8dp"
+                    android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Change" />
-                <Button
-                    android:id="@+id/btn_reset_video"
-                    style="@style/SecondaryButton"
-                    android:layout_width="0dp"
+                    android:text=""
+                    android:textColor="#7A8294"
+                    android:textSize="13sp" />
+                <ImageButton
+                    android:id="@+id/btn_gear"
+                    android:layout_width="44dp"
                     android:layout_height="44dp"
-                    android:layout_marginTop="0dp"
-                    android:layout_weight="1"
-                    android:text="Reset" />
+                    android:background="@android:color/transparent"
+                    android:contentDescription="Messages and setup"
+                    android:src="@drawable/ic_gear"
+                    android:tint="#7A8294" />
             </LinearLayout>
 
-            <Button
-                android:id="@+id/btn_preview"
-                style="@style/SecondaryButton"
-                android:text="Preview the alarm" />
+            <TextView
+                android:id="@+id/txt_warning"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_card_amber"
+                android:padding="14dp"
+                android:text=""
+                android:textColor="#F2F4F8"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
 
-            <Button
-                android:id="@+id/btn_test_1min"
-                style="@style/SecondaryButton"
-                android:text="Test in 1 minute (lock the phone)" />
+            <LinearLayout
+                android:id="@+id/list_alarms"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="vertical" />
 
             <TextView
-                android:id="@+id/txt_status_line"
-                android:layout_width="wrap_content"
+                android:id="@+id/txt_empty"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="✓ Phone is set up to wake you"
-                android:textColor="#6B7488"
-                android:textSize="12sp" />
+                android:layout_marginTop="80dp"
+                android:gravity="center"
+                android:text="No alarms"
+                android:textColor="#3A3F4B"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- TIMER TAB -->
+    <include
+        android:id="@+id/tab_timer"
+        layout="@layout/tab_timer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone" />
+
+    <!-- STOPWATCH TAB -->
+    <include
+        android:id="@+id/tab_stopwatch"
+        layout="@layout/tab_stopwatch"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone" />
+
+    <ImageButton
+        android:id="@+id/fab_add"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="24dp"
+        android:layout_marginBottom="108dp"
+        android:background="@drawable/bg_circle_amber"
+        android:contentDescription="Add alarm"
+        android:src="@drawable/ic_plus"
+        android:tint="#000000" />
+
+    <!-- BOTTOM NAV -->
+    <LinearLayout
+        android:id="@+id/nav"
+        android:layout_width="match_parent"
+        android:layout_height="88dp"
+        android:layout_gravity="bottom"
+        android:background="#000000"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingBottom="14dp">
+        <LinearLayout android:id="@+id/nav_alarm" style="@style/NavItem">
+            <ImageView android:layout_width="22dp" android:layout_height="22dp" android:src="@drawable/ic_alarm" android:tint="#F2F4F8" android:importantForAccessibility="no" />
+            <TextView style="@style/NavLabel" android:text="Alarm" android:textColor="#F2F4F8" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/nav_timer" style="@style/NavItem">
+            <ImageView android:layout_width="22dp" android:layout_height="22dp" android:src="@drawable/ic_timer" android:tint="#555B68" android:importantForAccessibility="no" />
+            <TextView style="@style/NavLabel" android:text="Timer" android:textColor="#555B68" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/nav_stopwatch" style="@style/NavItem">
+            <ImageView android:layout_width="22dp" android:layout_height="22dp" android:src="@drawable/ic_stopwatch" android:tint="#555B68" android:importantForAccessibility="no" />
+            <TextView style="@style/NavLabel" android:text="Stopwatch" android:textColor="#555B68" />
         </LinearLayout>
     </LinearLayout>
-</ScrollView>
+</FrameLayout>

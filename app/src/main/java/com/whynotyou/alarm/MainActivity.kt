@@ -1,19 +1,12 @@
 package com.whynotyou.alarm
 
-import android.Manifest
-import android.app.AlertDialog
-import android.app.TimePickerDialog
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
-import android.view.Gravity
+import android.view.LayoutInflater
 import android.view.View
-import android.widget.Button
-import android.widget.EditText
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
 import java.text.SimpleDateFormat
@@ -23,169 +16,135 @@ import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var time: TextView
-    private lateinit var sub: TextView
-    private lateinit var switchAlarm: SwitchCompat
-    private lateinit var intention: EditText
-    private lateinit var calendarLink: TextView
-    private lateinit var messagesList: LinearLayout
-    private lateinit var noMessages: TextView
+    private lateinit var tabAlarm: View
+    private lateinit var tabTimer: View
+    private lateinit var tabStopwatch: View
+    private lateinit var fab: View
+    private lateinit var list: LinearLayout
+    private lateinit var next: TextView
     private lateinit var warning: TextView
-    private lateinit var videoLabel: TextView
-    private lateinit var statusLine: TextView
-    private lateinit var panelMore: View
+    private lateinit var empty: TextView
 
-    private var pendingFrom: String = ""
-
-    private val pickMessage = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri == null) return@registerForActivityResult
-        val m = MessageStore.import(this, uri, pendingFrom)
-        Toast.makeText(this, if (m != null) "Added" else "Couldn't read that file", Toast.LENGTH_SHORT).show()
-        refresh()
-    }
-    private val pickVideo = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri == null) return@registerForActivityResult
-        VideoStore.importFrom(this, uri); refresh()
-    }
-    private val askCalendar = registerForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
-        if (ok) CalendarSync.refreshToday(this)
-        refresh()
-    }
+    private var timer: TimerTab? = null
+    private var stopwatch: StopwatchTab? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        time = findViewById(R.id.txt_time)
-        sub = findViewById(R.id.txt_sub)
-        switchAlarm = findViewById(R.id.switch_alarm)
-        intention = findViewById(R.id.edit_intention)
-        calendarLink = findViewById(R.id.txt_calendar)
-        messagesList = findViewById(R.id.list_messages)
-        noMessages = findViewById(R.id.txt_no_messages)
-        warning = findViewById(R.id.txt_warning)
-        videoLabel = findViewById(R.id.txt_video)
-        statusLine = findViewById(R.id.txt_status_line)
-        panelMore = findViewById(R.id.panel_more)
+        tabAlarm = findViewById(R.id.tab_alarm); tabTimer = findViewById(R.id.tab_timer); tabStopwatch = findViewById(R.id.tab_stopwatch)
+        fab = findViewById(R.id.fab_add); list = findViewById(R.id.list_alarms)
+        next = findViewById(R.id.txt_next); warning = findViewById(R.id.txt_warning); empty = findViewById(R.id.txt_empty)
 
-        intention.setText(Brief.intention(this))
-
-        time.setOnClickListener {
-            TimePickerDialog(this, { _, h, m -> AlarmScheduler.setDaily(this, h, m); refresh() },
-                AlarmScheduler.hour(this), AlarmScheduler.minute(this), false).show()
-        }
-        switchAlarm.setOnCheckedChangeListener { _, on ->
-            if (on) AlarmScheduler.setDaily(this, AlarmScheduler.hour(this), AlarmScheduler.minute(this))
-            else AlarmScheduler.disable(this)
-            refresh()
-        }
+        fab.setOnClickListener { startActivity(Intent(this, AlarmDetailActivity::class.java)) }
+        findViewById<View>(R.id.btn_gear).setOnClickListener { startActivity(Intent(this, MessagesActivity::class.java)) }
         warning.setOnClickListener { startActivity(Intent(this, SetupActivity::class.java)) }
-        calendarLink.setOnClickListener { askCalendar.launch(Manifest.permission.READ_CALENDAR) }
 
-        findViewById<Button>(R.id.btn_add_message).setOnClickListener { askWhoThenPick() }
+        findViewById<View>(R.id.nav_alarm).setOnClickListener { showTab(0) }
+        findViewById<View>(R.id.nav_timer).setOnClickListener { showTab(1) }
+        findViewById<View>(R.id.nav_stopwatch).setOnClickListener { showTab(2) }
 
-        findViewById<TextView>(R.id.btn_more).setOnClickListener {
-            panelMore.visibility = if (panelMore.visibility == View.VISIBLE) View.GONE else View.VISIBLE
-        }
-        findViewById<Button>(R.id.btn_pick_video).setOnClickListener { pickVideo.launch(arrayOf("video/*", "audio/*")) }
-        findViewById<Button>(R.id.btn_reset_video).setOnClickListener { VideoStore.clear(this); refresh() }
-        findViewById<Button>(R.id.btn_preview).setOnClickListener {
-            startActivity(Intent(this, AlarmActivity::class.java).putExtra(AlarmActivity.EXTRA_PREVIEW, true))
-        }
-        findViewById<Button>(R.id.btn_test_1min).setOnClickListener {
-            AlarmScheduler.scheduleInMinutes(this, 1)
-            Toast.makeText(this, "Lock the phone. Firing in 60 s.", Toast.LENGTH_LONG).show()
-            refresh()
-        }
+        timer = TimerTab(this, tabTimer)
+        stopwatch = StopwatchTab(this, tabStopwatch)
 
-        if (savedInstanceState == null && !Permissions.allGranted(this))
-            startActivity(Intent(this, SetupActivity::class.java))
+        if (savedInstanceState == null && !Permissions.allGranted(this)) startActivity(Intent(this, SetupActivity::class.java))
+        showTab(0)
     }
 
-    private fun askWhoThenPick() {
-        val input = EditText(this).apply {
-            hint = "Who is it from? (e.g. Mum)"
-            setPadding(48, 32, 48, 32)
+    private fun showTab(i: Int) {
+        tabAlarm.visibility = if (i == 0) View.VISIBLE else View.GONE
+        tabTimer.visibility = if (i == 1) View.VISIBLE else View.GONE
+        tabStopwatch.visibility = if (i == 2) View.VISIBLE else View.GONE
+        fab.visibility = if (i == 0) View.VISIBLE else View.GONE
+        val ids = intArrayOf(R.id.nav_alarm, R.id.nav_timer, R.id.nav_stopwatch)
+        ids.forEachIndexed { idx, id ->
+            val item = findViewById<LinearLayout>(id)
+            val col = if (idx == i) 0xFFF2F4F8.toInt() else 0xFF555B68.toInt()
+            (item.getChildAt(0) as ImageView).setColorFilter(col)
+            (item.getChildAt(1) as TextView).setTextColor(col)
         }
-        AlertDialog.Builder(this)
-            .setTitle("Add a message")
-            .setMessage("A voice memo or short video. It plays after you stop the alarm.")
-            .setView(input)
-            .setPositiveButton("Choose file") { _, _ ->
-                pendingFrom = input.text.toString().trim()
-                pickMessage.launch(arrayOf("audio/*", "video/*"))
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
+        if (i == 1) timer?.onShow()
+        if (i == 2) stopwatch?.onShow()
     }
 
-    override fun onResume() { super.onResume(); CalendarSync.refreshToday(this); refresh() }
-    override fun onPause() { super.onPause(); Brief.setIntention(this, intention.text.toString()) }
+    override fun onResume() { super.onResume(); CalendarSync.refreshToday(this); refresh(); timer?.onShow() }
+    override fun onPause() { super.onPause(); stopwatch?.onHide() }
 
     private fun refresh() {
-        // Alarm
-        val cal = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, AlarmScheduler.hour(this@MainActivity)); set(Calendar.MINUTE, AlarmScheduler.minute(this@MainActivity))
-        }
-        time.text = SimpleDateFormat("h:mm", Locale.getDefault()).format(cal.time) +
-            " " + SimpleDateFormat("a", Locale.getDefault()).format(cal.time).lowercase()
-        switchAlarm.setOnCheckedChangeListener(null)
-        switchAlarm.isChecked = AlarmScheduler.isEnabled(this)
-        switchAlarm.setOnCheckedChangeListener { _, on ->
-            if (on) AlarmScheduler.setDaily(this, AlarmScheduler.hour(this), AlarmScheduler.minute(this)) else AlarmScheduler.disable(this)
-            refresh()
-        }
-        val next = AlarmScheduler.nextTime(this)
-        sub.text = when {
-            next != null -> "Every day · next " + SimpleDateFormat("EEE", Locale.getDefault()).format(Date(next)) + " · " + untilText(next)
-            else -> "Off · tap the time to change"
-        }
-        time.alpha = if (AlarmScheduler.isEnabled(this)) 1f else 0.4f
+        val alarms = AlarmStore.all(this)
+        empty.visibility = if (alarms.isEmpty()) View.VISIBLE else View.GONE
 
-        // Calendar
-        calendarLink.text = if (CalendarSync.hasPermission(this)) {
-            val n = Brief.cachedEvents(this).size
-            "✓ Calendar · $n thing${if (n == 1) "" else "s"} today"
-        } else "Read my calendar too →"
-        calendarLink.isClickable = !CalendarSync.hasPermission(this)
-        calendarLink.setTextColor(if (CalendarSync.hasPermission(this)) 0xFF6B7488.toInt() else 0xFFF5A524.toInt())
-
-        // Messages
-        messagesList.removeAllViews()
-        val msgs = MessageStore.all(this)
-        noMessages.visibility = if (msgs.isEmpty()) View.VISIBLE else View.GONE
-        val nextMsg = MessageStore.peekNext(this)
-        msgs.forEach { m ->
-            val row = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
-                setPadding(0, 28, 0, 28)
-            }
-            val label = TextView(this).apply {
-                text = (if (m.from.isNotBlank()) m.from else m.name) +
-                    "  ·  " + "%d:%02d".format(m.durationMs / 60000, (m.durationMs / 1000) % 60) +
-                    (if (m == nextMsg && msgs.size > 1) "  ·  next" else "")
-                setTextColor(0xFFF2F4F8.toInt()); textSize = 16f
-                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-            }
-            val del = TextView(this).apply {
-                text = "Remove"; setTextColor(0xFF6B7488.toInt()); textSize = 13f
-                minHeight = 44; setPadding(24, 0, 0, 0)
-                setOnClickListener { MessageStore.remove(this@MainActivity, m.id); refresh() }
-            }
-            row.addView(label); row.addView(del)
-            messagesList.addView(row)
+        val n = AlarmStore.next(this)
+        next.text = if (n == null) "" else {
+            val at = n.second
+            SimpleDateFormat("EEE h:mm a", Locale.getDefault()).format(Date(at)).lowercase().replaceFirstChar { it.uppercase() } + " · " + untilText(at)
         }
 
-        // More
-        videoLabel.text = "Alarm sound: " + (VideoStore.customName(this) ?: "bundled clip")
+        list.removeAllViews()
+        val inflater = LayoutInflater.from(this)
+        for (a in alarms) {
+            val v = inflater.inflate(R.layout.item_alarm, list, false)
+            val time = v.findViewById<TextView>(R.id.txt_time)
+            val days = v.findViewById<TextView>(R.id.txt_days)
+            val sw = v.findViewById<SwitchCompat>(R.id.switch_on)
+            val content = v.findViewById<View>(R.id.content)
+            val plan = v.findViewById<View>(R.id.row_plan)
+            val planText = v.findViewById<TextView>(R.id.txt_plan)
+
+            time.text = formatTime(a.hour, a.minute)
+            days.text = daysSpannable(a)
+            content.alpha = if (a.enabled) 1f else 0.45f
+            sw.isChecked = a.enabled
+            sw.setOnCheckedChangeListener { _, on -> AlarmStore.setEnabled(this, a.id, on); refresh() }
+
+            v.findViewById<View>(R.id.row_main).setOnClickListener {
+                startActivity(Intent(this, AlarmDetailActivity::class.java).putExtra(AlarmDetailActivity.EXTRA_ID, a.id))
+            }
+            content.setOnClickListener {
+                startActivity(Intent(this, AlarmDetailActivity::class.java).putExtra(AlarmDetailActivity.EXTRA_ID, a.id))
+            }
+
+            if (a.brief && a.enabled) {
+                plan.visibility = View.VISIBLE
+                val intention = Brief.intention(this)
+                planText.text = if (intention.isBlank()) "Plan tomorrow" else intention
+                planText.setTextColor(if (intention.isBlank()) 0xFF7A8294.toInt() else 0xFFF2F4F8.toInt())
+                plan.setOnClickListener { PlanSheet.show(this) { refresh() } }
+            }
+            list.addView(v)
+        }
+
         val missing = Permissions.missingCount(this)
         warning.visibility = if (missing == 0) View.GONE else View.VISIBLE
-        warning.text = "$missing permission${if (missing > 1) "s" else ""} missing — the alarm may not fire. Fix →"
-        statusLine.text = if (missing == 0) "✓ Phone is set up to wake you" else ""
+        warning.text = "$missing permission${if (missing > 1) "s" else ""} missing — fix"
+    }
+
+    private fun daysSpannable(a: Alarm): CharSequence {
+        val letters = "MTWTFSS"
+        val sb = android.text.SpannableStringBuilder()
+        for (i in 0 until 7) {
+            val start = sb.length
+            sb.append(letters[i]); if (i < 6) sb.append(' ')
+            val col = if (a.days[i]) 0xFFF5A524.toInt() else 0xFF3A3F4B.toInt()
+            sb.setSpan(android.text.style.ForegroundColorSpan(col), start, start + 1, 0)
+        }
+        return sb
     }
 
     private fun untilText(t: Long): String {
         val mins = ((t - System.currentTimeMillis()) / 60_000L).coerceAtLeast(0)
         return if (mins >= 60) "in ${mins / 60}h ${mins % 60}m" else "in ${mins}m"
+    }
+
+    companion object {
+        fun formatTime(h: Int, m: Int): CharSequence {
+            val cal = Calendar.getInstance().apply { set(Calendar.HOUR_OF_DAY, h); set(Calendar.MINUTE, m) }
+            val t = SimpleDateFormat("h:mm", Locale.getDefault()).format(cal.time)
+            val ap = SimpleDateFormat("a", Locale.getDefault()).format(cal.time).lowercase()
+            val sb = android.text.SpannableStringBuilder("$t $ap")
+            sb.setSpan(android.text.style.RelativeSizeSpan(0.38f), t.length + 1, sb.length, 0)
+            sb.setSpan(android.text.style.ForegroundColorSpan(0xFF7A8294.toInt()), t.length + 1, sb.length, 0)
+            return sb
+        }
     }
 }

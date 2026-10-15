@@ -22,10 +22,11 @@ class AlarmReceiver : BroadcastReceiver() {
         wl.acquire(20_000L)
 
         AlarmScheduler.onFired(context)
-        showFullScreen(context)
+        val alarmId = intent.getStringExtra(AlarmScheduler.EXTRA_ALARM_ID) ?: AlarmScheduler.TEST_ID
+        showFullScreen(context, alarmId)
     }
 
-    private fun showFullScreen(context: Context) {
+    private fun showFullScreen(context: Context, alarmId: String) {
         val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val channel = NotificationChannel(
             CHANNEL_ID, "Alarm", NotificationManager.IMPORTANCE_HIGH
@@ -39,16 +40,16 @@ class AlarmReceiver : BroadcastReceiver() {
 
         val fullScreen = PendingIntent.getActivity(
             context, 0,
-            Intent(context, AlarmActivity::class.java).addFlags(
-                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            ),
+            Intent(context, AlarmActivity::class.java)
+                .putExtra(AlarmScheduler.EXTRA_ALARM_ID, alarmId)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val n = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-            .setContentTitle("Why not you?")
-            .setContentText("Time to get up.")
+            .setContentTitle("Alarm")
+            .setContentText("Tap to open")
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setOngoing(true)
@@ -62,7 +63,9 @@ class AlarmReceiver : BroadcastReceiver() {
         // Belt and braces: try to launch directly too. Allowed on some OEMs / when app is foreground.
         try {
             context.startActivity(
-                Intent(context, AlarmActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                Intent(context, AlarmActivity::class.java)
+                    .putExtra(AlarmScheduler.EXTRA_ALARM_ID, alarmId)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             )
         } catch (_: Exception) { }
     }

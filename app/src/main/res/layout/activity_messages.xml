@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="28dp"
+        android:paddingTop="56dp"
+        android:paddingEnd="28dp"
+        android:paddingBottom="40dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+            <ImageButton
+                android:id="@+id/btn_back"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_marginStart="-12dp"
+                android:background="@android:color/transparent"
+                android:contentDescription="Back"
+                android:src="@drawable/ic_back"
+                android:tint="#7A8294" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Messages"
+                android:textColor="#F2F4F8"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:letterSpacing="-0.02" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:orientation="vertical" />
+
+        <!-- Recorder (hidden until Record tapped) -->
+        <LinearLayout
+            android:id="@+id/recorder"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:background="@drawable/bg_box"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:padding="24dp"
+            android:visibility="gone">
+            <com.whynotyou.alarm.OrbView
+                android:id="@+id/rec_orb"
+                android:layout_width="120dp"
+                android:layout_height="120dp" />
+            <TextView
+                android:id="@+id/rec_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="0:00"
+                android:textColor="#F2F4F8"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+            <EditText
+                android:id="@+id/rec_from"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:background="@android:color/transparent"
+                android:hint="From"
+                android:inputType="textCapWords"
+                android:maxLines="1"
+                android:paddingVertical="8dp"
+                android:textColor="#F2F4F8"
+                android:textColorHint="#3A3F4B"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#22262F" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:orientation="horizontal">
+                <Button android:id="@+id/rec_cancel" style="@style/OutlineButton" android:layout_width="0dp" android:layout_weight="1" android:layout_marginEnd="6dp" android:text="Cancel" />
+                <Button android:id="@+id/rec_stop" style="@style/PrimaryButton" android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="1" android:layout_marginStart="6dp" android:text="Stop" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btn_record"
+            style="@style/PrimaryButton"
+            android:layout_marginTop="28dp"
+            android:drawableStart="@drawable/ic_mic"
+            android:drawablePadding="10dp"
+            android:drawableTint="#000000"
+            android:text="Record a message" />
+
+        <Button
+            android:id="@+id/btn_import"
+            style="@style/OutlineButton"
+            android:layout_marginTop="10dp"
+            android:text="Import a voice memo" />
+
+        <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginTop="36dp" android:background="#15181F" />
+
+        <LinearLayout android:id="@+id/row_permissions" style="@style/Row" android:background="?android:attr/selectableItemBackground">
+            <TextView style="@style/RowLabel" android:textSize="14sp" android:text="Permissions" />
+            <TextView android:id="@+id/txt_permissions" style="@style/RowValue" android:textSize="14sp" android:text="All set ✓" />
+        </LinearLayout>
+        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#15181F" />
+
+        <LinearLayout android:id="@+id/row_test" style="@style/Row" android:background="?android:attr/selectableItemBackground">
+            <TextView style="@style/RowLabel" android:textSize="14sp" android:text="Test alarm in 1 min" />
+            <ImageView android:layout_width="18dp" android:layout_height="18dp" android:src="@drawable/ic_chevron" android:tint="#7A8294" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#15181F" />
+
+        <LinearLayout android:id="@+id/row_preview" style="@style/Row" android:background="?android:attr/selectableItemBackground">
+            <TextView style="@style/RowLabel" android:textSize="14sp" android:text="Preview wake-up" />
+            <ImageView android:layout_width="18dp" android:layout_height="18dp" android:src="@drawable/ic_chevron" android:tint="#7A8294" android:importantForAccessibility="no" />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

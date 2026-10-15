@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Picker state -->
+    <LinearLayout
+        android:id="@+id/timer_pick"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:paddingTop="108dp"
+        android:paddingBottom="100dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp">
+            <LinearLayout style="@style/PickerCol">
+                <TextView style="@style/PickerLabel" android:text="Hours" />
+                <NumberPicker android:id="@+id/np_h" style="@style/Picker" />
+            </LinearLayout>
+            <TextView style="@style/PickerColon" android:text=":" />
+            <LinearLayout style="@style/PickerCol">
+                <TextView style="@style/PickerLabel" android:text="Minutes" />
+                <NumberPicker android:id="@+id/np_m" style="@style/Picker" />
+            </LinearLayout>
+            <TextView style="@style/PickerColon" android:text=":" />
+            <LinearLayout style="@style/PickerCol">
+                <TextView style="@style/PickerLabel" android:text="Seconds" />
+                <NumberPicker android:id="@+id/np_s" style="@style/Picker" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="40dp"
+            android:orientation="horizontal">
+            <TextView android:id="@+id/preset_5" style="@style/Preset" android:text="5 min" />
+            <TextView android:id="@+id/preset_10" style="@style/Preset" android:layout_marginStart="10dp" android:text="10 min" />
+            <TextView android:id="@+id/preset_25" style="@style/Preset" android:layout_marginStart="10dp" android:text="25 min" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/timer_start"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_marginTop="72dp"
+            android:background="@drawable/bg_circle_amber"
+            android:text="Start"
+            android:textAllCaps="false"
+            android:textColor="#000000"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- Running state -->
+    <LinearLayout
+        android:id="@+id/timer_run"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:paddingTop="140dp"
+        android:paddingBottom="100dp"
+        android:visibility="gone">
+        <TextView
+            android:id="@+id/timer_remaining"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="23:00"
+            android:textColor="#F2F4F8"
+            android:textSize="80sp"
+            android:textStyle="bold"
+            android:letterSpacing="-0.03" />
+        <com.whynotyou.alarm.OrbView
+            android:id="@+id/timer_orb"
+            android:layout_width="160dp"
+            android:layout_height="160dp"
+            android:layout_marginTop="56dp" />
+        <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <Button android:id="@+id/timer_cancel" style="@style/BigRoundOutline" android:text="Cancel" />
+            <Button android:id="@+id/timer_pause" style="@style/BigRoundAmber" android:layout_marginStart="48dp" android:text="Pause" />
+        </LinearLayout>
+    </LinearLayout>
+</FrameLayout>
