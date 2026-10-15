@@ -261,7 +261,6 @@ class AlarmActivity : AppCompatActivity() {
     private fun enterDone() {
         phase = Phase.DONE
         orb.mode = OrbView.Mode.STILL
-        phoneDown.visibility = View.VISIBLE
         btn.text = if (preview) "Close" else "I'm up"
         if (!preview) Brief.clearIntention(this)
     }

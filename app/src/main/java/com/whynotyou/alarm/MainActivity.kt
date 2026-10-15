@@ -132,7 +132,7 @@ class MainActivity : AppCompatActivity() {
         for (i in 0 until 7) {
             val start = sb.length
             sb.append(letters[i]); if (i < 6) sb.append(' ')
-            val col = if (a.days[i]) 0xFFF5A524.toInt() else 0xFF3A3F4B.toInt()
+            val col = if (a.days[i]) 0xFFF2F4F8.toInt() else 0xFF3A3F4B.toInt()
             sb.setSpan(android.text.style.ForegroundColorSpan(col), start, start + 1, 0)
         }
         return sb

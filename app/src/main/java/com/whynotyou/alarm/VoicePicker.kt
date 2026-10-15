@@ -43,7 +43,7 @@ object VoicePicker {
             col.addView(TextView(a).apply { text = v.name; textSize = 17f; setTextColor(0xFFF2F4F8.toInt()); setTypeface(typeface, android.graphics.Typeface.BOLD) })
             col.addView(TextView(a).apply { text = "${v.region} · ${v.sex}"; textSize = 13f; setTextColor(0xFF7A8294.toInt()) })
             val tick = TextView(a).apply {
-                text = "\u2713"; textSize = 20f; setTextColor(0xFFF5A524.toInt())
+                text = "\u2713"; textSize = 20f; setTextColor(0xFFF2F4F8.toInt())
                 visibility = if (v.id == current) View.VISIBLE else View.INVISIBLE
                 setPadding(dp(a, 12), 0, 0, 0)
             }

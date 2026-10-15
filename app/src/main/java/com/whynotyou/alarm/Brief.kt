@@ -99,7 +99,6 @@ object Brief {
         }
 
         intention(c).takeIf { it.isNotBlank() }?.let { parts += "Today you will $it." }
-        parts += "Phone down."
         return parts.joinToString(" ")
     }
 

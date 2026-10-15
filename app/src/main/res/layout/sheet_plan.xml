@@ -4,9 +4,9 @@
     android:layout_height="wrap_content"
     android:background="#0B0D12"
     android:orientation="vertical"
-    android:paddingStart="28dp"
+    android:paddingStart="20dp"
     android:paddingTop="28dp"
-    android:paddingEnd="28dp"
+    android:paddingEnd="20dp"
     android:paddingBottom="36dp">
 
     <TextView
@@ -62,7 +62,7 @@
         android:minHeight="44dp"
         android:gravity="center_vertical"
         android:text="Read my calendar →"
-        android:textColor="#F5A524"
+        android:textColor="#F2F4F8"
         android:textSize="14sp"
         android:textStyle="bold" />
 
