@@ -39,7 +39,7 @@ class OrbView @JvmOverloads constructor(context: Context, attrs: AttributeSet? =
         duration = 1000; repeatCount = ValueAnimator.INFINITE; interpolator = LinearInterpolator()
         addUpdateListener {
             t += 1f / 60f
-            level += (targetLevel - level) * (if (targetLevel > level) 0.35f else 0.08f)
+            level += (targetLevel - level) * (if (targetLevel > level) 0.6f else 0.12f)
             invalidate()
         }
     }
@@ -49,7 +49,7 @@ class OrbView @JvmOverloads constructor(context: Context, attrs: AttributeSet? =
 
     private fun energy(): Float = when (mode) {
         Mode.BREATHE -> 0.35f + 0.25f * ((sin(t * 2 * PI / 4.0).toFloat() + 1f) / 2f)
-        Mode.SPEAK -> 0.3f + 0.7f * level
+        Mode.SPEAK -> 0.1f + 0.9f * level
         Mode.STILL -> 0.12f
     }
 
@@ -103,10 +103,10 @@ float3 ribbon(float2 p,float seed,float t,float3 colA,float3 colB,float w){
 }
 half4 main(float2 fragCoord){
   float2 uv=(fragCoord-0.5*iResolution)/min(iResolution.x,iResolution.y);
-  float R=(0.30+0.03*iEnergy)*iScale;
+  float R=(0.28+0.07*iEnergy)*iScale;
   float ang=atan(uv.y,uv.x);
   // strongly deformed: big slow lobes
-  float wob=(sin(ang*2.0+iTime*0.5)*0.5+sin(ang*3.0-iTime*0.4)*0.6+sin(ang*5.0+iTime*0.7)*0.25+sin(ang*6.0-iTime*0.9)*0.1)*(0.012+0.020*iEnergy);
+  float wob=(sin(ang*2.0+iTime*0.5)*0.5+sin(ang*3.0-iTime*0.4)*0.6+sin(ang*5.0+iTime*0.7)*0.25+sin(ang*6.0-iTime*0.9)*0.1)*(0.008+0.040*iEnergy);
   float r=length(uv);
   float Rw=R+wob;
   float aa=1.5/min(iResolution.x,iResolution.y);
@@ -126,7 +126,7 @@ half4 main(float2 fragCoord){
   float3 lines=float3(0.0);
   lines+=ribbon(spU,-0.55,iTime,pink,violet,1.0);
   lines+=ribbon(spU,0.55,iTime*0.9,cyan,blue,1.1);
-  lines*=(0.8+0.8*iEnergy)*(0.5+0.9*f)*smoothstep(-0.9,0.3,-uv.y/Rw);
+  lines*=(0.35+1.8*iEnergy)*(0.5+0.9*f)*smoothstep(-0.9,0.3,-uv.y/Rw);
   // rim colour fixed by side: magenta/violet on the left, blue/cyan on the right
   float side=0.5+0.5*cos(ang+iTime*0.12);           // 1 right, 0 left
   float3 rimCol=mix(mix(float3(0.85,0.15,0.95),float3(0.45,0.20,1.0),0.5+0.5*sin(uv.y/Rw*2.5)),
@@ -143,7 +143,7 @@ half4 main(float2 fragCoord){
   float sheenDir=smoothstep(0.55,1.0,dot(normalize(uv),normalize(float2(0.62,-0.78))));
   col+=float3(1.0,0.98,1.0)*sheenDir*(pow(f,2.0)*0.4+pow(f,6.0)*0.8+edge*0.8);
   // bloom outside
-  float halo=exp(-max(r-Rw,0.0)*10.0)*(0.14+0.28*iEnergy)*(0.4+0.6*lit);
+  float halo=exp(-max(r-Rw,0.0)*10.0)*(0.10+0.45*iEnergy)*(0.4+0.6*lit);
   float3 haloCol=rimCol*halo;
   float innerA=0.04+0.96*pow(f,1.0);
   float lum=dot(lines,float3(0.33));

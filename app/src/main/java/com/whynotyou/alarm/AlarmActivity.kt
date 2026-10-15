@@ -175,7 +175,10 @@ class AlarmActivity : AppCompatActivity() {
         }
     }
 
+    private var peak = 0.02
+
     private fun attachVisualizer(sessionId: Int) {
+        peak = 0.02
         try {
             visualizer?.release()
             visualizer = Visualizer(sessionId).apply {
@@ -186,7 +189,11 @@ class AlarmActivity : AppCompatActivity() {
                         var sum = 0.0
                         for (b in wave) { val s = (b.toInt() and 0xFF) - 128; sum += s * s }
                         val rms = sqrt(sum / wave.size) / 128.0
-                        orb.setLevel((rms * 3.0).toFloat())
+                        // auto-gain: scale to the loudest thing heard so far (slowly forgets), so quiet
+                        // recordings still swing the orb through its full range
+                        peak = maxOf(peak * 0.995, rms, 0.02)
+                        val norm = (rms / peak).coerceIn(0.0, 1.0)
+                        orb.setLevel(Math.pow(norm, 0.7).toFloat())
                     }
                     override fun onFftDataCapture(v: Visualizer?, fft: ByteArray?, rate: Int) {}
                 }, Visualizer.getMaxCaptureRate() / 2, true, false)
@@ -253,7 +260,7 @@ class AlarmActivity : AppCompatActivity() {
     }
 
     private fun speakWithPhone(text: String) {
-        pulseFallback()
+        attachVisualizer(0)   // session 0 = the phone's output mix, so the orb follows the TTS voice too
         speaker = BriefSpeaker(this) { runOnUiThread { enterDone() } }.also { it.speak(text) }
     }
 
