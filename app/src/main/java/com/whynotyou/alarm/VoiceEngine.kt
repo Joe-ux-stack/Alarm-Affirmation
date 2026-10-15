@@ -14,16 +14,16 @@ import java.io.FileOutputStream
  */
 object VoiceEngine {
 
-    data class Voice(val id: String, val name: String, val region: String, val sex: String)
-
+    // sid = index in the untouched 54-voice table (alphabetical in the sherpa package)
+    data class Voice(val id: String, val name: String, val region: String, val sex: String, val sid: Int)
     val voices = listOf(
-        Voice("af_sky", "Sky", "US", "F"),
-        Voice("af_heart", "Heart", "US", "F"),
-        Voice("af_alloy", "Alloy", "US", "F"),
-        Voice("af_nova", "Nova", "US", "F"),
-        Voice("bf_emma", "Emma", "UK", "F"),
-        Voice("bm_fable", "Fable", "UK", "M"),
-        Voice("bm_lewis", "Lewis", "UK", "M"),
+        Voice("af_sky", "Sky", "US", "F", 10),
+        Voice("af_heart", "Heart", "US", "F", 3),
+        Voice("af_alloy", "Alloy", "US", "F", 0),
+        Voice("af_nova", "Nova", "US", "F", 7),
+        Voice("bf_emma", "Emma", "UK", "F", 21),
+        Voice("bm_fable", "Fable", "UK", "M", 25),
+        Voice("bm_lewis", "Lewis", "UK", "M", 27),
     )
     const val DEFAULT_VOICE = "af_sky"
     fun voice(id: String) = voices.firstOrNull { it.id == id } ?: voices[0]
@@ -88,7 +88,7 @@ object VoiceEngine {
         if (text.isBlank()) return false
         return try {
             val e = engine(c)
-            val sid = voices.indexOfFirst { it.id == voiceId }.coerceAtLeast(0)
+            val sid = voice(voiceId).sid
             val audio = e.generate(text = text, sid = sid, speed = speed)
             if (audio.samples.isEmpty()) return false
             audio.save(out.absolutePath)

@@ -14,16 +14,11 @@ names = meta["speaker_names"].split(",")
 idx = [names.index(n) for n in KEEP]
 n_all = len(names)
 
-sb = np.fromfile(f"{src}/voices.bin", dtype=np.float32).reshape(n_all, 510 * 256)
-np.concatenate([sb[i] for i in idx]).astype(np.float32).tofile(f"{dst}/voices.bin")
-
-for p in m.metadata_props:
-    if p.key == "n_speakers": p.value = str(len(KEEP))
-    if p.key == "id2speaker": p.value = ",".join(f"{i}->{n}" for i, n in enumerate(KEEP))
-    if p.key == "speaker2id": p.value = ",".join(f"{n}->{i}" for i, n in enumerate(KEEP))
-    if p.key == "speaker_names": p.value = ",".join(KEEP)
-    if p.key == "language": p.value = "English"
-onnx.save(m, f"{dst}/model.int8.onnx")
+# Ship the model and voice table UNMODIFIED (sherpa's native loader validates them against each
+# other); the app exposes only KEEP in its UI and maps names to these original indices.
+shutil.copy(f"{src}/voices.bin", dst)
+shutil.copy(f"{src}/model.int8.onnx", dst)
+open(f"{dst}/speaker_ids.txt", "w").write("\n".join(f"{n} {names.index(n)}" for n in KEEP) + "\n")
 
 for f in ["tokens.txt", "lexicon-us-en.txt", "lexicon-gb-en.txt"]:
     shutil.copy(f"{src}/{f}", dst)
