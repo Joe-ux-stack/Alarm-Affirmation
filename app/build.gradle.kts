@@ -48,7 +48,7 @@ android {
         jvmTarget = "17"
     }
     androidResources {
-        noCompress += listOf("onnx", "bin")
+        noCompress += listOf("onnx", "bin", "txt")
     }
     packaging {
         jniLibs { useLegacyPackaging = false }
@@ -64,5 +64,6 @@ dependencies {
     implementation("androidx.media3:media3-exoplayer:1.5.1")
     implementation("androidx.media3:media3-ui:1.5.1")
     implementation("androidx.work:work-runtime-ktx:2.10.0")
-    implementation("com.k2-fsa:sherpa-onnx:1.12.11")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    implementation(files("libs/sherpa-onnx.aar"))
 }

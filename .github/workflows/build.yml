@@ -42,6 +42,14 @@ jobs:
           path: app/src/main/assets/kokoro
           key: kokoro-int8-v1_0-7voices-${{ hashFiles('tools/prepare_kokoro.py') }}
 
+      - name: Fetch sherpa-onnx AAR (arm64 only)
+        run: |
+          mkdir -p app/libs /tmp/aar
+          curl -sSL -o /tmp/sherpa.aar https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.12.11/sherpa-onnx-1.12.11.aar
+          cd /tmp/aar && unzip -q /tmp/sherpa.aar && rm -rf jni/armeabi-v7a jni/x86 jni/x86_64
+          zip -q -r "$GITHUB_WORKSPACE/app/libs/sherpa-onnx.aar" .
+          ls -la "$GITHUB_WORKSPACE/app/libs/"
+
       - name: Download and trim Kokoro
         if: steps.kokoro-cache.outputs.cache-hit != 'true'
         run: |

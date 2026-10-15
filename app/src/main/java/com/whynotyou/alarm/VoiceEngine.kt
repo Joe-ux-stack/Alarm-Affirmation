@@ -7,7 +7,6 @@ import com.k2fsa.sherpa.onnx.OfflineTtsKokoroModelConfig
 import com.k2fsa.sherpa.onnx.OfflineTtsModelConfig
 import java.io.File
 import java.io.FileOutputStream
-import java.io.RandomAccessFile
 
 /**
  * On-device Kokoro TTS via sherpa-onnx. Model + 7 voices live in assets/kokoro and are copied to
@@ -34,12 +33,13 @@ object VoiceEngine {
 
     fun isAvailable(c: Context): Boolean = try { c.assets.list("kokoro")?.contains("model.int8.onnx") == true } catch (e: Exception) { false }
 
-    private fun ensureFiles(c: Context): File {
-        val dir = File(c.filesDir, "kokoro")
+    /** espeak-ng needs real files, so that folder is copied out of assets once; the model is read from assets directly. */
+    private fun espeakDir(c: Context): File {
+        val dir = File(c.filesDir, "espeak-ng-data")
         val marker = File(dir, ".ready-v1")
         if (marker.exists()) return dir
         dir.mkdirs()
-        copyAssetDir(c, "kokoro", dir)
+        copyAssetDir(c, "kokoro/espeak-ng-data", dir)
         marker.writeText("ok")
         return dir
     }
@@ -58,15 +58,14 @@ object VoiceEngine {
         tts?.let { return it }
         synchronized(lock) {
             tts?.let { return it }
-            val dir = ensureFiles(c)
             val cfg = OfflineTtsConfig(
                 model = OfflineTtsModelConfig(
                     kokoro = OfflineTtsKokoroModelConfig(
-                        model = "${dir}/model.int8.onnx",
-                        voices = "${dir}/voices.bin",
-                        tokens = "${dir}/tokens.txt",
-                        dataDir = "${dir}/espeak-ng-data",
-                        lexicon = "${dir}/lexicon-us-en.txt",
+                        model = "kokoro/model.int8.onnx",
+                        voices = "kokoro/voices.bin",
+                        tokens = "kokoro/tokens.txt",
+                        dataDir = espeakDir(c).absolutePath,
+                        lexicon = "kokoro/lexicon-us-en.txt",
                     ),
                     numThreads = 2,
                     debug = false,
@@ -74,7 +73,7 @@ object VoiceEngine {
                 ),
                 maxNumSentences = 1,
             )
-            return OfflineTts(config = cfg).also { tts = it }
+            return OfflineTts(assetManager = c.assets, config = cfg).also { tts = it }
         }
     }
 
@@ -86,28 +85,10 @@ object VoiceEngine {
             val sid = voices.indexOfFirst { it.id == voiceId }.coerceAtLeast(0)
             val audio = e.generate(text = text, sid = sid, speed = speed)
             if (audio.samples.isEmpty()) return false
-            writeWav(out, audio.samples, audio.sampleRate)
-            true
+            audio.save(out.absolutePath)
         } catch (e: Throwable) {
             out.delete(); false
         }
     }
 
-    private fun writeWav(f: File, samples: FloatArray, sr: Int) {
-        val pcm = ByteArray(samples.size * 2)
-        for (i in samples.indices) {
-            val v = (samples[i].coerceIn(-1f, 1f) * 32767f).toInt()
-            pcm[i * 2] = (v and 0xFF).toByte(); pcm[i * 2 + 1] = ((v shr 8) and 0xFF).toByte()
-        }
-        RandomAccessFile(f, "rw").use { r ->
-            r.setLength(0)
-            val dataLen = pcm.size
-            fun le32(v: Int) = byteArrayOf((v and 0xFF).toByte(), ((v shr 8) and 0xFF).toByte(), ((v shr 16) and 0xFF).toByte(), ((v shr 24) and 0xFF).toByte())
-            fun le16(v: Int) = byteArrayOf((v and 0xFF).toByte(), ((v shr 8) and 0xFF).toByte())
-            r.write("RIFF".toByteArray()); r.write(le32(36 + dataLen)); r.write("WAVE".toByteArray())
-            r.write("fmt ".toByteArray()); r.write(le32(16)); r.write(le16(1)); r.write(le16(1))
-            r.write(le32(sr)); r.write(le32(sr * 2)); r.write(le16(2)); r.write(le16(16))
-            r.write("data".toByteArray()); r.write(le32(dataLen)); r.write(pcm)
-        }
-    }
 }
