@@ -128,29 +128,32 @@ half4 main(float2 fragCoord){
   lines+=ribbon(sp,0.0,iTime,pink,violet,1.0);
   lines+=ribbon(sp,1.7,iTime*0.9,cyan,blue,1.2);
   lines+=ribbon(sp,3.9,iTime*1.1,violet,cyan,0.7)*0.6;
-  lines*=(0.55+0.7*iEnergy)*(0.55+0.9*(1.0-ndv));
+  lines*=(0.8+0.8*iEnergy)*(0.55+0.9*(1.0-ndv));
   // faint haze inside
   float hz=fbm(sp*1.4+float2(iTime*0.07,-iTime*0.05));
-  float3 haze=pal(hz*1.4+iTime*0.02+ang*0.15)*0.10*(0.4+0.6*(1.0-ndv));
-  // rim: hue varies with angle (violet one side, cyan the other)
+  float3 haze=pal(hz*1.4+iTime*0.02+0.15*sin(ang))*0.10*(0.4+0.6*(1.0-ndv));
+  // rim: fully coloured, hue drifts around the circle (violet / magenta / red / blue)
   float f=1.0-ndv;
-  float3 rimCol=mix(float3(0.60,0.30,1.0),float3(0.30,0.90,1.0),0.5+0.5*sin(ang+iTime*0.25));
-  float3 rim=rimCol*pow(f,2.5)*0.9+float3(0.8,0.9,1.0)*pow(f,7.0)*(0.8+0.6*iEnergy)+rimCol*pow(f,14.0)*1.2;
-  // thin bright edge line, brightness varying around
-  float edge=smoothstep(Rw-0.009,Rw-0.0015,r)*inside;
-  float edgeVar=0.45+0.55*(0.5+0.5*sin(ang*1.0+iTime*0.4));
-  rim+=(float3(0.85,0.95,1.0)*0.6+rimCol*0.6)*edge*edgeVar;
+  float hue=ang+iTime*0.2;
+  float3 rimCol=mix(mix(float3(0.50,0.15,1.0),float3(1.0,0.15,0.50),0.5+0.5*sin(hue)),float3(0.25,0.55,1.0),0.5+0.5*sin(2.0*ang-iTime*0.14+1.7)*0.6);
+  // broad gradient from the rim fading into the centre + tighter bright band + coloured edge
+  float3 rim=rimCol*(pow(f,1.0)*1.1+pow(f,3.0)*1.3+pow(f,10.0)*1.6);
+  float edge=smoothstep(Rw-0.010,Rw-0.0015,r)*inside;
+  float edgeVar=0.5+0.5*(0.5+0.5*sin(ang*1.0+iTime*0.4));
+  rim+=rimCol*1.8*edge*edgeVar;
   // speculars
   float3 v=float3(0,0,1);
   float3 l1=normalize(float3(-0.5,-0.6,0.65));
   float rl1=max(dot(reflect(-l1,n),v),0.0);
-  float3 spec=float3(1.0)*pow(rl1,200.0)*0.5;
+  float3 spec=float3(1.0,0.9,1.0)*pow(rl1,200.0)*0.35;
   float3 col=haze+lines+rim+spec;
+  float mx=max(col.r,max(col.g,col.b));
+  col*=mix(1.0,1.0/mx,smoothstep(0.9,2.5,mx)*0.85);   // keep hue when bright instead of clipping to white
   // bloom outside
   float halo=exp(-max(r-Rw,0.0)*10.0)*(0.16+0.30*iEnergy);
   float3 haloCol=rimCol*halo;
   // alpha: mostly transparent centre, additive light on top
-  float innerA=0.10+0.90*pow(f,1.2);
+  float innerA=0.06+0.94*pow(f,1.0);
   float lum=dot(lines+spec,float3(0.33));
   float alpha=max(inside*clamp(innerA+lum,0.0,1.0),halo);
   float3 outc=col*inside+haloCol*(1.0-inside);
