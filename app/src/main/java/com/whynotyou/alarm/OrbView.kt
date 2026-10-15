@@ -141,26 +141,26 @@ half4 main(float2 fragCoord) {
   // reflection of the environment
   float3 rf = reflect(-v, n);
   float3 refl = env(rf.xy * 1.4 + float2(0.0, -0.3), iTime * 0.7) * 0.9;
-  float3 col = mix(tr, refl, fres);
 
-  // chromatic fresnel rim
-  col += float3(0.6, 0.8, 1.0) * pow(1.0 - ndv, 5.0) * (0.9 + 0.5 * iEnergy);
+  // hollow glass: see-through centre, colour lives in the fresnel band
+  float body = 0.30 + 0.70 * pow(1.0 - ndv, 0.7);
+  float3 col = tr * body * 0.9 + refl * fres;
+  col += pal(iTime * 0.02 + ang * 0.3) * pow(1.0 - ndv, 2.2) * (0.7 + 0.4 * iEnergy);
+  col += float3(0.6, 0.8, 1.0) * pow(1.0 - ndv, 5.0) * (0.6 + 0.4 * iEnergy);
   col += float3(1.0, 0.55, 0.9) * pow(1.0 - ndv, 9.0) * 0.7;
 
   // speculars
   float3 l1 = normalize(float3(-0.5, -0.6, 0.65));
   float3 l2 = normalize(float3(0.6, 0.5, 0.45));
   float rl1 = max(dot(reflect(-l1, n), v), 0.0);
-  col += float3(1.0) * (pow(rl1, 160.0) * 1.1 + pow(rl1, 16.0) * 0.12);
-  col += float3(0.95, 0.9, 1.0) * pow(max(dot(reflect(-l2, n), v), 0.0), 48.0) * 0.35;
-
-  // weight: slight darkening at the lower rim
-  col *= 1.0 - 0.25 * smoothstep(0.6, 1.0, rr) * smoothstep(-0.2, 0.8, uv.y / Rw);
+  col += float3(1.0) * (pow(rl1, 160.0) * 1.1 + pow(rl1, 16.0) * 0.10);
+  col += float3(0.95, 0.9, 1.0) * pow(max(dot(reflect(-l2, n), v), 0.0), 48.0) * 0.3;
 
   // bloom
   float halo = exp(-max(r - Rw, 0.0) * 11.0) * (0.18 + 0.30 * iEnergy);
   float3 haloCol = pal(iTime * 0.02 + 0.3) * halo;
-  float alpha = max(inside, halo);
+  float innerA = 0.40 + 0.60 * pow(1.0 - ndv, 0.9);
+  float alpha = max(inside * innerA, halo);
   float3 outc = col * inside + haloCol * (1.0 - inside);
   return half4(half3(outc * alpha), half(alpha));
 }
