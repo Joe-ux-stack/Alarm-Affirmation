@@ -114,6 +114,13 @@ class MainActivity : AppCompatActivity() {
             list.addView(v)
         }
 
+        val crash = App.lastCrash(this)
+        findViewById<TextView>(R.id.txt_crash).apply {
+            visibility = if (crash == null) View.GONE else View.VISIBLE
+            text = crash?.lines()?.take(14)?.joinToString("\n") ?: ""
+            setOnLongClickListener { App.clearCrash(this@MainActivity); visibility = View.GONE; true }
+        }
+
         val missing = Permissions.missingCount(this)
         warning.visibility = if (missing == 0) View.GONE else View.VISIBLE
         warning.text = "$missing permission${if (missing > 1) "s" else ""} missing — fix"

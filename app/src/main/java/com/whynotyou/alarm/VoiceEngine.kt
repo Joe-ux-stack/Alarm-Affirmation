@@ -33,6 +33,8 @@ object VoiceEngine {
 
     fun isAvailable(c: Context): Boolean = try { c.assets.list("kokoro")?.contains("model.int8.onnx") == true } catch (e: Exception) { false }
 
+    @Volatile var lastError: String? = null
+
     /** espeak-ng needs real files, so that folder is copied out of assets once; the model is read from assets directly. */
     private fun espeakDir(c: Context): File {
         val dir = File(c.filesDir, "espeak-ng-data")
@@ -87,6 +89,7 @@ object VoiceEngine {
             if (audio.samples.isEmpty()) return false
             audio.save(out.absolutePath)
         } catch (e: Throwable) {
+            lastError = e.toString()
             out.delete(); false
         }
     }
