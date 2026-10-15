@@ -1,0 +1,2 @@
+[0;93m2026-10-15 17:09:28.664626726 [W:onnxruntime:Default, device_discovery.cc:95 GetPciBusId] Skipping pci_bus_id for PCI path at "/sys/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI0004:00/MSFT1000:00/5620e0c7-8062-4dce-aeb7-520c7ef76171" because filename "5620e0c7-8062-4dce-aeb7-520c7ef76171" did not match expected pattern of [0-9a-f]+:[0-9a-f]+:[0-9a-f]+[.][0-9a-f]+[m
+bundle ready: ['voices.txt', 'voices.bin', 'tokens.txt', 'lexicon.txt', 'preview'] ['bf_emma.m4a', 'af_nova.m4a', 'af_sky.m4a', 'bm_lewis.m4a', 'af_alloy.m4a', 'bm_fable.m4a', 'af_heart.m4a']
