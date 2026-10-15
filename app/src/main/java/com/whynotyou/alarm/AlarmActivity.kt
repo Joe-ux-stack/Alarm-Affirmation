@@ -193,10 +193,10 @@ class AlarmActivity : AppCompatActivity() {
                         // recordings still swing the orb through its full range
                         peak = maxOf(peak * 0.995, rms, 0.02)
                         val norm = (rms / peak).coerceIn(0.0, 1.0)
-                        orb.setLevel(Math.pow(norm, 0.7).toFloat())
+                        orb.setLevel(Math.pow(norm, 0.6).toFloat())
                     }
                     override fun onFftDataCapture(v: Visualizer?, fft: ByteArray?, rate: Int) {}
-                }, Visualizer.getMaxCaptureRate() / 2, true, false)
+                }, Visualizer.getMaxCaptureRate(), true, false)
                 enabled = true
             }
         } catch (e: Exception) { pulseFallback() }

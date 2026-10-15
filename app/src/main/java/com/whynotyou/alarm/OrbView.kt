@@ -39,7 +39,7 @@ class OrbView @JvmOverloads constructor(context: Context, attrs: AttributeSet? =
         duration = 1000; repeatCount = ValueAnimator.INFINITE; interpolator = LinearInterpolator()
         addUpdateListener {
             t += 1f / 60f
-            level += (targetLevel - level) * (if (targetLevel > level) 0.6f else 0.12f)
+            level += (targetLevel - level) * (if (targetLevel > level) 0.8f else 0.3f)
             invalidate()
         }
     }
@@ -48,9 +48,9 @@ class OrbView @JvmOverloads constructor(context: Context, attrs: AttributeSet? =
     override fun onDetachedFromWindow() { ticker.cancel(); super.onDetachedFromWindow() }
 
     private fun energy(): Float = when (mode) {
-        Mode.BREATHE -> 0.35f + 0.25f * ((sin(t * 2 * PI / 4.0).toFloat() + 1f) / 2f)
+        Mode.BREATHE -> 0.3f + 0.3f * ((sin(t * 2 * PI / 4.0).toFloat() + 1f) / 2f)
         Mode.SPEAK -> 0.1f + 0.9f * level
-        Mode.STILL -> 0.22f
+        Mode.STILL -> 0.35f
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -103,7 +103,7 @@ float3 ribbon(float2 p,float seed,float t,float3 colA,float3 colB,float w){
 }
 half4 main(float2 fragCoord){
   float2 uv=(fragCoord-0.5*iResolution)/min(iResolution.x,iResolution.y);
-  float R=(0.28+0.07*iEnergy)*iScale;
+  float R=(0.22+0.15*iEnergy)*iScale;
   float ang=atan(uv.y,uv.x);
   // strongly deformed: big slow lobes
   float wob=(sin(ang*2.0+iTime*0.5)*0.5+sin(ang*3.0-iTime*0.4)*0.6+sin(ang*5.0+iTime*0.7)*0.25+sin(ang*6.0-iTime*0.9)*0.1)*(0.008+0.040*iEnergy);
