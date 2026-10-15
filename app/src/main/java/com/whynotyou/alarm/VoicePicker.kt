@@ -47,6 +47,11 @@ object VoicePicker {
                 stop()
                 val f = File(a.cacheDir, "preview_${v.id}.wav")
                 play.setImageResource(R.drawable.ic_stop); playingBtn = play
+                if (!VoiceEngine.isAvailable(a)) {
+                    // engine disabled: say the sample with the phone voice so the picker still responds
+                    val sp = BriefSpeaker(a) { a.runOnUiThread { stop() } }; sp.speak(SAMPLE)
+                    return@setOnClickListener
+                }
                 Thread {
                     if (!f.exists()) VoiceEngine.synthesizeToFile(a, SAMPLE, v.id, f)
                     a.runOnUiThread {

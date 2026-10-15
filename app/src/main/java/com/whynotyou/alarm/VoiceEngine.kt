@@ -1,10 +1,6 @@
 package com.whynotyou.alarm
 
 import android.content.Context
-import com.k2fsa.sherpa.onnx.OfflineTts
-import com.k2fsa.sherpa.onnx.OfflineTtsConfig
-import com.k2fsa.sherpa.onnx.OfflineTtsKokoroModelConfig
-import com.k2fsa.sherpa.onnx.OfflineTtsModelConfig
 import java.io.File
 import java.io.FileOutputStream
 
@@ -28,7 +24,7 @@ object VoiceEngine {
     const val DEFAULT_VOICE = "af_sky"
     fun voice(id: String) = voices.firstOrNull { it.id == id } ?: voices[0]
 
-    @Volatile private var tts: OfflineTts? = null
+    @Volatile private var tts: Any? = null
     private val lock = Any()
 
     /** Written step by step so a native crash still leaves a trail. */
@@ -43,7 +39,9 @@ object VoiceEngine {
     private fun markBroken(c: Context, why: String) { File(c.filesDir, "voice_broken").writeText(why) }
     fun unmarkBroken(c: Context) { File(c.filesDir, "voice_broken").delete() }
 
-    fun isAvailable(c: Context): Boolean = try { c.assets.list("kokoro")?.contains("model.int8.onnx") == true } catch (e: Exception) { false }
+    /** Kill switch while the native engine is being replaced. */
+    const val ENABLED = false
+    fun isAvailable(c: Context): Boolean = ENABLED && try { c.assets.list("kokoro")?.contains("model.int8.onnx") == true } catch (e: Exception) { false }
 
     @Volatile var lastError: String? = null
 
@@ -70,49 +68,16 @@ object VoiceEngine {
         for (it in items) copyAssetDir(c, "$path/$it", File(dest, it))
     }
 
-    private fun engine(c: Context): OfflineTts {
-        tts?.let { return it }
-        synchronized(lock) {
-            tts?.let { return it }
-            log(c, "engine: start")
-            val dir = prepare(c)
-            log(c, "engine: files ready " + listOf("model.int8.onnx","voices.bin","tokens.txt","lexicon-us-en.txt").joinToString { f -> "$f=" + File(dir, f).length() } + " espeak=" + File(dir, "espeak-ng-data").list()?.size)
-            try { System.loadLibrary("sherpa-onnx-jni"); log(c, "engine: jni loaded") } catch (e: Throwable) { log(c, "engine: jni load FAILED $e"); markBroken(c, "jni: $e"); throw e }
-            val cfg = OfflineTtsConfig(
-                model = OfflineTtsModelConfig(
-                    kokoro = OfflineTtsKokoroModelConfig(
-                        model = File(dir, "model.int8.onnx").absolutePath,
-                        voices = File(dir, "voices.bin").absolutePath,
-                        tokens = File(dir, "tokens.txt").absolutePath,
-                        dataDir = File(dir, "espeak-ng-data").absolutePath,
-                        lexicon = File(dir, "lexicon-us-en.txt").absolutePath,
-                    ),
-                    numThreads = 2,
-                    debug = false,
-                    provider = "cpu",
-                ),
-                maxNumSentences = 1,
-            )
-            log(c, "engine: constructing OfflineTts")
-            val e = try { OfflineTts(assetManager = c.assets, config = cfg) } catch (t: Throwable) { log(c, "engine: ctor FAILED $t"); markBroken(c, "ctor: $t"); throw t }
-            log(c, "engine: ok speakers=${e.numSpeakers()} sr=${e.sampleRate()}")
-            return e.also { tts = it }
-        }
+    private fun engine(c: Context): Nothing {
+        log(c, "engine: disabled in this build")
+        throw IllegalStateException("voice engine disabled")
     }
 
     /** Synthesise to a WAV file. Blocking; call off the main thread. Returns false on failure. */
     fun synthesizeToFile(c: Context, text: String, voiceId: String, out: File, speed: Float = 0.95f): Boolean {
-        if (text.isBlank() || isBroken(c)) return false
+        if (!ENABLED || text.isBlank() || isBroken(c)) return false
         return try {
-            val e = engine(c)
-            val sid = voice(voiceId).sid
-            log(c, "gen: sid=$sid chars=${text.length}")
-            val audio = e.generate(text = text, sid = sid, speed = speed)
-            log(c, "gen: samples=${audio.samples.size}")
-            if (audio.samples.isEmpty()) return false
-            val ok = audio.save(out.absolutePath)
-            log(c, "gen: saved=$ok bytes=${out.length()}")
-            ok
+            engine(c)
         } catch (e: Throwable) {
             lastError = e.toString()
             out.delete(); false

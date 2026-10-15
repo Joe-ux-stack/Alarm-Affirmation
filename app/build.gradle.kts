@@ -11,8 +11,8 @@ android {
         applicationId = "com.whynotyou.alarm"
         minSdk = 26
         targetSdk = 35
-        versionCode = 15
-        versionName = "0.15"
+        versionCode = 16
+        versionName = "0.16"
         ndk { abiFilters += listOf("arm64-v8a") }
     }
 
@@ -65,5 +65,4 @@ dependencies {
     implementation("androidx.media3:media3-ui:1.5.1")
     implementation("androidx.work:work-runtime-ktx:2.10.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
-    implementation(files("libs/sherpa-onnx.aar"))
 }

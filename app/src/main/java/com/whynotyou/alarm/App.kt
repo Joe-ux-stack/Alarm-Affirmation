@@ -20,7 +20,6 @@ class App : Application(), androidx.work.Configuration.Provider {
             } catch (_: Throwable) {}
             prev?.uncaughtException(t, e)
         }
-        Thread { try { if (VoiceEngine.isAvailable(this)) VoiceEngine.prepare(this) } catch (_: Throwable) {} }.start()
     }
     companion object {
         fun lastCrash(ctx: android.content.Context): String? = File(ctx.filesDir, "last_crash.txt").takeIf { it.exists() }?.readText()
