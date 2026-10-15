@@ -17,8 +17,12 @@ data class Alarm(
     var snooze: Boolean = true,      // 5 min, max 2
     var message: Boolean = true,     // play a loved one's message after Stop
     var brief: Boolean = true,       // read calendar + intention after the message
-    var voice: String = VoiceEngine.DEFAULT_VOICE
+    var voice: String = VoiceEngine.DEFAULT_VOICE,
+    var soundName: String = ""       // "" = built-in chime; else a song copied into filesDir/sounds
 ) {
+    fun soundFile(c: android.content.Context) = java.io.File(c.filesDir, "sounds/$id.audio")
+    fun hasCustomSound(c: android.content.Context) = soundName.isNotEmpty() && soundFile(c).exists()
+
     val isDaily get() = days.all { it }
     val isWeekdays get() = (0..4).all { days[it] } && !days[5] && !days[6]
     val isOnce get() = days.none { it }
@@ -45,7 +49,7 @@ data class Alarm(
         .put("id", id).put("h", hour).put("m", minute)
         .put("days", JSONArray().also { a -> days.forEach { a.put(it) } })
         .put("on", enabled).put("vol", volume).put("ramp", ramp).put("snooze", snooze)
-        .put("msg", message).put("brief", brief).put("voice", voice)
+        .put("msg", message).put("brief", brief).put("voice", voice).put("sound", soundName)
 
     companion object {
         fun fromJson(o: JSONObject): Alarm {
@@ -56,7 +60,8 @@ data class Alarm(
                 enabled = o.optBoolean("on", true), volume = o.optInt("vol", 80),
                 ramp = o.optBoolean("ramp", true), snooze = o.optBoolean("snooze", true),
                 message = o.optBoolean("msg", true), brief = o.optBoolean("brief", true),
-                voice = o.optString("voice", VoiceEngine.DEFAULT_VOICE)
+                voice = o.optString("voice", VoiceEngine.DEFAULT_VOICE),
+                soundName = o.optString("sound", "")
             )
         }
         fun new(hour: Int = 7, minute: Int = 0) = Alarm(System.currentTimeMillis().toString(36), hour, minute)
@@ -84,6 +89,7 @@ object AlarmStore {
     }
 
     fun delete(c: Context, id: String) {
+        java.io.File(c.filesDir, "sounds/$id.audio").delete()
         write(c, all(c).filter { it.id != id })
         AlarmScheduler.reschedule(c)
         BriefAudio.scheduleAll(c)

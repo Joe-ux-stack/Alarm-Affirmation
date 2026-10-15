@@ -59,6 +59,13 @@
             </LinearLayout>
             <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginTop="10dp" android:background="#15181F" />
 
+            <LinearLayout android:id="@+id/row_sound" style="@style/Row" android:background="?android:attr/selectableItemBackground">
+                <TextView style="@style/RowLabel" android:text="Sound" />
+                <TextView android:id="@+id/txt_sound" style="@style/RowValue" android:maxWidth="200dp" android:singleLine="true" android:ellipsize="end" android:text="Chime" />
+                <ImageView android:layout_width="18dp" android:layout_height="18dp" android:layout_marginStart="8dp" android:src="@drawable/ic_chevron" android:tint="#7A8294" android:importantForAccessibility="no" />
+            </LinearLayout>
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#15181F" />
+
             <LinearLayout style="@style/Row">
                 <TextView style="@style/RowLabel" android:text="Ramp up gently" />
                 <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_ramp" android:layout_width="wrap_content" android:layout_height="wrap_content" />

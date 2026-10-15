@@ -61,6 +61,17 @@ class AlarmDetailActivity : AppCompatActivity() {
         bind(R.id.sw_snooze, alarm.snooze) { alarm.snooze = it }
         bind(R.id.sw_message, alarm.message) { alarm.message = it }
         bind(R.id.sw_brief, alarm.brief) { alarm.brief = it }
+        val soundLabel = findViewById<TextView>(R.id.txt_sound)
+        soundLabel.text = if (alarm.hasCustomSound(this)) alarm.soundName else "Chime"
+        findViewById<View>(R.id.row_sound).setOnClickListener {
+            val items = if (alarm.soundName.isNotEmpty()) arrayOf("Chime", "Choose from my music…", "Keep “${alarm.soundName}”") else arrayOf("Chime", "Choose from my music…")
+            androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Sound").setItems(items) { _, i ->
+                when (i) {
+                    0 -> { alarm.soundName = ""; soundLabel.text = "Chime" }
+                    1 -> pickSound.launch(arrayOf("audio/*"))
+                }
+            }.show()
+        }
         val voiceLabel = findViewById<TextView>(R.id.txt_voice)
         voiceLabel.text = VoiceEngine.voice(alarm.voice).name
         findViewById<View>(R.id.row_voice).setOnClickListener {
@@ -75,6 +86,25 @@ class AlarmDetailActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btn_save).setOnClickListener { alarm.enabled = true; AlarmStore.save(this, alarm); finish() }
 
         renderTime(); renderDays()
+    }
+
+    /** Copies the chosen song into app storage so it still plays at 6 am even if the source moves. */
+    private val pickSound = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri == null) return@registerForActivityResult
+        val name = contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
+            if (c.moveToFirst()) c.getString(0) else null
+        }?.substringBeforeLast('.') ?: "Song"
+        Thread {
+            val ok = try {
+                val f = alarm.soundFile(this); f.parentFile?.mkdirs()
+                contentResolver.openInputStream(uri)!!.use { i -> f.outputStream().use { o -> i.copyTo(o) } }
+                f.length() > 0
+            } catch (e: Exception) { false }
+            runOnUiThread {
+                if (ok) { alarm.soundName = name; findViewById<TextView>(R.id.txt_sound).text = name }
+                else android.widget.Toast.makeText(this, "Couldn't use that file", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }.start()
     }
 
     private fun bind(id: Int, value: Boolean, set: (Boolean) -> Unit) {

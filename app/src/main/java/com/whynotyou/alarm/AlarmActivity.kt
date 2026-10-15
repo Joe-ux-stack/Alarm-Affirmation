@@ -138,7 +138,8 @@ class AlarmActivity : AppCompatActivity() {
 
         val p = player ?: return
         p.repeatMode = Player.REPEAT_MODE_ONE
-        p.setMediaItem(MediaItem.fromUri(Uri.parse("android.resource://$packageName/${R.raw.chime}")))
+        val song = if (!timerMode && alarm.hasCustomSound(this)) Uri.fromFile(alarm.soundFile(this)) else null
+        p.setMediaItem(MediaItem.fromUri(song ?: Uri.parse("android.resource://$packageName/${R.raw.chime}")))
         p.volume = if (alarm.ramp && !preview) 0.15f else 1f
         p.playWhenReady = true
         p.prepare()
