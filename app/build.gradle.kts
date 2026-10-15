@@ -11,8 +11,8 @@ android {
         applicationId = "com.whynotyou.alarm"
         minSdk = 26
         targetSdk = 35
-        versionCode = 8
-        versionName = "0.8"
+        versionCode = 9
+        versionName = "0.9"
     }
 
     // Stable dev key: CI decodes it from a repo secret into keystore/whynotyou-dev.jks.

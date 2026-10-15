@@ -87,7 +87,8 @@ class AlarmActivity : AppCompatActivity() {
             val am = getSystemService(Context.AUDIO_SERVICE) as AudioManager
             savedAlarmVolume = am.getStreamVolume(AudioManager.STREAM_ALARM)
             val max = am.getStreamMaxVolume(AudioManager.STREAM_ALARM)
-            am.setStreamVolume(AudioManager.STREAM_ALARM, (max * alarm.volume / 100f).toInt().coerceAtLeast(1), 0)
+            val pct = if (timerMode) TimerSettings.volume(this) else alarm.volume
+            am.setStreamVolume(AudioManager.STREAM_ALARM, (max * pct / 100f).toInt().coerceAtLeast(1), 0)
             if (!timerMode) CalendarSync.refreshToday(this)
         }
 

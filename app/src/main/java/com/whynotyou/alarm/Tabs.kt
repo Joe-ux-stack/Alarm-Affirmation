@@ -7,16 +7,16 @@ import android.view.Gravity
 import android.view.View
 import android.widget.Button
 import android.widget.LinearLayout
-import android.widget.NumberPicker
 import android.widget.TextView
 
 /** Timer tab controller. */
 class TimerTab(private val a: Activity, root: View) {
     private val pick: View = root.findViewById(R.id.timer_pick)
     private val run: View = root.findViewById(R.id.timer_run)
-    private val h: NumberPicker = root.findViewById(R.id.np_h)
-    private val m: NumberPicker = root.findViewById(R.id.np_m)
-    private val s: NumberPicker = root.findViewById(R.id.np_s)
+    private val h: WheelView = root.findViewById(R.id.np_h)
+    private val m: WheelView = root.findViewById(R.id.np_m)
+    private val s: WheelView = root.findViewById(R.id.np_s)
+    private val presetViews = listOf<TextView>(root.findViewById(R.id.preset_1), root.findViewById(R.id.preset_2), root.findViewById(R.id.preset_3))
     private val remaining: TextView = root.findViewById(R.id.timer_remaining)
     private val orb: OrbView = root.findViewById(R.id.timer_orb)
     private val pause: Button = root.findViewById(R.id.timer_pause)
@@ -27,9 +27,8 @@ class TimerTab(private val a: Activity, root: View) {
         val last = TimerState.lastDuration(a) / 1000
         h.value = (last / 3600).toInt(); m.value = ((last % 3600) / 60).toInt(); s.value = (last % 60).toInt()
 
-        root.findViewById<View>(R.id.preset_5).setOnClickListener { set(0, 5, 0) }
-        root.findViewById<View>(R.id.preset_10).setOnClickListener { set(0, 10, 0) }
-        root.findViewById<View>(R.id.preset_25).setOnClickListener { set(0, 25, 0) }
+        renderPresets()
+        root.findViewById<View>(R.id.timer_gear).setOnClickListener { TimerSettings.showSheet(a) { renderPresets() } }
         root.findViewById<View>(R.id.timer_start).setOnClickListener {
             val ms = ((h.value * 3600L) + (m.value * 60L) + s.value) * 1000L
             if (ms > 0) { TimerService.start(a, ms); onShow() }
@@ -41,10 +40,14 @@ class TimerTab(private val a: Activity, root: View) {
         }
     }
 
-    private fun setup(np: NumberPicker, lo: Int, hi: Int) {
-        np.minValue = lo; np.maxValue = hi; np.wrapSelectorWheel = true
-        np.setFormatter { "%02d".format(it) }
-        np.descendantFocusability = NumberPicker.FOCUS_BLOCK_DESCENDANTS
+    private fun setup(np: WheelView, lo: Int, hi: Int) { np.setRange(lo, hi) }
+
+    private fun renderPresets() {
+        val p = TimerSettings.presets(a)
+        presetViews.forEachIndexed { i, tv ->
+            tv.text = "${p[i]} min"
+            tv.setOnClickListener { set(p[i] / 60, p[i] % 60, 0) }
+        }
     }
     private fun set(hh: Int, mm: Int, ss: Int) { h.value = hh; m.value = mm; s.value = ss }
 

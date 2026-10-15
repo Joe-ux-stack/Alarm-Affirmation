@@ -10,29 +10,44 @@
         android:layout_height="match_parent"
         android:gravity="center_horizontal"
         android:orientation="vertical"
-        android:paddingTop="108dp"
+        android:paddingTop="56dp"
         android:paddingBottom="100dp">
 
         <LinearLayout
             android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:gravity="end|center_vertical"
+            android:orientation="horizontal"
+            android:paddingEnd="24dp">
+            <ImageButton
+                android:id="@+id/timer_gear"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@android:color/transparent"
+                android:contentDescription="Timer settings"
+                android:src="@drawable/ic_gear"
+                android:tint="#7A8294" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
             android:gravity="center"
             android:orientation="horizontal"
             android:paddingStart="16dp"
             android:paddingEnd="16dp">
             <LinearLayout style="@style/PickerCol">
                 <TextView style="@style/PickerLabel" android:text="Hours" />
-                <NumberPicker android:id="@+id/np_h" style="@style/Picker" />
+                <com.whynotyou.alarm.WheelView android:id="@+id/np_h" style="@style/Picker" />
             </LinearLayout>
-            <TextView style="@style/PickerColon" android:text=":" />
             <LinearLayout style="@style/PickerCol">
                 <TextView style="@style/PickerLabel" android:text="Minutes" />
-                <NumberPicker android:id="@+id/np_m" style="@style/Picker" />
+                <com.whynotyou.alarm.WheelView android:id="@+id/np_m" style="@style/Picker" />
             </LinearLayout>
-            <TextView style="@style/PickerColon" android:text=":" />
             <LinearLayout style="@style/PickerCol">
                 <TextView style="@style/PickerLabel" android:text="Seconds" />
-                <NumberPicker android:id="@+id/np_s" style="@style/Picker" />
+                <com.whynotyou.alarm.WheelView android:id="@+id/np_s" style="@style/Picker" />
             </LinearLayout>
         </LinearLayout>
 
@@ -41,9 +56,9 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="40dp"
             android:orientation="horizontal">
-            <TextView android:id="@+id/preset_5" style="@style/Preset" android:text="5 min" />
-            <TextView android:id="@+id/preset_10" style="@style/Preset" android:layout_marginStart="10dp" android:text="10 min" />
-            <TextView android:id="@+id/preset_25" style="@style/Preset" android:layout_marginStart="10dp" android:text="25 min" />
+            <TextView android:id="@+id/preset_1" style="@style/Preset" android:text="5 min" />
+            <TextView android:id="@+id/preset_2" style="@style/Preset" android:layout_marginStart="10dp" android:text="10 min" />
+            <TextView android:id="@+id/preset_3" style="@style/Preset" android:layout_marginStart="10dp" android:text="25 min" />
         </LinearLayout>
 
         <Button

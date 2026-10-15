@@ -1,6 +1,5 @@
 package com.whynotyou.alarm
 
-import android.app.TimePickerDialog
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
@@ -10,18 +9,16 @@ import android.widget.SeekBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
-import java.text.SimpleDateFormat
 import java.util.Calendar
-import java.util.Locale
 
 class AlarmDetailActivity : AppCompatActivity() {
 
     private lateinit var alarm: Alarm
     private var isNew = false
 
-    private lateinit var time: TextView
-    private lateinit var am: TextView
-    private lateinit var pm: TextView
+    private lateinit var wh: WheelView
+    private lateinit var wm: WheelView
+    private lateinit var wap: WheelView
     private lateinit var daysRow: LinearLayout
     private val dayViews = arrayOfNulls<TextView>(7)
 
@@ -35,14 +32,11 @@ class AlarmDetailActivity : AppCompatActivity() {
             val now = Calendar.getInstance(); alarm.hour = now.get(Calendar.HOUR_OF_DAY); alarm.minute = now.get(Calendar.MINUTE)
         }
 
-        time = findViewById(R.id.txt_time); am = findViewById(R.id.btn_am); pm = findViewById(R.id.btn_pm)
+        wh = findViewById(R.id.wheel_h); wm = findViewById(R.id.wheel_m); wap = findViewById(R.id.wheel_ap)
         daysRow = findViewById(R.id.row_days)
 
-        time.setOnClickListener {
-            TimePickerDialog(this, R.style.DialogDark, { _, h, m -> alarm.hour = h; alarm.minute = m; renderTime() }, alarm.hour, alarm.minute, false).show()
-        }
-        am.setOnClickListener { if (alarm.hour >= 12) alarm.hour -= 12; renderTime() }
-        pm.setOnClickListener { if (alarm.hour < 12) alarm.hour += 12; renderTime() }
+        wh.setRange(1, 12); wm.setRange(0, 59); wap.setRange(0, 1); wap.labels = listOf("am", "pm")
+        wh.onChange = { readWheels() }; wm.onChange = { readWheels() }; wap.onChange = { readWheels() }
 
         val letters = "MTWTFSS"
         for (i in 0 until 7) {
@@ -83,15 +77,15 @@ class AlarmDetailActivity : AppCompatActivity() {
     }
 
     private fun renderTime() {
-        val cal = Calendar.getInstance().apply { set(Calendar.HOUR_OF_DAY, alarm.hour); set(Calendar.MINUTE, alarm.minute) }
-        time.text = SimpleDateFormat("h:mm", Locale.getDefault()).format(cal.time)
-        val isAm = alarm.hour < 12
-        style(am, isAm); style(pm, !isAm)
+        val h12 = alarm.hour % 12; wh.value = if (h12 == 0) 12 else h12
+        wm.value = alarm.minute
+        wap.value = if (alarm.hour < 12) 0 else 1
     }
 
-    private fun style(tv: TextView, on: Boolean) {
-        tv.setBackgroundResource(if (on) R.drawable.bg_pill_amber else R.drawable.bg_pill_outline)
-        tv.setTextColor(if (on) 0xFF000000.toInt() else 0xFF7A8294.toInt())
+    private fun readWheels() {
+        val h12 = wh.value % 12
+        alarm.hour = h12 + if (wap.value == 1) 12 else 0
+        alarm.minute = wm.value
     }
 
     private fun renderDays() {
