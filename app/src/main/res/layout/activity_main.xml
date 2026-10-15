@@ -9,98 +9,80 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="24dp"
-        android:paddingTop="48dp">
+        android:paddingStart="28dp"
+        android:paddingTop="56dp"
+        android:paddingEnd="28dp"
+        android:paddingBottom="40dp">
 
-        <!-- Warning strip: only visible when a permission is missing -->
-        <LinearLayout
-            android:id="@+id/row_warning"
+        <!-- Warning: only when a permission is missing -->
+        <TextView
+            android:id="@+id/txt_warning"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="20dp"
+            android:layout_marginBottom="24dp"
             android:background="@drawable/bg_card_amber"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
             android:padding="14dp"
-            android:visibility="gone">
+            android:text="1 permission missing — fix"
+            android:textColor="#F2F4F8"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <!-- Alarm -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
             <TextView
-                android:id="@+id/txt_warning"
+                android:id="@+id/txt_time"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="1 permission missing — the alarm may not fire"
+                android:text="7:00"
                 android:textColor="#F2F4F8"
-                android:textSize="13sp"
+                android:textSize="64sp"
                 android:textStyle="bold" />
-            <TextView
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switch_alarm"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Fix"
-                android:textColor="#F5A524"
-                android:textSize="13sp"
-                android:textStyle="bold" />
+                android:minWidth="48dp"
+                android:minHeight="48dp" />
         </LinearLayout>
 
         <TextView
+            android:id="@+id/txt_sub"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="NEXT WAKE-UP"
+            android:text="Every day · tap the time to change"
             android:textColor="#9AA3B5"
-            android:textSize="12sp"
-            android:textStyle="bold" />
+            android:textSize="14sp" />
 
-        <TextView
-            android:id="@+id/txt_next_time"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="None"
-            android:textColor="#F2F4F8"
-            android:textSize="56sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/txt_next_sub"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Tap below to set one"
-            android:textColor="#9AA3B5"
-            android:textSize="15sp" />
-
-        <Button
-            android:id="@+id/btn_set_time"
-            style="@style/PrimaryButton"
-            android:layout_marginTop="16dp"
-            android:text="Set wake-up time" />
-
-        <Button
-            android:id="@+id/btn_cancel"
-            style="@style/SecondaryButton"
-            android:text="Cancel alarm" />
-
+        <!-- Intention -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
-            android:text="TOMORROW I WILL…"
+            android:layout_marginTop="40dp"
+            android:text="Tomorrow I will"
             android:textColor="#9AA3B5"
-            android:textSize="12sp"
-            android:textStyle="bold" />
+            android:textSize="13sp" />
 
         <EditText
             android:id="@+id/edit_intention"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
             android:background="@android:color/transparent"
-            android:hint="one thing, read to you after the video"
+            android:hint="one thing"
             android:imeOptions="actionDone"
             android:inputType="textCapSentences"
             android:maxLines="2"
-            android:paddingVertical="8dp"
+            android:paddingVertical="6dp"
             android:textColor="#F2F4F8"
             android:textColorHint="#3A4458"
-            android:textSize="20sp"
+            android:textSize="22sp"
             android:textStyle="bold" />
 
         <View
@@ -109,100 +91,118 @@
             android:background="#2A3245" />
 
         <TextView
-            android:id="@+id/txt_brief_status"
+            android:id="@+id/txt_calendar"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Calendar: not connected yet"
-            android:textColor="#6B7488"
-            android:textSize="12sp" />
+            android:layout_marginTop="10dp"
+            android:minHeight="32dp"
+            android:gravity="center_vertical"
+            android:text="Read my calendar too →"
+            android:textColor="#F5A524"
+            android:textSize="13sp"
+            android:textStyle="bold" />
 
-        <!-- Video card -->
+        <!-- Messages -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="40dp"
+            android:text="Messages from people you love"
+            android:textColor="#9AA3B5"
+            android:textSize="13sp" />
+
         <LinearLayout
+            android:id="@+id/list_messages"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
-            android:background="@drawable/bg_card"
-            android:orientation="vertical"
-            android:padding="18dp">
+            android:orientation="vertical" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="WAKE-UP VIDEO"
-                android:textColor="#9AA3B5"
-                android:textSize="12sp"
-                android:textStyle="bold" />
+        <TextView
+            android:id="@+id/txt_no_messages"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="None yet. Add a voice memo from your partner, a parent, a friend. It plays after you stop the alarm."
+            android:textColor="#6B7488"
+            android:textSize="14sp" />
+
+        <Button
+            android:id="@+id/btn_add_message"
+            style="@style/PrimaryButton"
+            android:layout_marginTop="14dp"
+            android:text="Add a message" />
+
+        <!-- Less important -->
+        <TextView
+            android:id="@+id/btn_more"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="40dp"
+            android:minHeight="40dp"
+            android:gravity="center_vertical"
+            android:text="More ▾"
+            android:textColor="#9AA3B5"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:id="@+id/panel_more"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
 
             <TextView
                 android:id="@+id/txt_video"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="Bundled placeholder"
+                android:layout_marginTop="8dp"
+                android:text="Alarm sound: bundled clip"
                 android:textColor="#F2F4F8"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/txt_video_sub"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="0:10"
-                android:textColor="#9AA3B5"
-                android:textSize="13sp" />
+                android:textSize="14sp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
+                android:layout_marginTop="8dp"
                 android:orientation="horizontal">
                 <Button
-                    android:id="@+id/btn_preview"
+                    android:id="@+id/btn_pick_video"
                     style="@style/SecondaryButton"
                     android:layout_width="0dp"
-                    android:layout_height="48dp"
+                    android:layout_height="44dp"
                     android:layout_marginTop="0dp"
                     android:layout_marginEnd="8dp"
                     android:layout_weight="1"
-                    android:text="Preview" />
+                    android:text="Change" />
                 <Button
-                    android:id="@+id/btn_pick_video"
-                    style="@style/PrimaryButton"
+                    android:id="@+id/btn_reset_video"
+                    style="@style/SecondaryButton"
                     android:layout_width="0dp"
-                    android:layout_height="48dp"
+                    android:layout_height="44dp"
                     android:layout_marginTop="0dp"
                     android:layout_weight="1"
-                    android:text="Change" />
+                    android:text="Reset" />
             </LinearLayout>
 
             <Button
-                android:id="@+id/btn_reset_video"
+                android:id="@+id/btn_preview"
+                style="@style/SecondaryButton"
+                android:text="Preview the alarm" />
+
+            <Button
+                android:id="@+id/btn_test_1min"
+                style="@style/SecondaryButton"
+                android:text="Test in 1 minute (lock the phone)" />
+
+            <TextView
+                android:id="@+id/txt_status_line"
                 android:layout_width="wrap_content"
-                android:layout_height="40dp"
-                android:layout_gravity="center_horizontal"
-                android:background="@android:color/transparent"
-                android:text="Back to bundled clip"
-                android:textAllCaps="false"
-                android:textColor="#9AA3B5"
-                android:textSize="13sp" />
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="✓ Phone is set up to wake you"
+                android:textColor="#6B7488"
+                android:textSize="12sp" />
         </LinearLayout>
-
-        <!-- Test row -->
-        <Button
-            android:id="@+id/btn_test_1min"
-            style="@style/SecondaryButton"
-            android:layout_marginTop="24dp"
-            android:text="Test: fire in 1 min, then lock the phone" />
-
-        <TextView
-            android:id="@+id/txt_status_line"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="28dp"
-            android:text="✓ Phone is set up to wake you"
-            android:textColor="#6B7488"
-            android:textSize="12sp" />
     </LinearLayout>
 </ScrollView>

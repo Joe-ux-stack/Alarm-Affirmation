@@ -21,7 +21,7 @@ class AlarmReceiver : BroadcastReceiver() {
         val wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "whynotyou:fire")
         wl.acquire(20_000L)
 
-        AlarmScheduler.cancel(context) // one-shot for the MVP
+        AlarmScheduler.onFired(context)
         showFullScreen(context)
     }
 
