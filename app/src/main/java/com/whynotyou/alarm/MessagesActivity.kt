@@ -62,6 +62,7 @@ class MessagesActivity : AppCompatActivity() {
         findViewById<Button>(R.id.rec_cancel).setOnClickListener { stopRecording(save = false) }
         findViewById<Button>(R.id.rec_stop).setOnClickListener { stopRecording(save = true) }
 
+        findViewById<View>(R.id.row_phonedown).setOnClickListener { startActivity(Intent(this, PhoneDownActivity::class.java)) }
         findViewById<View>(R.id.row_permissions).setOnClickListener { startActivity(Intent(this, SetupActivity::class.java)) }
         findViewById<View>(R.id.row_test).setOnClickListener {
             AlarmScheduler.scheduleTestInMinutes(this, 1)
@@ -105,7 +106,10 @@ class MessagesActivity : AppCompatActivity() {
         }
     }
 
-    override fun onResume() { super.onResume(); refresh(); renderVoiceRows() }
+    override fun onResume() {
+        super.onResume(); refresh(); renderVoiceRows()
+        findViewById<TextView>(R.id.txt_phonedown).text = if (PhoneDown.isEnabled(this)) "${PhoneDown.limitMin(this)} min" else "Off"
+    }
 
     private val voiceTick = object : Runnable { override fun run() { renderVoiceRows() } }
     private fun renderVoiceRows() {
