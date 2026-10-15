@@ -35,13 +35,15 @@ object VoiceEngine {
 
     @Volatile var lastError: String? = null
 
-    /** espeak-ng needs real files, so that folder is copied out of assets once; the model is read from assets directly. */
-    private fun espeakDir(c: Context): File {
-        val dir = File(c.filesDir, "espeak-ng-data")
-        val marker = File(dir, ".ready-v1")
+    /** Everything is copied out of assets to real files once (sherpa + espeak are happiest that way). */
+    fun isReady(c: Context) = File(c.filesDir, "kokoro/.ready-v2").exists()
+
+    fun prepare(c: Context): File {
+        val dir = File(c.filesDir, "kokoro")
+        val marker = File(dir, ".ready-v2")
         if (marker.exists()) return dir
-        dir.mkdirs()
-        copyAssetDir(c, "kokoro/espeak-ng-data", dir)
+        dir.deleteRecursively(); dir.mkdirs()
+        copyAssetDir(c, "kokoro", dir)
         marker.writeText("ok")
         return dir
     }
@@ -60,14 +62,15 @@ object VoiceEngine {
         tts?.let { return it }
         synchronized(lock) {
             tts?.let { return it }
+            val dir = prepare(c)
             val cfg = OfflineTtsConfig(
                 model = OfflineTtsModelConfig(
                     kokoro = OfflineTtsKokoroModelConfig(
-                        model = "kokoro/model.int8.onnx",
-                        voices = "kokoro/voices.bin",
-                        tokens = "kokoro/tokens.txt",
-                        dataDir = espeakDir(c).absolutePath,
-                        lexicon = "kokoro/lexicon-us-en.txt",
+                        model = File(dir, "model.int8.onnx").absolutePath,
+                        voices = File(dir, "voices.bin").absolutePath,
+                        tokens = File(dir, "tokens.txt").absolutePath,
+                        dataDir = File(dir, "espeak-ng-data").absolutePath,
+                        lexicon = File(dir, "lexicon-us-en.txt").absolutePath,
                     ),
                     numThreads = 2,
                     debug = false,
@@ -75,6 +78,7 @@ object VoiceEngine {
                 ),
                 maxNumSentences = 1,
             )
+            // Absolute paths → sherpa reads from the filesystem (assetManager is ignored for '/'-prefixed paths).
             return OfflineTts(assetManager = c.assets, config = cfg).also { tts = it }
         }
     }
