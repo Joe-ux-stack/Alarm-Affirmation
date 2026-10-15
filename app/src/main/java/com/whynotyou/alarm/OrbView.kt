@@ -14,8 +14,8 @@ import kotlin.math.min
 import kotlin.math.sin
 
 /**
- * Iridescent glass orb. On Android 13+ it's an AGSL shader: a refractive sphere (per-channel
- * dispersion, fresnel reflection, two speculars) over a drifting violet/cyan/pink colour field, plus bloom. [level] (0..1) drives wobble + brightness.
+ * Plasma orb: a slightly deformed, mostly transparent glass sphere with a violet/cyan rim and
+ * two or three soft ribbons of light drifting inside. [level] drives ribbon brightness and wobble.
  * BREATHE: slow sine. SPEAK: follows setLevel(). STILL: small, calm.
  * Pre-13 devices get the flat concentric-circle version.
  */
@@ -85,84 +85,76 @@ uniform float iTime;
 uniform float iEnergy;
 uniform float iScale;
 
-float hash(float2 p) { return fract(sin(dot(p, float2(127.1, 311.7))) * 43758.5453); }
-float noise(float2 p) {
-  float2 i = floor(p); float2 f = fract(p);
-  float2 u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
-  return mix(mix(hash(i), hash(i + float2(1,0)), u.x), mix(hash(i + float2(0,1)), hash(i + float2(1,1)), u.x), u.y);
+float hash(float2 p){return fract(sin(dot(p,float2(127.1,311.7)))*43758.5453);}
+float noise(float2 p){float2 i=floor(p);float2 f=fract(p);float2 u=f*f*f*(f*(f*6.0-15.0)+10.0);
+return mix(mix(hash(i),hash(i+float2(1,0)),u.x),mix(hash(i+float2(0,1)),hash(i+float2(1,1)),u.x),u.y);}
+float fbm(float2 p){float v=0.0;float a=0.55;for(int i=0;i<3;i++){v+=a*noise(p);p=p*1.9+5.3;a*=0.5;}return v;}
+float3 pal(float x){
+  float3 a=float3(0.60,0.58,0.95);float3 b=float3(0.36,0.32,0.18);float3 c=float3(1.0,1.0,0.7);float3 d=float3(0.72,0.28,0.78);
+  return a+b*cos(6.28318*(c*x+d));
 }
-float fbm(float2 p) {
-  float v = 0.0; float a = 0.55;
-  for (int i = 0; i < 3; i++) { v += a * noise(p); p = p * 1.9 + 5.3; a *= 0.5; }
-  return v;
+// one glowing ribbon of light: distance from a wandering curve in sphere space
+float3 ribbon(float2 p,float seed,float t,float3 colA,float3 colB,float w){
+  // rotate the ribbon's frame
+  float rot=seed*2.1+t*0.05;
+  float2 q=float2(cos(rot)*p.x-sin(rot)*p.y,sin(rot)*p.x+cos(rot)*p.y);
+  float curve=0.40*sin(q.x*1.6+t*0.5+seed*3.0)+0.12*sin(q.x*3.1-t*0.4+seed)+(fbm(q*1.1+float2(t*0.06,seed))-0.5)*0.35;
+  float d=abs(q.y-curve);
+  float core=exp(-d*d*(110.0*w));
+  float glow=exp(-d*(5.0*w));
+  float fade=smoothstep(1.3,0.4,abs(q.x));
+  float3 col=mix(colA,colB,0.5+0.5*sin(q.x*3.0+t*0.3+seed));
+  return col*(core*0.9+glow*0.45)*fade;
 }
-float3 pal(float x) {
-  float3 a = float3(0.60, 0.58, 0.95); float3 b = float3(0.36, 0.32, 0.18);
-  float3 c = float3(1.0, 1.0, 0.7);    float3 d = float3(0.72, 0.28, 0.78);
-  return a + b * cos(6.28318 * (c * x + d));
-}
-// environment seen through / reflected by the glass: soft drifting colour field + a softbox top-left
-float3 env(float2 p, float t) {
-  float n1 = fbm(p * 1.8 + float2(t * 0.09, -t * 0.06));
-  float n2 = fbm(p * 1.9 - float2(t * 0.05, t * 0.10) + n1 * 1.4);
-  float3 c = pal(n2 * 1.5 + t * 0.02 + 0.25);
-  float2 dl = p - float2(-0.9, -1.1);
-  c += float3(0.9, 0.95, 1.0) * exp(-dot(dl, dl) * 0.9) * 0.9;
-  return c;
-}
-
-half4 main(float2 fragCoord) {
-  float mn = min(iResolution.x, iResolution.y);
-  float2 uv = (fragCoord - 0.5 * iResolution) / mn;
-  float R = (0.30 + 0.035 * iEnergy) * iScale;
-  float ang = atan(uv.y, uv.x);
-  float wob = (sin(ang * 2.0 + iTime * 0.7) * 0.5 + sin(ang * 3.0 - iTime * 0.5) * 0.3 + sin(ang * 5.0 + iTime * 0.9) * 0.1) * (0.005 + 0.016 * iEnergy);
-  float r = length(uv);
-  float Rw = R + wob;
-  float aa = 1.5 / mn;
-  float inside = 1.0 - smoothstep(Rw - aa, Rw + aa, r);
-  float rr = clamp(r / Rw, 0.0, 1.0);
-  float z = sqrt(max(1.0 - rr * rr, 0.0));
-  float3 n = normalize(float3(uv / Rw, z));
-  float3 v = float3(0.0, 0.0, 1.0);
-  float ndv = max(dot(n, v), 0.0);
-  float fres = 0.04 + 0.96 * pow(1.0 - ndv, 3.0);
-
-  // refraction with chromatic dispersion (three IORs)
-  float3 I = float3(0.0, 0.0, -1.0);
-  float2 rR = refract(I, n, 1.0 / 1.42).xy;
-  float2 rG = refract(I, n, 1.0 / 1.46).xy;
-  float2 rB = refract(I, n, 1.0 / 1.50).xy;
-  float2 base = uv / Rw * 0.8;
-  float depth = 1.6;
-  float3 tr = float3(env(base + rR * depth, iTime).r, env(base + rG * depth, iTime).g, env(base + rB * depth, iTime).b);
-  tr = mix(tr, tr * float3(0.55, 0.5, 0.9), 0.35 * (1.0 - rr));
-
-  // reflection of the environment
-  float3 rf = reflect(-v, n);
-  float3 refl = env(rf.xy * 1.4 + float2(0.0, -0.3), iTime * 0.7) * 0.9;
-
-  // hollow glass: see-through centre, colour lives in the fresnel band
-  float body = 0.30 + 0.70 * pow(1.0 - ndv, 0.7);
-  float3 col = tr * body * 0.9 + refl * fres;
-  col += pal(iTime * 0.02 + ang * 0.3) * pow(1.0 - ndv, 2.2) * (0.7 + 0.4 * iEnergy);
-  col += float3(0.6, 0.8, 1.0) * pow(1.0 - ndv, 5.0) * (0.6 + 0.4 * iEnergy);
-  col += float3(1.0, 0.55, 0.9) * pow(1.0 - ndv, 9.0) * 0.7;
-
+half4 main(float2 fragCoord){
+  float2 uv=(fragCoord-0.5*iResolution)/min(iResolution.x,iResolution.y);
+  float R=(0.30+0.03*iEnergy)*iScale;
+  float ang=atan(uv.y,uv.x);
+  // more deformed: slow large lobes + faster small ones
+  float wob=(sin(ang*2.0+iTime*0.6)*0.6+sin(ang*3.0-iTime*0.45)*0.45+sin(ang*4.0+iTime*0.8)*0.25+sin(ang*7.0-iTime*1.1)*0.1)*(0.006+0.014*iEnergy);
+  float r=length(uv);
+  float Rw=R+wob;
+  float aa=1.5/min(iResolution.x,iResolution.y);
+  float inside=1.0-smoothstep(Rw-aa,Rw+aa,r);
+  float rr=clamp(r/Rw,0.0,1.0);
+  float z=sqrt(max(1.0-rr*rr,0.0));
+  float3 n=normalize(float3(uv/Rw,z));
+  float ndv=max(n.z,0.0);
+  // sphere-space coords (refracted so the ribbons bend with the glass)
+  float2 sp=(uv/Rw)*(0.75+0.35*z);
+  // ribbons
+  float3 pink=float3(1.0,0.35,0.85),cyan=float3(0.35,0.95,1.0),violet=float3(0.55,0.45,1.0),blue=float3(0.3,0.6,1.0);
+  float3 lines=float3(0.0);
+  lines+=ribbon(sp,0.0,iTime,pink,violet,1.0);
+  lines+=ribbon(sp,1.7,iTime*0.9,cyan,blue,1.2);
+  lines+=ribbon(sp,3.9,iTime*1.1,violet,cyan,0.7)*0.6;
+  lines*=(0.55+0.7*iEnergy)*(0.55+0.9*(1.0-ndv));
+  // faint haze inside
+  float hz=fbm(sp*1.4+float2(iTime*0.07,-iTime*0.05));
+  float3 haze=pal(hz*1.4+iTime*0.02+ang*0.15)*0.10*(0.4+0.6*(1.0-ndv));
+  // rim: hue varies with angle (violet one side, cyan the other)
+  float f=1.0-ndv;
+  float3 rimCol=mix(float3(0.60,0.30,1.0),float3(0.30,0.90,1.0),0.5+0.5*sin(ang+iTime*0.25));
+  float3 rim=rimCol*pow(f,2.5)*0.9+float3(0.8,0.9,1.0)*pow(f,7.0)*(0.8+0.6*iEnergy)+rimCol*pow(f,14.0)*1.2;
+  // thin bright edge line, brightness varying around
+  float edge=smoothstep(Rw-0.009,Rw-0.0015,r)*inside;
+  float edgeVar=0.45+0.55*(0.5+0.5*sin(ang*1.0+iTime*0.4));
+  rim+=(float3(0.85,0.95,1.0)*0.6+rimCol*0.6)*edge*edgeVar;
   // speculars
-  float3 l1 = normalize(float3(-0.5, -0.6, 0.65));
-  float3 l2 = normalize(float3(0.6, 0.5, 0.45));
-  float rl1 = max(dot(reflect(-l1, n), v), 0.0);
-  col += float3(1.0) * (pow(rl1, 160.0) * 1.1 + pow(rl1, 16.0) * 0.10);
-  col += float3(0.95, 0.9, 1.0) * pow(max(dot(reflect(-l2, n), v), 0.0), 48.0) * 0.3;
-
-  // bloom
-  float halo = exp(-max(r - Rw, 0.0) * 11.0) * (0.18 + 0.30 * iEnergy);
-  float3 haloCol = pal(iTime * 0.02 + 0.3) * halo;
-  float innerA = 0.40 + 0.60 * pow(1.0 - ndv, 0.9);
-  float alpha = max(inside * innerA, halo);
-  float3 outc = col * inside + haloCol * (1.0 - inside);
-  return half4(half3(outc * alpha), half(alpha));
+  float3 v=float3(0,0,1);
+  float3 l1=normalize(float3(-0.5,-0.6,0.65));
+  float rl1=max(dot(reflect(-l1,n),v),0.0);
+  float3 spec=float3(1.0)*pow(rl1,200.0)*0.5;
+  float3 col=haze+lines+rim+spec;
+  // bloom outside
+  float halo=exp(-max(r-Rw,0.0)*10.0)*(0.16+0.30*iEnergy);
+  float3 haloCol=rimCol*halo;
+  // alpha: mostly transparent centre, additive light on top
+  float innerA=0.10+0.90*pow(f,1.2);
+  float lum=dot(lines+spec,float3(0.33));
+  float alpha=max(inside*clamp(innerA+lum,0.0,1.0),halo);
+  float3 outc=col*inside+haloCol*(1.0-inside);
+  return half4(half3(outc*alpha),half(alpha));
 }
 """
     }
