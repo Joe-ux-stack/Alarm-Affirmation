@@ -39,7 +39,8 @@ object VoiceEngine {
     fun unmarkBroken(c: Context) { File(c.filesDir, "voice_broken").delete() }
 
     const val ENABLED = true
-    fun isAvailable(c: Context): Boolean = ENABLED && try { c.assets.list("kokoro")?.contains("model.int8.onnx") == true } catch (e: Exception) { false }
+    /** True when the model has been downloaded for the selected quality. */
+    fun isAvailable(c: Context): Boolean = ENABLED && ModelStore.isDownloaded(c)
 
     @Volatile var lastError: String? = null
 

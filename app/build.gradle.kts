@@ -11,8 +11,8 @@ android {
         applicationId = "com.whynotyou.alarm"
         minSdk = 26
         targetSdk = 35
-        versionCode = 30
-        versionName = "0.30"
+        versionCode = 31
+        versionName = "0.31"
         ndk { abiFilters += listOf("arm64-v8a") }
     }
 

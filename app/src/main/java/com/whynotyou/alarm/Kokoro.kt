@@ -5,7 +5,6 @@ import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
 import android.content.Context
 import java.io.File
-import java.io.FileOutputStream
 import java.io.RandomAccessFile
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -32,17 +31,14 @@ object Kokoro {
         try { File(c.filesDir, "voice_probe.txt").appendText("${System.currentTimeMillis() % 100000} $s\n") } catch (_: Throwable) {}
     }
 
-    /** Model is copied out of assets once (ORT wants a path or the whole thing in memory). */
+    /** The downloaded model for the selected quality (see ModelStore). */
     private fun modelFile(c: Context): File {
-        val f = File(c.filesDir, "kokoro-model.onnx")
-        val size = c.assets.openFd("kokoro/model.int8.onnx").use { it.length }
-        if (!f.exists() || f.length() != size) {
-            val tmp = File(c.filesDir, "kokoro-model.tmp")
-            c.assets.open("kokoro/model.int8.onnx").use { i -> FileOutputStream(tmp).use { o -> i.copyTo(o, 1 shl 20) } }
-            tmp.renameTo(f)
-        }
+        val f = ModelStore.file(c)
+        if (!ModelStore.isDownloaded(c)) throw IllegalStateException("model not downloaded")
         return f
     }
+
+    fun unload() { synchronized(lock) { try { session?.close() } catch (_: Throwable) {}; session = null } }
 
     fun ensureLoaded(c: Context) {
         if (session != null) return

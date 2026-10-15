@@ -13,7 +13,12 @@ object VoiceWarmup {
     @Volatile var status = "idle"
     private var started = false
 
-    fun previewFile(c: Context, voiceId: String) = File(c.cacheDir, "preview_v2_${voiceId}.wav")
+    /** Bundled tester clip (same text for every voice), copied out of assets on first use. */
+    fun previewFile(c: Context, voiceId: String): File {
+        val f = File(c.cacheDir, "tester_$voiceId.m4a")
+        if (!f.exists()) try { c.assets.open("kokoro/preview/$voiceId.m4a").use { i -> f.outputStream().use { o -> i.copyTo(o) } } } catch (_: Exception) {}
+        return f
+    }
 
     @Synchronized fun start(c: Context) {
         if (started || !VoiceEngine.isAvailable(c) || VoiceEngine.isBroken(c)) return
@@ -24,13 +29,6 @@ object VoiceWarmup {
                 status = "loading engine"
                 Kokoro.ensureLoaded(app)
                 loaded = true
-                for (v in VoiceEngine.voices) {
-                    val f = previewFile(app, v.id)
-                    if (f.exists() && f.length() > 1000) continue
-                    status = "rendering ${v.name}"
-                    val tmp = File(app.cacheDir, "preview_tmp_${v.id}.wav")
-                    if (VoiceEngine.synthesizeToFile(app, SAMPLE, v.id, tmp)) tmp.renameTo(f) else tmp.delete()
-                }
                 status = "ready"
             } catch (e: Throwable) {
                 status = "failed: $e"; VoiceEngine.lastError = e.toString()

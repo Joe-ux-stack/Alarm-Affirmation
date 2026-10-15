@@ -48,9 +48,9 @@ jobs:
           curl -sL -o k.tar.bz2 https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-int8-multi-lang-v1_0.tar.bz2
           tar xjf k.tar.bz2 && rm k.tar.bz2
 
-      - name: Build Kokoro asset bundle
+      - name: Build Kokoro asset bundle (voices, lexicon, testers — no model)
         run: |
-          pip install -q numpy
+          pip install -q numpy onnxruntime
           python3 tools/prepare_kokoro.py kokoro-int8-multi-lang-v1_0 app/src/main/assets/kokoro
           du -sh app/src/main/assets/kokoro
 

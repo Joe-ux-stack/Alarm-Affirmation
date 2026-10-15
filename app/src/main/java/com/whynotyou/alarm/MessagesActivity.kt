@@ -67,6 +67,24 @@ class MessagesActivity : AppCompatActivity() {
             AlarmScheduler.scheduleTestInMinutes(this, 1)
             Toast.makeText(this, "Lock the phone. Firing in 60 s.", Toast.LENGTH_LONG).show()
         }
+        findViewById<View>(R.id.row_voices).setOnClickListener {
+            val v = ModelStore.selected(this)
+            if (ModelStore.isDownloaded(this, v)) {
+                android.app.AlertDialog.Builder(this, R.style.SheetDark).setTitle("Voices downloaded")
+                    .setMessage("${v.label} quality, ${v.mb} MB on this phone.")
+                    .setPositiveButton("Keep", null)
+                    .setNegativeButton("Delete") { _, _ -> ModelStore.delete(this, v); renderVoiceRows() }.show()
+            } else if (!ModelStore.isDownloading()) {
+                ModelStore.download(this, v) { ok -> runOnUiThread { renderVoiceRows(); if (ok) VoiceWarmup.start(this) else Toast.makeText(this, "Download failed: ${ModelStore.error}", Toast.LENGTH_LONG).show() } }
+                renderVoiceRows()
+            }
+        }
+        findViewById<View>(R.id.row_quality).setOnClickListener {
+            val names = ModelStore.variants.map { "${it.label} · ${it.mb} MB" }.toTypedArray()
+            val cur = ModelStore.variants.indexOf(ModelStore.selected(this))
+            android.app.AlertDialog.Builder(this, R.style.SheetDark).setTitle("Voice quality")
+                .setSingleChoiceItems(names, cur) { d, i -> ModelStore.select(this, ModelStore.variants[i].id); renderVoiceRows(); d.dismiss() }.show()
+        }
         findViewById<View>(R.id.row_voicetest).setOnClickListener {
             VoiceEngine.clearProbe(this); VoiceEngine.unmarkBroken(this)
             val probe = findViewById<TextView>(R.id.txt_probe)
@@ -87,7 +105,20 @@ class MessagesActivity : AppCompatActivity() {
         }
     }
 
-    override fun onResume() { super.onResume(); refresh() }
+    override fun onResume() { super.onResume(); refresh(); renderVoiceRows() }
+
+    private val voiceTick = object : Runnable { override fun run() { renderVoiceRows() } }
+    private fun renderVoiceRows() {
+        val v = ModelStore.selected(this)
+        findViewById<TextView>(R.id.txt_quality).text = v.label
+        val t = findViewById<TextView>(R.id.txt_voices)
+        t.removeCallbacks(voiceTick)
+        t.text = when {
+            ModelStore.isDownloading() -> { t.postDelayed(voiceTick, 500); "Downloading ${ModelStore.progress}%" }
+            ModelStore.isDownloaded(this, v) -> "Downloaded"
+            else -> "Download · ${v.mb} MB"
+        }
+    }
     override fun onPause() { super.onPause(); stopPreview(); if (recorder != null) stopRecording(save = true) }
 
     private fun refresh() {

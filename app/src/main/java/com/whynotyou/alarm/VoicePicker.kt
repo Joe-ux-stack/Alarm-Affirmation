@@ -53,37 +53,24 @@ object VoicePicker {
                 stop()
                 val f = VoiceWarmup.previewFile(a, v.id)
                 play.setImageResource(R.drawable.ic_stop); playingBtn = play
-                VoiceWarmup.start(a)
-                if (!f.exists()) sub.text = "Preparing voice…"
-                if (!VoiceEngine.isAvailable(a)) {
-                    // engine disabled: phone voice reads the sample (all voices sound the same until the engine is back)
+                if (!f.exists() || f.length() < 1000) {
+                    // no bundled tester (dev build): phone voice reads the sample
                     speaker = BriefSpeaker(a) { a.runOnUiThread { if (playingBtn === play) stop() } }.also { it.speak(SAMPLE) }
                     return@setOnClickListener
                 }
-                Thread {
-                    // wait for the warm-up to produce this preview (it renders them in order); render it
-                    // ourselves if it is taking too long
-                    val t0 = System.currentTimeMillis()
-                    while (!f.exists() && playingBtn === play && System.currentTimeMillis() - t0 < 60_000) {
-                        if (VoiceWarmup.loaded && !VoiceWarmup.status.startsWith("rendering")) {
-                            val tmp = File(a.cacheDir, "preview_tmp2_${v.id}.wav")
-                            if (VoiceEngine.synthesizeToFile(a, SAMPLE, v.id, tmp)) tmp.renameTo(f) else tmp.delete()
-                            break
-                        }
-                        Thread.sleep(250)
-                    }
-                    a.runOnUiThread {
-                        sub.text = "${v.region} · ${v.sex}"
-                        if (playingBtn !== play || !f.exists()) { if (!f.exists()) stop(); return@runOnUiThread }
-                        player = MediaPlayer().apply { setDataSource(f.absolutePath); setOnCompletionListener { stop() }; prepare(); start() }
-                    }
-                }.start()
+                player = MediaPlayer().apply { setDataSource(f.absolutePath); setOnCompletionListener { stop() }; prepare(); start() }
             }
             row.setOnClickListener { stop(); onPick(v.id); dialog.dismiss() }
             col.setOnClickListener { stop(); onPick(v.id); dialog.dismiss() }
             row.addView(play); row.addView(col); row.addView(tick)
             root.addView(row)
             root.addView(View(a).apply { setBackgroundColor(0xFF15181F.toInt()); layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1) })
+        }
+        if (!VoiceEngine.isAvailable(a)) {
+            root.addView(TextView(a).apply {
+                text = if (ModelStore.isDownloading()) "Downloading voices… ${ModelStore.progress}%" else "Voices aren't downloaded yet — the alarm uses the phone's voice until they are. Download in Settings."
+                textSize = 13f; setTextColor(0xFF7A8294.toInt()); setPadding(0, dp(a, 18), 0, 0)
+            })
         }
         dialog.setContentView(root)
         dialog.setOnDismissListener { stop() }
