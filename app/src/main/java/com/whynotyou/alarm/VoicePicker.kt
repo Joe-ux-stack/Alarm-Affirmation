@@ -13,7 +13,7 @@ import java.io.File
 /** Sheet listing the bundled voices with a play preview. Previews render once and are cached. */
 object VoicePicker {
 
-    private const val SAMPLE = "Good morning. It's Thursday. Standup at ten, lunch at twelve thirty. You've handled harder."
+    private const val SAMPLE = VoiceWarmup.SAMPLE
 
     fun show(a: Activity, current: String, onPick: (String) -> Unit) {
         val dialog = BottomSheetDialog(a, R.style.SheetDark)
@@ -41,7 +41,8 @@ object VoicePicker {
             }
             val col = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL; layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f) }
             col.addView(TextView(a).apply { text = v.name; textSize = 17f; setTextColor(0xFFF2F4F8.toInt()); setTypeface(typeface, android.graphics.Typeface.BOLD) })
-            col.addView(TextView(a).apply { text = "${v.region} · ${v.sex}"; textSize = 13f; setTextColor(0xFF7A8294.toInt()) })
+            val sub = TextView(a).apply { text = "${v.region} · ${v.sex}"; textSize = 13f; setTextColor(0xFF7A8294.toInt()) }
+            col.addView(sub)
             val tick = TextView(a).apply {
                 text = "\u2713"; textSize = 20f; setTextColor(0xFFF2F4F8.toInt())
                 visibility = if (v.id == current) View.VISIBLE else View.INVISIBLE
@@ -50,16 +51,29 @@ object VoicePicker {
             play.setOnClickListener {
                 if (playingBtn === play) { stop(); return@setOnClickListener }
                 stop()
-                val f = File(a.cacheDir, "preview_${v.id}.wav")
+                val f = VoiceWarmup.previewFile(a, v.id)
                 play.setImageResource(R.drawable.ic_stop); playingBtn = play
+                VoiceWarmup.start(a)
+                if (!f.exists()) sub.text = "Preparing voice…"
                 if (!VoiceEngine.isAvailable(a)) {
                     // engine disabled: phone voice reads the sample (all voices sound the same until the engine is back)
                     speaker = BriefSpeaker(a) { a.runOnUiThread { if (playingBtn === play) stop() } }.also { it.speak(SAMPLE) }
                     return@setOnClickListener
                 }
                 Thread {
-                    if (!f.exists()) VoiceEngine.synthesizeToFile(a, SAMPLE, v.id, f)
+                    // wait for the warm-up to produce this preview (it renders them in order); render it
+                    // ourselves if it is taking too long
+                    val t0 = System.currentTimeMillis()
+                    while (!f.exists() && playingBtn === play && System.currentTimeMillis() - t0 < 60_000) {
+                        if (VoiceWarmup.loaded && !VoiceWarmup.status.startsWith("rendering")) {
+                            val tmp = File(a.cacheDir, "preview_tmp2_${v.id}.wav")
+                            if (VoiceEngine.synthesizeToFile(a, SAMPLE, v.id, tmp)) tmp.renameTo(f) else tmp.delete()
+                            break
+                        }
+                        Thread.sleep(250)
+                    }
                     a.runOnUiThread {
+                        sub.text = "${v.region} · ${v.sex}"
                         if (playingBtn !== play || !f.exists()) { if (!f.exists()) stop(); return@runOnUiThread }
                         player = MediaPlayer().apply { setDataSource(f.absolutePath); setOnCompletionListener { stop() }; prepare(); start() }
                     }

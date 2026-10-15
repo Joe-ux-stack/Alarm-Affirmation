@@ -20,6 +20,7 @@ class App : Application(), androidx.work.Configuration.Provider {
             } catch (_: Throwable) {}
             prev?.uncaughtException(t, e)
         }
+        try { VoiceWarmup.start(this) } catch (_: Throwable) {}
     }
     companion object {
         fun lastCrash(ctx: android.content.Context): String? = File(ctx.filesDir, "last_crash.txt").takeIf { it.exists() }?.readText()

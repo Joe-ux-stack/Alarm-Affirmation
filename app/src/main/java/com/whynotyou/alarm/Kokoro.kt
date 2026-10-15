@@ -70,7 +70,7 @@ object Kokoro {
             val env = OrtEnvironment.getEnvironment()
             val opts = OrtSession.SessionOptions().apply {
                 setIntraOpNumThreads(4)
-                setOptimizationLevel(OrtSession.SessionOptions.OptLevel.BASIC_OPT)
+                setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
             }
             session = env.createSession(modelFile(c).absolutePath, opts)
             log(c, "kokoro: session ready")
