@@ -43,7 +43,7 @@ class AlarmDetailActivity : AppCompatActivity() {
             val tv = TextView(this).apply {
                 text = letters[i].toString(); textSize = 13f; gravity = Gravity.CENTER
                 setTypeface(typeface, android.graphics.Typeface.BOLD)
-                layoutParams = LinearLayout.LayoutParams(dp(40), dp(40)).apply { if (i < 6) marginEnd = dp(8) }
+                layoutParams = LinearLayout.LayoutParams(0, dp(42), 1f).apply { if (i < 6) marginEnd = dp(6) }
                 setOnClickListener { alarm.days[i] = !alarm.days[i]; renderDays() }
             }
             dayViews[i] = tv; daysRow.addView(tv)
@@ -97,7 +97,7 @@ class AlarmDetailActivity : AppCompatActivity() {
         for (i in 0 until 7) {
             val tv = dayViews[i] ?: continue
             val on = alarm.days[i]
-            tv.setBackgroundResource(if (on) R.drawable.bg_circle_amber else R.drawable.bg_circle_outline)
+            tv.setBackgroundResource(if (on) R.drawable.bg_pill_amber else R.drawable.bg_pill_outline)
             tv.setTextColor(if (on) 0xFF000000.toInt() else 0xFF7A8294.toInt())
         }
     }

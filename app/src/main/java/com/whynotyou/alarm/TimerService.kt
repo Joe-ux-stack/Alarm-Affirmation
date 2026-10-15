@@ -28,10 +28,12 @@ class TimerService : Service() {
         when (intent?.action) {
             ACTION_START -> {
                 val endAt = intent.getLongExtra(EXTRA_END_AT, 0L)
-                TimerState.start(this, endAt)
+                if (!TimerState.isActive(this)) TimerState.start(this, endAt)
                 armEnd(endAt)
-                startForeground(NOTIF_ID, notification())
-                ui.post(tick)
+                if (android.os.Build.VERSION.SDK_INT >= 34)
+                    startForeground(NOTIF_ID, notification(), android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+                else startForeground(NOTIF_ID, notification())
+                ui.removeCallbacks(tick); ui.post(tick)
             }
             ACTION_PAUSE -> { TimerState.pause(this); disarmEnd(); nm().notify(NOTIF_ID, notification()) }
             ACTION_RESUME -> { val endAt = TimerState.resume(this); armEnd(endAt); nm().notify(NOTIF_ID, notification()) }
@@ -76,7 +78,9 @@ class TimerService : Service() {
         const val CHANNEL = "timer"; const val NOTIF_ID = 77
 
         fun start(c: Context, durationMs: Long) {
-            c.startForegroundService(Intent(c, TimerService::class.java).setAction(ACTION_START).putExtra(EXTRA_END_AT, System.currentTimeMillis() + durationMs))
+            val endAt = System.currentTimeMillis() + durationMs
+            TimerState.start(c, endAt)   // UI can switch immediately; the service re-reads this
+            c.startForegroundService(Intent(c, TimerService::class.java).setAction(ACTION_START).putExtra(EXTRA_END_AT, endAt))
         }
         fun pause(c: Context) = c.startService(Intent(c, TimerService::class.java).setAction(ACTION_PAUSE))
         fun resume(c: Context) = c.startService(Intent(c, TimerService::class.java).setAction(ACTION_RESUME))

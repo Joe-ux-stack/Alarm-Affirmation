@@ -31,7 +31,7 @@ class TimerTab(private val a: Activity, root: View) {
         root.findViewById<View>(R.id.timer_gear).setOnClickListener { TimerSettings.showSheet(a) { renderPresets() } }
         root.findViewById<View>(R.id.timer_start).setOnClickListener {
             val ms = ((h.value * 3600L) + (m.value * 60L) + s.value) * 1000L
-            if (ms > 0) { TimerService.start(a, ms); onShow() }
+            if (ms > 0) { TimerService.start(a, ms); onShow(); render() }
         }
         root.findViewById<View>(R.id.timer_cancel).setOnClickListener { TimerService.cancel(a); ui.removeCallbacks(tick); onShow() }
         pause.setOnClickListener {
