@@ -50,6 +50,7 @@ jobs:
 
       - name: Build Kokoro asset bundle (voices, lexicon, testers — no model)
         run: |
+          sudo apt-get install -y -qq ffmpeg > /dev/null
           pip install -q numpy onnxruntime
           python3 -u tools/prepare_kokoro.py kokoro-int8-multi-lang-v1_0 app/src/main/assets/kokoro 2>&1 | tee bundle.log
           test -f app/src/main/assets/kokoro/preview/af_sky.m4a
