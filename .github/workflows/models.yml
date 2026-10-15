@@ -1,0 +1,28 @@
+name: Publish voice models
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  models:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Fetch Kokoro packages
+        run: |
+          curl -sL -o i.tar.bz2 https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-int8-multi-lang-v1_0.tar.bz2
+          curl -sL -o f.tar.bz2 https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-multi-lang-v1_0.tar.bz2
+          tar xjf i.tar.bz2 && tar xjf f.tar.bz2
+          cp kokoro-int8-multi-lang-v1_0/model.int8.onnx kokoro-int8.onnx
+          cp kokoro-multi-lang-v1_0/model.onnx kokoro-fp32.onnx
+          ls -la *.onnx
+      - name: Publish "models" release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete models --yes --cleanup-tag || true
+          gh release create models kokoro-int8.onnx kokoro-fp32.onnx --title "Voice models" \
+            --notes "Kokoro-82M v1.0 ONNX models (Apache-2.0, from k2-fsa/sherpa-onnx). Downloaded by the app on demand."
