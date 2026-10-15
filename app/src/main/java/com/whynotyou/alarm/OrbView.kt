@@ -71,7 +71,7 @@ class OrbView @JvmOverloads constructor(context: Context, attrs: AttributeSet? =
 
     private fun drawFallback(canvas: Canvas, w: Float, h: Float, e: Float) {
         val cx = w / 2f; val cy = h / 2f; val rMax = min(w, h) / 2f
-        val p = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFF2F4F8.toInt() }
+        val p = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF7A5CFF.toInt() }
         val rings = floatArrayOf(1.0f, 0.72f, 0.48f, 0.30f); val alphas = intArrayOf(14, 30, 56, 115)
         val tt = 0.5f + 0.5f * e
         for (i in rings.indices) { p.alpha = alphas[i]; canvas.drawCircle(cx, cy, rMax * rings[i] * tt, p) }
@@ -96,44 +96,51 @@ float fbm(float2 p) {
   for (int i = 0; i < 3; i++) { v += a * noise(p); p = p * 2.0 + 7.7; a *= 0.5; }
   return v;
 }
+// iridescent ramp: violet -> blue -> cyan -> pink, smooth
+float3 iri(float x) {
+  float3 a = float3(0.55, 0.45, 0.85);
+  float3 b = float3(0.40, 0.40, 0.30);
+  float3 c = float3(1.0, 1.0, 1.0);
+  float3 d = float3(0.65, 0.20, 0.85);
+  return a + b * cos(6.28318 * (c * x + d));
+}
 
 half4 main(float2 fragCoord) {
   float2 uv = (fragCoord - 0.5 * iResolution) / min(iResolution.x, iResolution.y);
   float r = length(uv);
   float ang = atan(uv.y, uv.x);
 
-  // radius kept inside the view: max ~0.42 of the short side
+  // radius stays inside the view
   float base = (0.26 + 0.07 * iEnergy) * iScale;
   float wob = (fbm(float2(cos(ang), sin(ang)) * 1.6 + iTime * 0.22) - 0.5) * (0.03 + 0.05 * iEnergy);
   float radius = base + wob;
-
   float edge = 1.0 - smoothstep(radius - 0.006, radius + 0.006, r);
 
-  // glass body: dark centre, bright towards the rim
+  // flowing colour field inside
+  float2 q = uv * 2.0;
+  float n1 = fbm(q + float2(iTime * 0.14, -iTime * 0.10));
+  float n2 = fbm(q * 1.5 - float2(iTime * 0.07, iTime * 0.16) + n1 * 0.8);
+  float3 col = iri(n2 * 0.9 + iTime * 0.04 + r * 0.5);
+
+  // glass depth: darker centre, saturated towards the rim
   float d = clamp(r / max(radius, 0.001), 0.0, 1.0);
-  float body = pow(d, 2.2);
-  float3 white = float3(1.0);
-  float3 blue  = float3(0.62, 0.74, 1.0);
-  float3 col = mix(float3(0.06, 0.07, 0.10), white, body * 0.75);
+  col = mix(col * 0.30, col, pow(d, 1.6));
 
-  // slow internal sheen
-  float sheen = fbm(uv * 1.8 + float2(iTime * 0.10, -iTime * 0.07));
-  col += blue * sheen * 0.22;
-
-  // rim light
-  float rim = smoothstep(radius - 0.05, radius, r) * edge;
-  col += mix(white, blue, 0.4) * rim * (0.6 + 0.6 * iEnergy);
+  // rim light: bright blue-white
+  float rim = smoothstep(radius - 0.055, radius, r) * edge;
+  col += float3(0.70, 0.80, 1.0) * rim * (0.7 + 0.7 * iEnergy);
 
   // specular
-  float2 hp = float2(-0.10, -0.12);
+  float2 hp = float2(-0.10, -0.12) + 0.02 * float2(sin(iTime * 0.6), cos(iTime * 0.45));
   float spec = exp(-dot(uv - hp, uv - hp) * 220.0);
-  col += white * spec * (0.5 + 0.3 * iEnergy);
+  col += float3(1.0) * spec * (0.55 + 0.3 * iEnergy);
 
-  // outer halo, soft and short
-  float halo = exp(-max(r - radius, 0.0) * 22.0) * (0.18 + 0.25 * iEnergy);
+  // short soft halo in the dominant hue
+  float halo = exp(-max(r - radius, 0.0) * 22.0) * (0.20 + 0.30 * iEnergy);
+  float3 haloCol = iri(iTime * 0.04 + 0.3) * halo;
 
   float alpha = max(edge, halo);
-  float3 outc = col * edge + blue * halo * (1.0 - edge);
+  float3 outc = col * edge + haloCol * (1.0 - edge);
   return half4(half3(outc * alpha), half(alpha));
 }
 """
