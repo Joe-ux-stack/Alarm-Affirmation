@@ -16,7 +16,8 @@ data class Alarm(
     var ramp: Boolean = true,        // quiet start, full after 10 s
     var snooze: Boolean = true,      // 5 min, max 2
     var message: Boolean = true,     // play a loved one's message after Stop
-    var brief: Boolean = true        // read calendar + intention after the message
+    var brief: Boolean = true,       // read calendar + intention after the message
+    var voice: String = VoiceEngine.DEFAULT_VOICE
 ) {
     val isDaily get() = days.all { it }
     val isWeekdays get() = (0..4).all { days[it] } && !days[5] && !days[6]
@@ -44,7 +45,7 @@ data class Alarm(
         .put("id", id).put("h", hour).put("m", minute)
         .put("days", JSONArray().also { a -> days.forEach { a.put(it) } })
         .put("on", enabled).put("vol", volume).put("ramp", ramp).put("snooze", snooze)
-        .put("msg", message).put("brief", brief)
+        .put("msg", message).put("brief", brief).put("voice", voice)
 
     companion object {
         fun fromJson(o: JSONObject): Alarm {
@@ -54,7 +55,8 @@ data class Alarm(
                 days = BooleanArray(7) { i -> d?.optBoolean(i, i < 5) ?: (i < 5) },
                 enabled = o.optBoolean("on", true), volume = o.optInt("vol", 80),
                 ramp = o.optBoolean("ramp", true), snooze = o.optBoolean("snooze", true),
-                message = o.optBoolean("msg", true), brief = o.optBoolean("brief", true)
+                message = o.optBoolean("msg", true), brief = o.optBoolean("brief", true),
+                voice = o.optString("voice", VoiceEngine.DEFAULT_VOICE)
             )
         }
         fun new(hour: Int = 7, minute: Int = 0) = Alarm(System.currentTimeMillis().toString(36), hour, minute)
@@ -77,11 +79,13 @@ object AlarmStore {
         val list = all(c).filter { it.id != alarm.id } + alarm
         write(c, list)
         AlarmScheduler.reschedule(c)
+        BriefAudio.scheduleAll(c)
     }
 
     fun delete(c: Context, id: String) {
         write(c, all(c).filter { it.id != id })
         AlarmScheduler.reschedule(c)
+        BriefAudio.scheduleAll(c)
     }
 
     fun setEnabled(c: Context, id: String, on: Boolean) {

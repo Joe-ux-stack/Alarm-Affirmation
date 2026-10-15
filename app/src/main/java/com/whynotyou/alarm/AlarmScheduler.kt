@@ -47,6 +47,7 @@ object AlarmScheduler {
         prefs(c).edit().putInt(KEY_SNOOZES, 0).apply()
         AlarmStore.get(c, alarmId)?.let { if (it.isOnce) { it.enabled = false; AlarmStore.save(c, it); return } }
         reschedule(c)
+        BriefAudio.scheduleAll(c)
     }
 
     fun onFired(c: Context) { prefs(c).edit().remove(KEY_PENDING_AT).apply() }

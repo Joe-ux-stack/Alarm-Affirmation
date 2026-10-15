@@ -224,6 +224,35 @@ class AlarmActivity : AppCompatActivity() {
         briefView.text = text.replace("Phone down.", "").trim()
         briefView.visibility = View.VISIBLE
         orb.layoutParams = orb.layoutParams.apply { width = dp(120); height = dp(120) }
+
+        val cached = BriefAudio.cached(this, alarm.id, text, alarm.voice)
+        if (cached != null) { playBriefFile(cached); return }
+
+        // Not cached (first run / calendar changed). Try to render now, but don't keep the user waiting.
+        pulseFallback()
+        var done = false
+        Thread {
+            val f = BriefAudio.render(this, alarm.id, text, alarm.voice)
+            runOnUiThread { if (!done && !isFinishing) { done = true; if (f != null) playBriefFile(f) else speakWithPhone(text) } }
+        }.start()
+        ui.postDelayed({ if (!done && !isFinishing) { done = true; speakWithPhone(text) } }, 25_000L)
+    }
+
+    private fun playBriefFile(f: java.io.File) {
+        val p = player ?: return
+        p.repeatMode = Player.REPEAT_MODE_OFF
+        p.volume = 1f
+        p.setMediaItem(MediaItem.fromUri(Uri.fromFile(f)))
+        p.playWhenReady = true
+        p.prepare()
+        attachVisualizer(p.audioSessionId)
+        p.addListener(object : Player.Listener {
+            override fun onPlaybackStateChanged(state: Int) { if (state == Player.STATE_ENDED && phase == Phase.BRIEF) { p.removeListener(this); enterDone() } }
+            override fun onPlayerError(e: PlaybackException) { if (phase == Phase.BRIEF) { p.removeListener(this); speakWithPhone(Brief.compose(this@AlarmActivity)) } }
+        })
+    }
+
+    private fun speakWithPhone(text: String) {
         pulseFallback()
         speaker = BriefSpeaker(this) { runOnUiThread { enterDone() } }.also { it.speak(text) }
     }

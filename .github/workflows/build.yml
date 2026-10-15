@@ -35,6 +35,22 @@ jobs:
             echo "No DEV_KEYSTORE_B64 secret; using throwaway debug key"
           fi
 
+      - name: Prepare Kokoro voice bundle (cached)
+        id: kokoro-cache
+        uses: actions/cache@v4
+        with:
+          path: app/src/main/assets/kokoro
+          key: kokoro-int8-v1_0-7voices-${{ hashFiles('tools/prepare_kokoro.py') }}
+
+      - name: Download and trim Kokoro
+        if: steps.kokoro-cache.outputs.cache-hit != 'true'
+        run: |
+          pip install -q numpy onnx
+          curl -sSL -o /tmp/kokoro.tar.bz2 https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-int8-multi-lang-v1_0.tar.bz2
+          tar xjf /tmp/kokoro.tar.bz2 -C /tmp
+          python3 tools/prepare_kokoro.py /tmp/kokoro-int8-multi-lang-v1_0 app/src/main/assets/kokoro
+          du -sh app/src/main/assets/kokoro
+
       - uses: gradle/actions/setup-gradle@v5
 
       - name: Build release APK

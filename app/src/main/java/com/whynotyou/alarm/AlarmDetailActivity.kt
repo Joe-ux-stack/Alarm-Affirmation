@@ -61,6 +61,11 @@ class AlarmDetailActivity : AppCompatActivity() {
         bind(R.id.sw_snooze, alarm.snooze) { alarm.snooze = it }
         bind(R.id.sw_message, alarm.message) { alarm.message = it }
         bind(R.id.sw_brief, alarm.brief) { alarm.brief = it }
+        val voiceLabel = findViewById<TextView>(R.id.txt_voice)
+        voiceLabel.text = VoiceEngine.voice(alarm.voice).name
+        findViewById<View>(R.id.row_voice).setOnClickListener {
+            VoicePicker.show(this, alarm.voice) { id -> alarm.voice = id; voiceLabel.text = VoiceEngine.voice(id).name }
+        }
 
         findViewById<Button>(R.id.btn_delete).apply {
             visibility = if (isNew) View.GONE else View.VISIBLE

@@ -11,8 +11,9 @@ android {
         applicationId = "com.whynotyou.alarm"
         minSdk = 26
         targetSdk = 35
-        versionCode = 9
-        versionName = "0.9"
+        versionCode = 10
+        versionName = "0.10"
+        ndk { abiFilters += listOf("arm64-v8a") }
     }
 
     // Stable dev key: CI decodes it from a repo secret into keystore/whynotyou-dev.jks.
@@ -46,6 +47,12 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+    androidResources {
+        noCompress += listOf("onnx", "bin")
+    }
+    packaging {
+        jniLibs { useLegacyPackaging = false }
+    }
 }
 
 dependencies {
@@ -56,4 +63,6 @@ dependencies {
     implementation("androidx.constraintlayout:constraintlayout:2.2.0")
     implementation("androidx.media3:media3-exoplayer:1.5.1")
     implementation("androidx.media3:media3-ui:1.5.1")
+    implementation("androidx.work:work-runtime-ktx:2.10.0")
+    implementation("com.k2-fsa:sherpa-onnx:1.12.11")
 }

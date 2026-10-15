@@ -26,7 +26,11 @@ object Brief {
     fun setEnabled(c: Context, on: Boolean) = prefs(c).edit().putBoolean(KEY_ENABLED, on).apply()
 
     fun intention(c: Context): String = prefs(c).getString(KEY_INTENTION, "") ?: ""
-    fun setIntention(c: Context, s: String) = prefs(c).edit().putString(KEY_INTENTION, s.trim()).apply()
+    fun setIntention(c: Context, s: String) {
+        val old = intention(c)
+        prefs(c).edit().putString(KEY_INTENTION, s.trim()).apply()
+        if (old != s.trim()) BriefAudio.refreshNow(c)
+    }
     fun clearIntention(c: Context) = setIntention(c, "")
 
     fun scope(c: Context): String = prefs(c).getString(KEY_SCOPE, "lunch") ?: "lunch"
@@ -59,8 +63,13 @@ object Brief {
         if (!isEnabled(c)) return ""
         val parts = mutableListOf<String>()
 
+        val hour = Calendar.getInstance().apply { time = now }.get(Calendar.HOUR_OF_DAY)
         val day = SimpleDateFormat("EEEE", Locale.getDefault()).format(now)
-        parts += "Good morning. It's $day."
+        parts += when {
+            hour < 12 -> "Good morning. It's $day."
+            hour < 18 -> "Good afternoon."
+            else -> "Good evening."
+        }
 
         val cached = cachedEvents(c)
         val allDayItems = cached.filter { it.allDay }
