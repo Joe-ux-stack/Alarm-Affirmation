@@ -14,8 +14,8 @@ import kotlin.math.min
 import kotlin.math.sin
 
 /**
- * Iridescent glass orb. On Android 13+ it's an AGSL shader: a lit sphere (fresnel rim, two
- * speculars) with a slowly swirling violet/cyan/pink liquid inside and a soft bloom. [level] (0..1) drives wobble + brightness.
+ * Iridescent glass orb. On Android 13+ it's an AGSL shader: a refractive sphere (per-channel
+ * dispersion, fresnel reflection, two speculars) over a drifting violet/cyan/pink colour field, plus bloom. [level] (0..1) drives wobble + brightness.
  * BREATHE: slow sine. SPEAK: follows setLevel(). STILL: small, calm.
  * Pre-13 devices get the flat concentric-circle version.
  */
@@ -96,21 +96,27 @@ float fbm(float2 p) {
   for (int i = 0; i < 3; i++) { v += a * noise(p); p = p * 1.9 + 5.3; a *= 0.5; }
   return v;
 }
-// violet -> blue -> cyan -> pink, no green/yellow
 float3 pal(float x) {
-  float3 a = float3(0.58, 0.58, 0.95);
-  float3 b = float3(0.34, 0.30, 0.16);
-  float3 c = float3(1.0, 1.0, 0.7);
-  float3 d = float3(0.72, 0.28, 0.78);
+  float3 a = float3(0.60, 0.58, 0.95); float3 b = float3(0.36, 0.32, 0.18);
+  float3 c = float3(1.0, 1.0, 0.7);    float3 d = float3(0.72, 0.28, 0.78);
   return a + b * cos(6.28318 * (c * x + d));
+}
+// environment seen through / reflected by the glass: soft drifting colour field + a softbox top-left
+float3 env(float2 p, float t) {
+  float n1 = fbm(p * 1.8 + float2(t * 0.09, -t * 0.06));
+  float n2 = fbm(p * 1.9 - float2(t * 0.05, t * 0.10) + n1 * 1.4);
+  float3 c = pal(n2 * 1.5 + t * 0.02 + 0.25);
+  float2 dl = p - float2(-0.9, -1.1);
+  c += float3(0.9, 0.95, 1.0) * exp(-dot(dl, dl) * 0.9) * 0.9;
+  return c;
 }
 
 half4 main(float2 fragCoord) {
   float mn = min(iResolution.x, iResolution.y);
   float2 uv = (fragCoord - 0.5 * iResolution) / mn;
-  float R = (0.30 + 0.04 * iEnergy) * iScale;
+  float R = (0.30 + 0.035 * iEnergy) * iScale;
   float ang = atan(uv.y, uv.x);
-  float wob = (sin(ang * 2.0 + iTime * 0.7) * 0.5 + sin(ang * 3.0 - iTime * 0.5) * 0.3 + sin(ang * 5.0 + iTime * 0.9) * 0.1) * (0.006 + 0.018 * iEnergy);
+  float wob = (sin(ang * 2.0 + iTime * 0.7) * 0.5 + sin(ang * 3.0 - iTime * 0.5) * 0.3 + sin(ang * 5.0 + iTime * 0.9) * 0.1) * (0.005 + 0.016 * iEnergy);
   float r = length(uv);
   float Rw = R + wob;
   float aa = 1.5 / mn;
@@ -120,36 +126,40 @@ half4 main(float2 fragCoord) {
   float3 n = normalize(float3(uv / Rw, z));
   float3 v = float3(0.0, 0.0, 1.0);
   float ndv = max(dot(n, v), 0.0);
-  float fres = pow(1.0 - ndv, 2.5);
+  float fres = 0.04 + 0.96 * pow(1.0 - ndv, 3.0);
 
-  // liquid interior, refracted by the sphere
-  float2 q = (uv / Rw) * (0.55 + 0.45 * z);
-  float n1 = fbm(q * 1.6 + float2(iTime * 0.10, -iTime * 0.07));
-  float n2 = fbm(q * 2.2 - float2(iTime * 0.05, iTime * 0.11) + n1 * 1.5);
-  float phase = n2 * 1.1 + fres * 0.9 + iTime * 0.025;
-  float3 col = pal(phase);
-  col += pal(phase + 0.45) * smoothstep(0.35, 0.75, n1) * 0.25;
-  col *= 0.50 + 0.50 * pow(rr, 0.9);
-  col += float3(0.35, 0.30, 0.65) * (1.0 - rr) * 0.25;
+  // refraction with chromatic dispersion (three IORs)
+  float3 I = float3(0.0, 0.0, -1.0);
+  float2 rR = refract(I, n, 1.0 / 1.42).xy;
+  float2 rG = refract(I, n, 1.0 / 1.46).xy;
+  float2 rB = refract(I, n, 1.0 / 1.50).xy;
+  float2 base = uv / Rw * 0.8;
+  float depth = 1.6;
+  float3 tr = float3(env(base + rR * depth, iTime).r, env(base + rG * depth, iTime).g, env(base + rB * depth, iTime).b);
+  tr = mix(tr, tr * float3(0.55, 0.5, 0.9), 0.35 * (1.0 - rr));
 
-  // chromatic fresnel rim + crisp edge
-  col += float3(0.55, 0.75, 1.0) * fres * (1.0 + 0.6 * iEnergy);
-  col += float3(1.0, 0.6, 0.95) * pow(1.0 - ndv, 6.0) * 0.6;
-  float edgeLine = smoothstep(Rw - 0.010, Rw - 0.001, r) * inside;
-  col += float3(0.9, 0.95, 1.0) * edgeLine * 0.4;
+  // reflection of the environment
+  float3 rf = reflect(-v, n);
+  float3 refl = env(rf.xy * 1.4 + float2(0.0, -0.3), iTime * 0.7) * 0.9;
+  float3 col = mix(tr, refl, fres);
+
+  // chromatic fresnel rim
+  col += float3(0.6, 0.8, 1.0) * pow(1.0 - ndv, 5.0) * (0.9 + 0.5 * iEnergy);
+  col += float3(1.0, 0.55, 0.9) * pow(1.0 - ndv, 9.0) * 0.7;
 
   // speculars
-  float3 l1 = normalize(float3(-0.45, -0.55, 0.7));
-  float3 l2 = normalize(float3(0.55, 0.45, 0.5));
+  float3 l1 = normalize(float3(-0.5, -0.6, 0.65));
+  float3 l2 = normalize(float3(0.6, 0.5, 0.45));
   float rl1 = max(dot(reflect(-l1, n), v), 0.0);
-  float s1 = pow(rl1, 90.0);
-  float s1b = pow(rl1, 14.0);
-  float s2 = pow(max(dot(reflect(-l2, n), v), 0.0), 40.0);
-  col += float3(1.0) * s1 + float3(1.0) * s1b * 0.18 + float3(0.9, 0.85, 1.0) * s2 * 0.3;
+  col += float3(1.0) * (pow(rl1, 160.0) * 1.1 + pow(rl1, 16.0) * 0.12);
+  col += float3(0.95, 0.9, 1.0) * pow(max(dot(reflect(-l2, n), v), 0.0), 48.0) * 0.35;
+
+  // weight: slight darkening at the lower rim
+  col *= 1.0 - 0.25 * smoothstep(0.6, 1.0, rr) * smoothstep(-0.2, 0.8, uv.y / Rw);
 
   // bloom
-  float halo = exp(-max(r - Rw, 0.0) * 12.0) * (0.22 + 0.35 * iEnergy);
-  float3 haloCol = pal(iTime * 0.025 + 0.3) * halo;
+  float halo = exp(-max(r - Rw, 0.0) * 11.0) * (0.18 + 0.30 * iEnergy);
+  float3 haloCol = pal(iTime * 0.02 + 0.3) * halo;
   float alpha = max(inside, halo);
   float3 outc = col * inside + haloCol * (1.0 - inside);
   return half4(half3(outc * alpha), half(alpha));
