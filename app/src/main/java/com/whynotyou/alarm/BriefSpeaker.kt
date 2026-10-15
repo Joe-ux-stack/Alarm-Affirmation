@@ -61,8 +61,9 @@ class BriefSpeaker(context: Context, private val onDone: () -> Unit) {
     }
 
     fun release() {
-        tts?.stop()
-        tts?.shutdown()
+        finished = true
+        try { tts?.stop() } catch (_: Exception) {}
+        try { tts?.shutdown() } catch (_: Exception) {}
         tts = null
     }
 }

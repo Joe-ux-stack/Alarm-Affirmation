@@ -35,7 +35,7 @@ class AlarmDetailActivity : AppCompatActivity() {
         wh = findViewById(R.id.wheel_h); wm = findViewById(R.id.wheel_m); wap = findViewById(R.id.wheel_ap)
         daysRow = findViewById(R.id.row_days)
 
-        wh.setRange(1, 12); wm.setRange(0, 59); wap.setRange(0, 1); wap.labels = listOf("am", "pm")
+        wh.setRange(1, 12); wm.setRange(0, 59); wap.setRange(0, 1); wap.labels = listOf("am", "pm"); wap.wrap = false
         wh.onChange = { readWheels() }; wm.onChange = { readWheels() }; wap.onChange = { readWheels() }
 
         val letters = "MTWTFSS"
@@ -43,7 +43,7 @@ class AlarmDetailActivity : AppCompatActivity() {
             val tv = TextView(this).apply {
                 text = letters[i].toString(); textSize = 13f; gravity = Gravity.CENTER
                 setTypeface(typeface, android.graphics.Typeface.BOLD)
-                layoutParams = LinearLayout.LayoutParams(0, dp(44), 1f).apply { if (i < 6) marginEnd = dp(6) }
+                layoutParams = LinearLayout.LayoutParams(dp(40), dp(40)).apply { if (i < 6) marginEnd = dp(8) }
                 setOnClickListener { alarm.days[i] = !alarm.days[i]; renderDays() }
             }
             dayViews[i] = tv; daysRow.addView(tv)

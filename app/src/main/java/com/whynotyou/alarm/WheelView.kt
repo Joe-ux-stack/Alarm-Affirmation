@@ -22,6 +22,7 @@ class WheelView @JvmOverloads constructor(context: Context, attrs: AttributeSet?
     var min = 0
     var max = 59
     var labels: List<String>? = null           // overrides numeric formatting when set
+    var wrap = true                            // false: clamp to [min,max], no neighbours beyond the ends
     var onChange: ((Int) -> Unit)? = null
 
     private val range get() = max - min + 1
@@ -39,8 +40,10 @@ class WheelView @JvmOverloads constructor(context: Context, attrs: AttributeSet?
     private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop
 
     var value: Int
-        get() = min + Math.floorMod(offset.roundToInt(), range)
+        get() = if (wrap) min + Math.floorMod(offset.roundToInt(), range) else min + offset.roundToInt().coerceIn(0, range - 1)
         set(v) { offset = (v - min).toFloat(); invalidate() }
+
+    private fun clampOffset() { if (!wrap) offset = offset.coerceIn(0f, (range - 1).toFloat()) }
 
     fun setRange(lo: Int, hi: Int) { min = lo; max = hi; offset = offset.coerceIn(0f, (range - 1).toFloat()); invalidate() }
 
@@ -58,6 +61,7 @@ class WheelView @JvmOverloads constructor(context: Context, attrs: AttributeSet?
             val idx = base + i
             val y = center - (i - frac) * rowH
             if (y < -rowH || y > height + rowH) continue
+            if (!wrap && (idx < 0 || idx >= range)) continue
             val dist = abs(i - frac)
             paint.alpha = when {
                 dist < 0.5f -> 255
@@ -84,7 +88,7 @@ class WheelView @JvmOverloads constructor(context: Context, attrs: AttributeSet?
             MotionEvent.ACTION_MOVE -> {
                 val dy = e.y - lastY
                 if (!dragging && abs(dy) > touchSlop) dragging = true
-                if (dragging) { offset += dy / rowH; lastY = e.y; invalidate() }
+                if (dragging) { offset += dy / rowH; clampOffset(); lastY = e.y; invalidate() }
                 return true
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
@@ -108,12 +112,14 @@ class WheelView @JvmOverloads constructor(context: Context, attrs: AttributeSet?
         override fun run() {
             if (scroller.computeScrollOffset()) {
                 offset = flingStart + scroller.currY / 1000f
+                clampOffset()
                 invalidate(); postOnAnimation(this)
             } else snap()
         }
     }
 
     private fun snap() {
+        clampOffset()
         val target = offset.roundToInt().toFloat()
         val start = offset
         val t0 = System.currentTimeMillis()

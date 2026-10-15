@@ -23,8 +23,13 @@ object VoicePicker {
             setPadding(dp(a, 28), dp(a, 24), dp(a, 28), dp(a, 36))
         }
         var player: MediaPlayer? = null
+        var speaker: BriefSpeaker? = null
         var playingBtn: ImageButton? = null
-        fun stop() { player?.release(); player = null; playingBtn?.setImageResource(R.drawable.ic_play); playingBtn = null }
+        fun stop() {
+            player?.release(); player = null
+            speaker?.release(); speaker = null
+            playingBtn?.setImageResource(R.drawable.ic_play); playingBtn = null
+        }
 
         for (v in VoiceEngine.voices) {
             val row = LinearLayout(a).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(0, dp(a, 12), 0, dp(a, 12)) }
@@ -48,8 +53,8 @@ object VoicePicker {
                 val f = File(a.cacheDir, "preview_${v.id}.wav")
                 play.setImageResource(R.drawable.ic_stop); playingBtn = play
                 if (!VoiceEngine.isAvailable(a)) {
-                    // engine disabled: say the sample with the phone voice so the picker still responds
-                    val sp = BriefSpeaker(a) { a.runOnUiThread { stop() } }; sp.speak(SAMPLE)
+                    // engine disabled: phone voice reads the sample (all voices sound the same until the engine is back)
+                    speaker = BriefSpeaker(a) { a.runOnUiThread { if (playingBtn === play) stop() } }.also { it.speak(SAMPLE) }
                     return@setOnClickListener
                 }
                 Thread {
