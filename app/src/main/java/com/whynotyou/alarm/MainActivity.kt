@@ -154,7 +154,7 @@ class MainActivity : AppCompatActivity() {
         messagesList.removeAllViews()
         val msgs = MessageStore.all(this)
         noMessages.visibility = if (msgs.isEmpty()) View.VISIBLE else View.GONE
-        val next = MessageStore.peekNext(this)
+        val nextMsg = MessageStore.peekNext(this)
         msgs.forEach { m ->
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
@@ -163,7 +163,7 @@ class MainActivity : AppCompatActivity() {
             val label = TextView(this).apply {
                 text = (if (m.from.isNotBlank()) m.from else m.name) +
                     "  ·  " + "%d:%02d".format(m.durationMs / 60000, (m.durationMs / 1000) % 60) +
-                    (if (m == next && msgs.size > 1) "  ·  next" else "")
+                    (if (m == nextMsg && msgs.size > 1) "  ·  next" else "")
                 setTextColor(0xFFF2F4F8.toInt()); textSize = 16f
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             }
