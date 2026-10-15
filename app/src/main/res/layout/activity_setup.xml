@@ -41,13 +41,23 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
                 <TextView
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
                     android:text="Notifications"
                     android:textColor="#F2F4F8"
                     android:textSize="16sp"
                     android:textStyle="bold" />
+                <ImageButton
+                    android:id="@+id/info_notif"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginStart="2dp"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Why"
+                    android:padding="9dp"
+                    android:src="@drawable/ic_info"
+                    android:tint="#7A8294" />
+                <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
                 <Button
                     android:id="@+id/btn_notif"
                     style="@style/SmallPrimaryButton"
@@ -63,15 +73,6 @@
                     android:textSize="22sp"
                     android:textStyle="bold"
                     android:visibility="gone" />
-                <ImageButton
-                    android:id="@+id/info_notif"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:background="?android:attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Why"
-                    android:padding="9dp"
-                    android:src="@drawable/ic_info"
-                    android:tint="#7A8294" />
             </LinearLayout>
 
             <TextView
@@ -104,13 +105,23 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
                 <TextView
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
                     android:text="Exact alarms"
                     android:textColor="#F2F4F8"
                     android:textSize="16sp"
                     android:textStyle="bold" />
+                <ImageButton
+                    android:id="@+id/info_exact"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginStart="2dp"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Why"
+                    android:padding="9dp"
+                    android:src="@drawable/ic_info"
+                    android:tint="#7A8294" />
+                <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
                 <Button
                     android:id="@+id/btn_exact"
                     style="@style/SmallPrimaryButton"
@@ -126,15 +137,6 @@
                     android:textSize="22sp"
                     android:textStyle="bold"
                     android:visibility="gone" />
-                <ImageButton
-                    android:id="@+id/info_exact"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:background="?android:attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Why"
-                    android:padding="9dp"
-                    android:src="@drawable/ic_info"
-                    android:tint="#7A8294" />
             </LinearLayout>
 
             <TextView
@@ -167,13 +169,23 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
                 <TextView
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
                     android:text="Battery"
                     android:textColor="#F2F4F8"
                     android:textSize="16sp"
                     android:textStyle="bold" />
+                <ImageButton
+                    android:id="@+id/info_battery"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginStart="2dp"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Why"
+                    android:padding="9dp"
+                    android:src="@drawable/ic_info"
+                    android:tint="#7A8294" />
+                <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
                 <Button
                     android:id="@+id/btn_battery"
                     style="@style/SmallPrimaryButton"
@@ -189,15 +201,6 @@
                     android:textSize="22sp"
                     android:textStyle="bold"
                     android:visibility="gone" />
-                <ImageButton
-                    android:id="@+id/info_battery"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:background="?android:attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Why"
-                    android:padding="9dp"
-                    android:src="@drawable/ic_info"
-                    android:tint="#7A8294" />
             </LinearLayout>
 
             <TextView
@@ -230,13 +233,23 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
                 <TextView
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
                     android:text="Show over other apps"
                     android:textColor="#F2F4F8"
                     android:textSize="16sp"
                     android:textStyle="bold" />
+                <ImageButton
+                    android:id="@+id/info_overlay"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginStart="2dp"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Why"
+                    android:padding="9dp"
+                    android:src="@drawable/ic_info"
+                    android:tint="#7A8294" />
+                <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
                 <Button
                     android:id="@+id/btn_overlay"
                     style="@style/SmallPrimaryButton"
@@ -252,15 +265,6 @@
                     android:textSize="22sp"
                     android:textStyle="bold"
                     android:visibility="gone" />
-                <ImageButton
-                    android:id="@+id/info_overlay"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:background="?android:attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Why"
-                    android:padding="9dp"
-                    android:src="@drawable/ic_info"
-                    android:tint="#7A8294" />
             </LinearLayout>
 
             <TextView
