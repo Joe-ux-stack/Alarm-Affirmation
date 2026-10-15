@@ -11,8 +11,8 @@ android {
         applicationId = "com.whynotyou.alarm"
         minSdk = 26
         targetSdk = 35
-        versionCode = 28
-        versionName = "0.28"
+        versionCode = 29
+        versionName = "0.29"
         ndk { abiFilters += listOf("arm64-v8a") }
     }
 
@@ -48,7 +48,7 @@ android {
         jvmTarget = "17"
     }
     androidResources {
-        noCompress += listOf("onnx", "bin", "txt")
+        noCompress += listOf("onnx", "bin")
     }
     packaging {
         jniLibs { useLegacyPackaging = false }
@@ -65,4 +65,5 @@ dependencies {
     implementation("androidx.media3:media3-ui:1.5.1")
     implementation("androidx.work:work-runtime-ktx:2.10.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.20.0")
 }

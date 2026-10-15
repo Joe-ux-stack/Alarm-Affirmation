@@ -2,7 +2,7 @@ name: Build APK
 
 on:
   push:
-    branches: [ main ]
+    branches: [ '**' ]
   workflow_dispatch:
 
 permissions:
@@ -35,6 +35,25 @@ jobs:
             echo "No DEV_KEYSTORE_B64 secret; using throwaway debug key"
           fi
 
+      - name: Cache Kokoro package
+        id: kcache
+        uses: actions/cache@v4
+        with:
+          path: kokoro-int8-multi-lang-v1_0
+          key: kokoro-int8-multi-lang-v1_0-v1
+
+      - name: Download Kokoro package
+        if: steps.kcache.outputs.cache-hit != 'true'
+        run: |
+          curl -sL -o k.tar.bz2 https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-int8-multi-lang-v1_0.tar.bz2
+          tar xjf k.tar.bz2 && rm k.tar.bz2
+
+      - name: Build Kokoro asset bundle
+        run: |
+          pip install -q numpy
+          python3 tools/prepare_kokoro.py kokoro-int8-multi-lang-v1_0 app/src/main/assets/kokoro
+          du -sh app/src/main/assets/kokoro
+
       - uses: gradle/actions/setup-gradle@v5
 
       - name: Build release APK
@@ -59,14 +78,15 @@ jobs:
           git add -A && git commit -q -m "build errors for ${GITHUB_SHA::7}"
           git push -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" build-errors
 
-      - name: Publish as "latest" release
+      - name: Publish release ("latest" on main, "beta" on other branches)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          TAG=latest; [ "${GITHUB_REF_NAME}" = "main" ] || TAG=beta
           NAME="WhyNotYou-${GITHUB_RUN_NUMBER}.apk"
           cp app/build/outputs/apk/release/app-release.apk "$NAME"
-          gh release delete latest --yes --cleanup-tag || true
-          gh release create latest "$NAME" \
+          gh release delete "$TAG" --yes --cleanup-tag || true
+          gh release create "$TAG" "$NAME" --target "${GITHUB_SHA}" \
             --title "Build ${GITHUB_RUN_NUMBER} (${GITHUB_SHA::7})" \
             --notes "Built from commit ${GITHUB_SHA}. Tap the .apk to download and install."
 

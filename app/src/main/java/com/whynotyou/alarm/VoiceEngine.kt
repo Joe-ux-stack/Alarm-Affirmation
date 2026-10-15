@@ -5,21 +5,20 @@ import java.io.File
 import java.io.FileOutputStream
 
 /**
- * On-device Kokoro TTS via sherpa-onnx. Model + 7 voices live in assets/kokoro and are copied to
- * filesDir on first use (sherpa needs real file paths). Output: 24 kHz 16-bit mono WAV.
+ * On-device Kokoro TTS via ONNX Runtime (see Kokoro.kt). Output: 24 kHz 16-bit mono WAV.
  */
 object VoiceEngine {
 
-    // sid = index in the untouched 54-voice table (alphabetical in the sherpa package)
+    // sid = index in our trimmed voices.bin (order of tools/prepare_kokoro.py KEEP)
     data class Voice(val id: String, val name: String, val region: String, val sex: String, val sid: Int)
     val voices = listOf(
-        Voice("af_sky", "Sky", "US", "F", 10),
-        Voice("af_heart", "Heart", "US", "F", 3),
-        Voice("af_alloy", "Alloy", "US", "F", 0),
-        Voice("af_nova", "Nova", "US", "F", 7),
-        Voice("bf_emma", "Emma", "UK", "F", 21),
-        Voice("bm_fable", "Fable", "UK", "M", 25),
-        Voice("bm_lewis", "Lewis", "UK", "M", 27),
+        Voice("af_sky", "Sky", "US", "F", 0),
+        Voice("af_heart", "Heart", "US", "F", 1),
+        Voice("af_alloy", "Alloy", "US", "F", 2),
+        Voice("af_nova", "Nova", "US", "F", 3),
+        Voice("bf_emma", "Emma", "UK", "F", 4),
+        Voice("bm_fable", "Fable", "UK", "M", 5),
+        Voice("bm_lewis", "Lewis", "UK", "M", 6),
     )
     const val DEFAULT_VOICE = "af_sky"
     fun voice(id: String) = voices.firstOrNull { it.id == id } ?: voices[0]
@@ -39,46 +38,21 @@ object VoiceEngine {
     private fun markBroken(c: Context, why: String) { File(c.filesDir, "voice_broken").writeText(why) }
     fun unmarkBroken(c: Context) { File(c.filesDir, "voice_broken").delete() }
 
-    /** Kill switch while the native engine is being replaced. */
-    const val ENABLED = false
+    const val ENABLED = true
     fun isAvailable(c: Context): Boolean = ENABLED && try { c.assets.list("kokoro")?.contains("model.int8.onnx") == true } catch (e: Exception) { false }
 
     @Volatile var lastError: String? = null
 
-    /** Everything is copied out of assets to real files once (sherpa + espeak are happiest that way). */
-    fun isReady(c: Context) = File(c.filesDir, "kokoro/.ready-v2").exists()
-
-    fun prepare(c: Context): File {
-        val dir = File(c.filesDir, "kokoro")
-        val marker = File(dir, ".ready-v2")
-        if (marker.exists()) return dir
-        dir.deleteRecursively(); dir.mkdirs()
-        copyAssetDir(c, "kokoro", dir)
-        marker.writeText("ok")
-        return dir
-    }
-
-    private fun copyAssetDir(c: Context, path: String, dest: File) {
-        val items = c.assets.list(path) ?: return
-        if (items.isEmpty()) {
-            c.assets.open(path).use { i -> FileOutputStream(dest).use { o -> i.copyTo(o) } }
-            return
-        }
-        dest.mkdirs()
-        for (it in items) copyAssetDir(c, "$path/$it", File(dest, it))
-    }
-
-    private fun engine(c: Context): Nothing {
-        log(c, "engine: disabled in this build")
-        throw IllegalStateException("voice engine disabled")
-    }
-
     /** Synthesise to a WAV file. Blocking; call off the main thread. Returns false on failure. */
-    fun synthesizeToFile(c: Context, text: String, voiceId: String, out: File, speed: Float = 0.95f): Boolean {
+    fun synthesizeToFile(c: Context, text: String, voiceId: String, out: File, speed: Float = 1.0f): Boolean {
         if (!ENABLED || text.isBlank() || isBroken(c)) return false
         return try {
-            engine(c)
+            log(c, "synth: ${text.take(40)} voice=$voiceId")
+            Kokoro.synthesizeToWav(c, text, voiceId, out, speed)
+            log(c, "synth: ok ${out.length()} bytes")
+            out.length() > 44
         } catch (e: Throwable) {
+            log(c, "synth: FAILED $e")
             lastError = e.toString()
             out.delete(); false
         }

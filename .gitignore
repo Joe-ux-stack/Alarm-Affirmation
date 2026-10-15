@@ -7,3 +7,4 @@ local.properties
 keystore/
 app/src/main/assets/kokoro/
 app/libs/
+app/src/main/assets/kokoro/
