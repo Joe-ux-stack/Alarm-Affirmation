@@ -41,11 +41,11 @@ object CalendarSync {
                     val allDay = cur.getInt(2) == 1
                     val status = cur.getInt(3)
                     val visible = cur.getInt(4) == 1
-                    if (allDay || !visible) continue
+                    if (!visible) continue
                     if (status == CalendarContract.Attendees.ATTENDEE_STATUS_DECLINED) continue
                     val title = cur.getString(1)?.trim().orEmpty()
                     if (title.isEmpty()) continue
-                    out += BriefItem(cur.getLong(0), title)
+                    out += BriefItem(cur.getLong(0), title, allDay)
                 }
             }
         } catch (e: Exception) { /* provider hiccup: brief just says nothing on the calendar */ }

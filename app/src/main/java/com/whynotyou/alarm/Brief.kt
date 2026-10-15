@@ -7,7 +7,7 @@ import java.util.Date
 import java.util.Locale
 
 /** One event for the morning brief. Calendar events and manual items both use this. */
-data class BriefItem(val startMillis: Long, val title: String)
+data class BriefItem(val startMillis: Long, val title: String, val allDay: Boolean = false)
 
 /**
  * Builds the spoken morning brief from cached calendar events plus the user's manual intention.
@@ -35,7 +35,7 @@ object Brief {
     /** Called by the calendar sync. Replaces today's cached events. */
     fun storeEvents(c: Context, items: List<BriefItem>, forDay: Date = Date()) {
         val body = items.sortedBy { it.startMillis }
-            .joinToString("\n") { "${it.startMillis}|${it.title.replace("\n", " ").replace("|", "/")}" }
+            .joinToString("\n") { "${it.startMillis}|${if (it.allDay) 1 else 0}|${it.title.replace("\n", " ").replace("|", "/")}" }
         prefs(c).edit()
             .putString(KEY_EVENTS, body)
             .putString(KEY_EVENTS_DAY, dayKey(forDay))
@@ -47,8 +47,9 @@ object Brief {
         return (prefs(c).getString(KEY_EVENTS, "") ?: "")
             .lineSequence()
             .mapNotNull { line ->
-                val i = line.indexOf('|')
-                if (i <= 0) null else line.substring(0, i).toLongOrNull()?.let { BriefItem(it, line.substring(i + 1)) }
+                val parts = line.split("|", limit = 3)
+                if (parts.size < 3) null
+                else parts[0].toLongOrNull()?.let { BriefItem(it, parts[2], parts[1] == "1") }
             }
             .toList()
     }
@@ -61,7 +62,9 @@ object Brief {
         val day = SimpleDateFormat("EEEE", Locale.getDefault()).format(now)
         parts += "Good morning. It's $day."
 
-        val all = cachedEvents(c).filter { it.startMillis >= now.time - 5 * 60_000L }
+        val cached = cachedEvents(c)
+        val allDayItems = cached.filter { it.allDay }
+        val all = cached.filter { !it.allDay && it.startMillis >= now.time - 5 * 60_000L }
         val chosen = when (scope(c)) {
             "three" -> all.take(3)
             "all" -> all
@@ -75,8 +78,11 @@ object Brief {
         }
         val rest = all.size - chosen.size
 
+        if (allDayItems.isNotEmpty()) {
+            parts += "Today: " + allDayItems.joinToString(", ") { it.title } + "."
+        }
         if (all.isEmpty()) {
-            parts += "Nothing on the calendar."
+            if (allDayItems.isEmpty()) parts += "Nothing on the calendar."
         } else {
             val fmt = SimpleDateFormat("h:mm a", Locale.getDefault())
             chosen.forEach { parts += "${it.title}, at ${fmt.format(Date(it.startMillis)).replace(":00", "")}." }
