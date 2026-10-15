@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#000000">
@@ -94,8 +95,7 @@
             android:textColor="#000000"
             android:textSize="20sp"
             android:textStyle="bold"
-            app:cornerRadius="36dp"
-            xmlns:app="http://schemas.android.com/apk/res-auto" />
+            app:cornerRadius="36dp" />
 
         <Button
             android:id="@+id/btn_snooze"
