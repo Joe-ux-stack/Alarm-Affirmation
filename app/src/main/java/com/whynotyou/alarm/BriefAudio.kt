@@ -50,7 +50,7 @@ object BriefAudio {
 
     /** Line up render jobs for every enabled alarm with brief on. Idempotent. */
     fun scheduleAll(c: Context) {
-        val wm = WorkManager.getInstance(c)
+        val wm = try { WorkManager.getInstance(c) } catch (e: Throwable) { return }
         val now = System.currentTimeMillis()
         for (a in AlarmStore.all(c)) {
             val name = "brief_${a.id}"
@@ -68,7 +68,7 @@ object BriefAudio {
 
     /** Render now for every alarm whose brief is stale (called when the intention changes). */
     fun refreshNow(c: Context) {
-        val wm = WorkManager.getInstance(c)
+        val wm = try { WorkManager.getInstance(c) } catch (e: Throwable) { return }
         for (a in AlarmStore.all(c)) {
             if (!a.enabled || !a.brief) continue
             val req = OneTimeWorkRequestBuilder<RenderWorker>().setInputData(workDataOf("alarmId" to a.id)).build()

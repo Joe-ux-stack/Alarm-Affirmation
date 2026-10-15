@@ -6,7 +6,10 @@ import java.io.PrintWriter
 import java.io.StringWriter
 
 /** Writes the last crash to a file so it can be shown in the app and pasted into a bug report. */
-class App : Application() {
+class App : Application(), androidx.work.Configuration.Provider {
+    override val workManagerConfiguration: androidx.work.Configuration
+        get() = androidx.work.Configuration.Builder().setMinimumLoggingLevel(android.util.Log.INFO).build()
+
     override fun onCreate() {
         super.onCreate()
         val prev = Thread.getDefaultUncaughtExceptionHandler()

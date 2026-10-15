@@ -84,14 +84,14 @@ class WheelView @JvmOverloads constructor(context: Context, attrs: AttributeSet?
             MotionEvent.ACTION_MOVE -> {
                 val dy = e.y - lastY
                 if (!dragging && abs(dy) > touchSlop) dragging = true
-                if (dragging) { offset -= dy / rowH; lastY = e.y; invalidate() }
+                if (dragging) { offset += dy / rowH; lastY = e.y; invalidate() }
                 return true
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                 velocity?.computeCurrentVelocity(1000)
                 val vy = velocity?.yVelocity ?: 0f
                 velocity?.recycle(); velocity = null
-                if (abs(vy) > 400) fling(-vy / rowH) else snap()
+                if (abs(vy) > 400) fling(vy / rowH) else snap()
                 return true
             }
         }
