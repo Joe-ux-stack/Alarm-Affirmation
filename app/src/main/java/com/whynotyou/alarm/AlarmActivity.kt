@@ -170,11 +170,35 @@ class AlarmActivity : AppCompatActivity() {
             p.setMediaItem(MediaItem.fromUri(Uri.fromFile(msg.file(this))))
             p.playWhenReady = true
             p.prepare()
-            attachVisualizer(p.audioSessionId)
+            followFile(Uri.fromFile(msg.file(this)), Phase.MESSAGE)
         } else {
             p.stop()
             startBrief()
         }
+    }
+
+    /**
+     * Drive the orb from the file's own loudness, in sync with playback. Needs no permission.
+     * Falls back to the Visualizer (needs mic permission) and then to a gentle pulse.
+     */
+    private fun followFile(uri: Uri, during: Phase) {
+        visualizer?.release(); visualizer = null
+        Thread {
+            val env = Envelope.of(this, uri)
+            runOnUiThread {
+                if (phase != during || isFinishing) return@runOnUiThread
+                if (env == null || env.isEmpty()) { attachVisualizer(player?.audioSessionId ?: 0); return@runOnUiThread }
+                val r = object : Runnable {
+                    override fun run() {
+                        if (phase != during) return
+                        val p = player ?: return
+                        orb.setLevel(if (p.isPlaying) Envelope.at(env, p.currentPosition + 40) else 0f)
+                        ui.postDelayed(this, 16)
+                    }
+                }
+                ui.post(r)
+            }
+        }.start()
     }
 
     private var peak = 0.02
@@ -254,7 +278,7 @@ class AlarmActivity : AppCompatActivity() {
         p.setMediaItem(MediaItem.fromUri(Uri.fromFile(f)))
         p.playWhenReady = true
         p.prepare()
-        attachVisualizer(p.audioSessionId)
+        followFile(Uri.fromFile(f), Phase.BRIEF)
         // reveal each sentence when playback reaches its share of the audio (by length)
         val follow = object : Runnable {
             override fun run() {
@@ -272,8 +296,13 @@ class AlarmActivity : AppCompatActivity() {
     }
 
     private fun speakWithPhone(text: String) {
-        attachVisualizer(0)   // session 0 = the phone's output mix, so the orb follows the TTS voice too
-        speaker = BriefSpeaker(this, onSentence = { i -> runOnUiThread { reveal?.showIndex(i) } }) { runOnUiThread { enterDone() } }.also { it.speak(text) }
+        // the phone voice gives us no audio to measure, but it reports each word as it starts:
+        // kick the orb on every word and let it fall back in between
+        val drop = Runnable { orb.setLevel(0.12f) }
+        speaker = BriefSpeaker(this,
+            onSentence = { i -> runOnUiThread { reveal?.showIndex(i) } },
+            onWord = { runOnUiThread { orb.setLevel(0.75f + 0.25f * Math.random().toFloat()); ui.removeCallbacks(drop); ui.postDelayed(drop, 150) } }
+        ) { runOnUiThread { enterDone() } }.also { it.speak(text) }
     }
 
     // ---- DONE ------------------------------------------------------------------------------

@@ -8,7 +8,7 @@ import android.speech.tts.UtteranceProgressListener
 import java.util.Locale
 
 /** Reads the morning brief aloud on the alarm stream. onDone fires when it finishes or fails. */
-class BriefSpeaker(context: Context, private val onSentence: (Int) -> Unit = {}, private val onDone: () -> Unit) {
+class BriefSpeaker(context: Context, private val onSentence: (Int) -> Unit = {}, private val onWord: () -> Unit = {}, private val onDone: () -> Unit) {
 
     private var tts: TextToSpeech? = null
     private var pending: String? = null
@@ -29,6 +29,7 @@ class BriefSpeaker(context: Context, private val onSentence: (Int) -> Unit = {},
                 )
                 setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                     override fun onStart(id: String?) { id?.removePrefix("s")?.toIntOrNull()?.let(onSentence) }
+                    override fun onRangeStart(id: String?, start: Int, end: Int, frame: Int) { onWord() }
                     override fun onDone(id: String?) { if (id == "s${lastIndex}") done() }
                     @Deprecated("Deprecated in Java")
                     override fun onError(id: String?) { done() }
