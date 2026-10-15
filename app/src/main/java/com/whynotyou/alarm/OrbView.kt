@@ -141,6 +141,9 @@ half4 main(float2 fragCoord){
   float edge=smoothstep(Rw-0.010,Rw-0.0015,r)*inside;
   float edgeVar=0.5+0.5*(0.5+0.5*sin(ang*1.0+iTime*0.4));
   rim+=rimCol*1.8*edge*edgeVar;
+  // white sheen on the top-right side, like a key light catching the glass
+  float side=smoothstep(-0.1,1.0,dot(normalize(uv),normalize(float2(0.72,-0.70))));
+
   // speculars
   float3 v=float3(0,0,1);
   float3 l1=normalize(float3(-0.5,-0.6,0.65));
@@ -149,6 +152,7 @@ half4 main(float2 fragCoord){
   float3 col=haze+lines+rim+spec;
   float mx=max(col.r,max(col.g,col.b));
   col*=mix(1.0,1.0/mx,smoothstep(0.9,2.5,mx)*0.85);   // keep hue when bright instead of clipping to white
+  col+=float3(1.0,0.98,1.0)*side*(pow(f,1.5)*0.9+pow(f,5.0)*1.3+edge*1.6);   // white sheen, added after so it stays white
   // bloom outside
   float halo=exp(-max(r-Rw,0.0)*10.0)*(0.16+0.30*iEnergy);
   float3 haloCol=rimCol*halo;
