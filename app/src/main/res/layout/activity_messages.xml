@@ -123,6 +123,23 @@
         </LinearLayout>
         <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#15181F" />
 
+        <LinearLayout android:id="@+id/row_voicetest" style="@style/Row" android:background="?android:attr/selectableItemBackground">
+            <TextView style="@style/RowLabel" android:textSize="14sp" android:text="Voice test" />
+            <ImageView android:layout_width="18dp" android:layout_height="18dp" android:src="@drawable/ic_chevron" android:tint="#7A8294" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <TextView
+            android:id="@+id/txt_probe"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:paddingBottom="12dp"
+            android:text=""
+            android:textColor="#7A8294"
+            android:textIsSelectable="true"
+            android:textSize="11sp"
+            android:visibility="gone" />
+        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#15181F" />
+
         <LinearLayout android:id="@+id/row_preview" style="@style/Row" android:background="?android:attr/selectableItemBackground">
             <TextView style="@style/RowLabel" android:textSize="14sp" android:text="Preview wake-up" />
             <ImageView android:layout_width="18dp" android:layout_height="18dp" android:src="@drawable/ic_chevron" android:tint="#7A8294" android:importantForAccessibility="no" />

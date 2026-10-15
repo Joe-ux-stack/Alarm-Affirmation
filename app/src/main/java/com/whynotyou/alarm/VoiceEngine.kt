@@ -31,6 +31,18 @@ object VoiceEngine {
     @Volatile private var tts: OfflineTts? = null
     private val lock = Any()
 
+    /** Written step by step so a native crash still leaves a trail. */
+    private fun log(c: Context, step: String) {
+        try { File(c.filesDir, "voice_probe.txt").appendText("${System.currentTimeMillis() % 100000} $step\n") } catch (_: Throwable) {}
+    }
+    fun probeLog(c: Context): String? = File(c.filesDir, "voice_probe.txt").takeIf { it.exists() }?.readText()
+    fun clearProbe(c: Context) { File(c.filesDir, "voice_probe.txt").delete() }
+
+    /** Set once the engine failed to open; everything then falls back to the phone voice. */
+    fun isBroken(c: Context) = File(c.filesDir, "voice_broken").exists()
+    private fun markBroken(c: Context, why: String) { File(c.filesDir, "voice_broken").writeText(why) }
+    fun unmarkBroken(c: Context) { File(c.filesDir, "voice_broken").delete() }
+
     fun isAvailable(c: Context): Boolean = try { c.assets.list("kokoro")?.contains("model.int8.onnx") == true } catch (e: Exception) { false }
 
     @Volatile var lastError: String? = null
@@ -62,7 +74,10 @@ object VoiceEngine {
         tts?.let { return it }
         synchronized(lock) {
             tts?.let { return it }
+            log(c, "engine: start")
             val dir = prepare(c)
+            log(c, "engine: files ready " + listOf("model.int8.onnx","voices.bin","tokens.txt","lexicon-us-en.txt").joinToString { f -> "$f=" + File(dir, f).length() } + " espeak=" + File(dir, "espeak-ng-data").list()?.size)
+            try { System.loadLibrary("sherpa-onnx-jni"); log(c, "engine: jni loaded") } catch (e: Throwable) { log(c, "engine: jni load FAILED $e"); markBroken(c, "jni: $e"); throw e }
             val cfg = OfflineTtsConfig(
                 model = OfflineTtsModelConfig(
                     kokoro = OfflineTtsKokoroModelConfig(
@@ -78,20 +93,26 @@ object VoiceEngine {
                 ),
                 maxNumSentences = 1,
             )
-            // Absolute paths → sherpa reads from the filesystem (assetManager is ignored for '/'-prefixed paths).
-            return OfflineTts(assetManager = c.assets, config = cfg).also { tts = it }
+            log(c, "engine: constructing OfflineTts")
+            val e = try { OfflineTts(assetManager = c.assets, config = cfg) } catch (t: Throwable) { log(c, "engine: ctor FAILED $t"); markBroken(c, "ctor: $t"); throw t }
+            log(c, "engine: ok speakers=${e.numSpeakers()} sr=${e.sampleRate()}")
+            return e.also { tts = it }
         }
     }
 
     /** Synthesise to a WAV file. Blocking; call off the main thread. Returns false on failure. */
     fun synthesizeToFile(c: Context, text: String, voiceId: String, out: File, speed: Float = 0.95f): Boolean {
-        if (text.isBlank()) return false
+        if (text.isBlank() || isBroken(c)) return false
         return try {
             val e = engine(c)
             val sid = voice(voiceId).sid
+            log(c, "gen: sid=$sid chars=${text.length}")
             val audio = e.generate(text = text, sid = sid, speed = speed)
+            log(c, "gen: samples=${audio.samples.size}")
             if (audio.samples.isEmpty()) return false
-            audio.save(out.absolutePath)
+            val ok = audio.save(out.absolutePath)
+            log(c, "gen: saved=$ok bytes=${out.length()}")
+            ok
         } catch (e: Throwable) {
             lastError = e.toString()
             out.delete(); false

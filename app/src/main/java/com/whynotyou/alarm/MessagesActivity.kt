@@ -67,6 +67,21 @@ class MessagesActivity : AppCompatActivity() {
             AlarmScheduler.scheduleTestInMinutes(this, 1)
             Toast.makeText(this, "Lock the phone. Firing in 60 s.", Toast.LENGTH_LONG).show()
         }
+        findViewById<View>(R.id.row_voicetest).setOnClickListener {
+            VoiceEngine.clearProbe(this); VoiceEngine.unmarkBroken(this)
+            val probe = findViewById<TextView>(R.id.txt_probe)
+            probe.visibility = View.VISIBLE; probe.text = "running…"
+            Thread {
+                val f = File(cacheDir, "voicetest.wav")
+                val ok = VoiceEngine.synthesizeToFile(this, "Good morning.", VoiceEngine.DEFAULT_VOICE, f)
+                runOnUiThread {
+                    probe.text = (VoiceEngine.probeLog(this) ?: "") + "\nresult=$ok err=${VoiceEngine.lastError}"
+                    if (ok) MediaPlayer().apply { setDataSource(f.absolutePath); setOnCompletionListener { release() }; prepare(); start() }
+                }
+            }.start()
+        }
+        VoiceEngine.probeLog(this)?.let { findViewById<TextView>(R.id.txt_probe).apply { visibility = View.VISIBLE; text = it } }
+
         findViewById<View>(R.id.row_preview).setOnClickListener {
             startActivity(Intent(this, AlarmActivity::class.java).putExtra(AlarmActivity.EXTRA_PREVIEW, true))
         }
