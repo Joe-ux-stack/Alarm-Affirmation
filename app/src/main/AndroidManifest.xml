@@ -75,6 +75,23 @@
             android:name=".PhoneDownActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".EveningPlanActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".PlanPromptActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:taskAffinity=""
+            android:windowSoftInputMode="adjustResize" />
+
+        <receiver
+            android:name=".PlanReceiver"
+            android:exported="false" />
+
         <service
             android:name=".GuardService"
             android:exported="false"

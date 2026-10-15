@@ -33,9 +33,9 @@ import kotlin.math.abs
 import kotlin.math.sqrt
 
 /**
- * RINGING (chime loops, orb breathes, "Stop") → MESSAGE (loved one's recording, orb pulses,
- * "I'm up" always tappable) → BRIEF (spoken day, orb pulses) → DONE ("Phone down." + "I'm up").
- * Also used for timer end (EXTRA_TIMER) and preview (EXTRA_PREVIEW).
+ * RINGING (chime loops, orb breathes, swipe the circle to stop, − snooze +) → MESSAGE (loved one's
+ * recording, orb pulses) → BRIEF (spoken day; each sentence appears as it is said) → DONE (the
+ * screen fades out on its own). Also used for timer end (EXTRA_TIMER) and preview (EXTRA_PREVIEW).
  */
 class AlarmActivity : AppCompatActivity() {
 
@@ -53,13 +53,14 @@ class AlarmActivity : AppCompatActivity() {
     private var savedAlarmVolume = -1
     private val ui = Handler(Looper.getMainLooper())
 
-    private lateinit var btn: Button
     private lateinit var snooze: Button
-    private lateinit var dismiss: android.widget.ImageButton
+    private lateinit var dismiss: SwipeDismissView
+    private lateinit var ringControls: View
+    private lateinit var snoozeRow: View
+    private var snoozeMin = 5
     private lateinit var clock: TextView
     private lateinit var sub: TextView
     private lateinit var briefView: TextView
-    private lateinit var phoneDown: TextView
     private lateinit var orb: OrbView
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -72,9 +73,10 @@ class AlarmActivity : AppCompatActivity() {
 
         showOverLockScreen()
 
-        btn = findViewById(R.id.btn_main); snooze = findViewById(R.id.btn_snooze); dismiss = findViewById(R.id.btn_dismiss)
+        snooze = findViewById(R.id.btn_snooze); dismiss = findViewById(R.id.btn_dismiss)
+        ringControls = findViewById(R.id.ring_controls); snoozeRow = findViewById(R.id.row_snooze)
         clock = findViewById(R.id.txt_clock); sub = findViewById(R.id.txt_sub)
-        briefView = findViewById(R.id.txt_brief); phoneDown = findViewById(R.id.txt_phone_down)
+        briefView = findViewById(R.id.txt_brief)
         orb = findViewById(R.id.orb)
 
         clock.text = SimpleDateFormat("H:mm", Locale.getDefault()).format(Date())
@@ -101,9 +103,10 @@ class AlarmActivity : AppCompatActivity() {
             })
         }
 
-        snooze.setOnClickListener { AlarmScheduler.snooze(this, alarm.id); finishAlarm(false) }
-        dismiss.setOnClickListener { if (timerMode) finishAlarm(false) else startMessage() }
-        btn.setOnClickListener { finishAlarm(true) }
+        snooze.setOnClickListener { AlarmScheduler.snooze(this, alarm.id, snoozeMin); finishAlarm(false) }
+        findViewById<View>(R.id.btn_snooze_minus).setOnClickListener { snoozeMin = (snoozeMin - 5).coerceAtLeast(5); renderSnooze() }
+        findViewById<View>(R.id.btn_snooze_plus).setOnClickListener { snoozeMin = (snoozeMin + 5).coerceAtMost(30); renderSnooze() }
+        dismiss.onDismiss = { if (phase == Phase.RINGING) { if (timerMode) finishAlarm(false) else startMessage() } }
         enterRinging()
     }
 
@@ -128,11 +131,10 @@ class AlarmActivity : AppCompatActivity() {
     private fun enterRinging() {
         phase = Phase.RINGING
         orb.mode = OrbView.Mode.BREATHE
-        dismiss.visibility = View.VISIBLE
-        btn.visibility = View.GONE
+        ringControls.visibility = View.VISIBLE
         val canSnooze = !preview && !timerMode && alarm.snooze && AlarmScheduler.snoozesLeft(this) > 0
-        snooze.visibility = if (canSnooze) View.VISIBLE else View.INVISIBLE
-        snooze.text = "Snooze 5 min"
+        snoozeRow.visibility = if (canSnooze) View.VISIBLE else View.INVISIBLE
+        renderSnooze()
 
         val p = player ?: return
         p.repeatMode = Player.REPEAT_MODE_ONE
@@ -142,6 +144,8 @@ class AlarmActivity : AppCompatActivity() {
         p.prepare()
         if (alarm.ramp && !preview) rampVolume()
     }
+
+    private fun renderSnooze() { snooze.text = "Snooze $snoozeMin mins" }
 
     private fun rampVolume() {
         val steps = 20; val total = 10_000L
@@ -153,10 +157,7 @@ class AlarmActivity : AppCompatActivity() {
     // ---- MESSAGE ---------------------------------------------------------------------------
     private fun startMessage() {
         phase = Phase.MESSAGE
-        snooze.visibility = View.GONE
-        dismiss.visibility = View.GONE
-        btn.visibility = View.VISIBLE
-        btn.text = "I'm up"
+        ringControls.animate().alpha(0f).setDuration(250).withEndAction { ringControls.visibility = View.GONE }.start()
         orb.mode = OrbView.Mode.SPEAK
 
         val msg = if (alarm.message) (if (preview) MessageStore.peekNext(this) else MessageStore.pickForToday(this)) else null
@@ -228,7 +229,7 @@ class AlarmActivity : AppCompatActivity() {
         val text = if (alarm.brief) Brief.compose(this) else ""
         if (text.isBlank()) { enterDone(); return }
         sub.text = SimpleDateFormat("EEEE", Locale.getDefault()).format(Date())
-        briefView.text = text.replace("Phone down.", "").trim()
+        reveal = SentenceReveal(briefView, text.replace("Phone down.", "").trim())
         briefView.visibility = View.VISIBLE
         orb.layoutParams = orb.layoutParams.apply { width = dp(120); height = dp(120) }
 
@@ -253,6 +254,16 @@ class AlarmActivity : AppCompatActivity() {
         p.playWhenReady = true
         p.prepare()
         attachVisualizer(p.audioSessionId)
+        // reveal each sentence when playback reaches its share of the audio (by length)
+        val follow = object : Runnable {
+            override fun run() {
+                if (phase != Phase.BRIEF) return
+                val dur = p.duration
+                if (dur > 0) reveal?.showUpTo(p.currentPosition.toFloat() / dur)
+                ui.postDelayed(this, 100)
+            }
+        }
+        ui.post(follow)
         p.addListener(object : Player.Listener {
             override fun onPlaybackStateChanged(state: Int) { if (state == Player.STATE_ENDED && phase == Phase.BRIEF) { p.removeListener(this); enterDone() } }
             override fun onPlayerError(e: PlaybackException) { if (phase == Phase.BRIEF) { p.removeListener(this); speakWithPhone(Brief.compose(this@AlarmActivity)) } }
@@ -261,15 +272,24 @@ class AlarmActivity : AppCompatActivity() {
 
     private fun speakWithPhone(text: String) {
         attachVisualizer(0)   // session 0 = the phone's output mix, so the orb follows the TTS voice too
-        speaker = BriefSpeaker(this) { runOnUiThread { enterDone() } }.also { it.speak(text) }
+        speaker = BriefSpeaker(this, onSentence = { i -> runOnUiThread { reveal?.showIndex(i) } }) { runOnUiThread { enterDone() } }.also { it.speak(text) }
     }
 
     // ---- DONE ------------------------------------------------------------------------------
+    private var reveal: SentenceReveal? = null
+
+    /** Everything has been said: settle, then fade the screen out on its own. */
     private fun enterDone() {
+        if (phase == Phase.DONE) return
         phase = Phase.DONE
+        reveal?.showAll()
         orb.mode = OrbView.Mode.STILL
-        btn.text = if (preview) "Close" else "I'm up"
         if (!preview) Brief.clearIntention(this)
+        val hold = if (reveal != null) 4_000L else 1_500L
+        ui.postDelayed({
+            findViewById<View>(R.id.alarm_root).animate().alpha(0f).setDuration(900)
+                .withEndAction { finishAlarm(!preview) }.start()
+        }, hold)
     }
 
     private fun finishAlarm(realDismiss: Boolean) {

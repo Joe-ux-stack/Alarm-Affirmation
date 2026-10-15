@@ -62,6 +62,7 @@ class MessagesActivity : AppCompatActivity() {
         findViewById<Button>(R.id.rec_cancel).setOnClickListener { stopRecording(save = false) }
         findViewById<Button>(R.id.rec_stop).setOnClickListener { stopRecording(save = true) }
 
+        findViewById<View>(R.id.row_plan).setOnClickListener { startActivity(Intent(this, EveningPlanActivity::class.java)) }
         findViewById<View>(R.id.row_phonedown).setOnClickListener { startActivity(Intent(this, PhoneDownActivity::class.java)) }
         findViewById<View>(R.id.row_permissions).setOnClickListener { startActivity(Intent(this, SetupActivity::class.java)) }
         findViewById<View>(R.id.row_test).setOnClickListener {
@@ -108,6 +109,7 @@ class MessagesActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume(); refresh(); renderVoiceRows()
+        findViewById<TextView>(R.id.txt_plan_setting).text = if (EveningPlan.isOn(this)) EveningPlan.hour(this).let { h -> "%d:%02d %s".format(if (h % 12 == 0) 12 else h % 12, EveningPlan.minute(this), if (h < 12) "am" else "pm") } else "Off"
         findViewById<TextView>(R.id.txt_phonedown).text = if (PhoneDown.isEnabled(this)) "${PhoneDown.limitMin(this)} min" else "Off"
     }
 

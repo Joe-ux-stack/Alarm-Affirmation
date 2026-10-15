@@ -80,12 +80,14 @@ object AlarmStore {
         write(c, list)
         AlarmScheduler.reschedule(c)
         BriefAudio.scheduleAll(c)
+        EveningPlan.schedule(c)
     }
 
     fun delete(c: Context, id: String) {
         write(c, all(c).filter { it.id != id })
         AlarmScheduler.reschedule(c)
         BriefAudio.scheduleAll(c)
+        EveningPlan.schedule(c)
     }
 
     fun setEnabled(c: Context, id: String, on: Boolean) {

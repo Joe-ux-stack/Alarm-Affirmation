@@ -111,6 +111,13 @@
 
         <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginTop="36dp" android:background="#15181F" />
 
+        <LinearLayout android:id="@+id/row_plan" style="@style/Row" android:background="?android:attr/selectableItemBackground">
+            <TextView style="@style/RowLabel" android:textSize="14sp" android:text="Evening plan" />
+            <TextView android:id="@+id/txt_plan_setting" style="@style/RowValue" android:textSize="14sp" android:text="9:00 pm" />
+            <ImageView android:layout_width="18dp" android:layout_height="18dp" android:layout_marginStart="8dp" android:src="@drawable/ic_chevron" android:tint="#7A8294" android:importantForAccessibility="no" />
+        </LinearLayout>
+        <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#15181F" />
+
         <LinearLayout android:id="@+id/row_phonedown" style="@style/Row" android:background="?android:attr/selectableItemBackground">
             <TextView style="@style/RowLabel" android:textSize="14sp" android:text="Phone down" />
             <TextView android:id="@+id/txt_phonedown" style="@style/RowValue" android:textSize="14sp" android:text="Off" />

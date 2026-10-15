@@ -104,13 +104,7 @@ class MainActivity : AppCompatActivity() {
                 startActivity(Intent(this, AlarmDetailActivity::class.java).putExtra(AlarmDetailActivity.EXTRA_ID, a.id))
             }
 
-            if (a.brief && a.enabled) {
-                plan.visibility = View.VISIBLE
-                val intention = Brief.intention(this)
-                planText.text = if (intention.isBlank()) "Plan tomorrow" else intention
-                planText.setTextColor(if (intention.isBlank()) 0xFF7A8294.toInt() else 0xFFF2F4F8.toInt())
-                plan.setOnClickListener { PlanSheet.show(this) { refresh() } }
-            }
+            plan.visibility = View.GONE
             list.addView(v)
         }
 

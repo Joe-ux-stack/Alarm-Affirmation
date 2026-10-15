@@ -22,6 +22,7 @@ class App : Application(), androidx.work.Configuration.Provider {
         }
         try { VoiceWarmup.start(this) } catch (_: Throwable) {}
         try { GuardService.start(this) } catch (_: Throwable) {}
+        try { EveningPlan.schedule(this) } catch (_: Throwable) {}
     }
     companion object {
         fun lastCrash(ctx: android.content.Context): String? = File(ctx.filesDir, "last_crash.txt").takeIf { it.exists() }?.readText()

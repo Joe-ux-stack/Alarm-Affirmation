@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/alarm_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#000000">
@@ -11,7 +12,7 @@
         android:gravity="center_horizontal"
         android:orientation="vertical"
         android:paddingStart="12dp"
-        android:paddingTop="88dp"
+        android:paddingTop="80dp"
         android:paddingEnd="12dp">
 
         <TextView
@@ -35,78 +36,83 @@
 
         <com.whynotyou.alarm.OrbView
             android:id="@+id/orb"
-            android:layout_width="240dp"
-            android:layout_height="240dp"
-            android:layout_marginTop="64dp" />
+            android:layout_width="220dp"
+            android:layout_height="220dp"
+            android:layout_marginTop="40dp" />
 
         <TextView
             android:id="@+id/txt_brief"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
-            android:lineSpacingExtra="8dp"
+            android:layout_marginTop="28dp"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:lineSpacingExtra="10dp"
             android:text=""
             android:textColor="#F2F4F8"
-            android:textSize="22sp"
+            android:textSize="24sp"
             android:textStyle="bold"
             android:visibility="gone" />
     </LinearLayout>
 
     <LinearLayout
+        android:id="@+id/ring_controls"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         android:gravity="center_horizontal"
         android:orientation="vertical"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
-        android:paddingBottom="48dp">
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="28dp">
 
-        <TextView
-            android:id="@+id/txt_phone_down"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:text="Phone down."
-            android:textColor="#F2F4F8"
-            android:textSize="32sp"
-            android:textStyle="bold"
-            android:visibility="gone" />
-
-        <ImageButton
+        <com.whynotyou.alarm.SwipeDismissView
             android:id="@+id/btn_dismiss"
-            android:layout_width="104dp"
-            android:layout_height="104dp"
-            android:layout_marginBottom="40dp"
-            android:background="@drawable/bg_circle_dismiss"
-            android:contentDescription="Stop"
-            android:padding="34dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/ic_close"
-            android:tint="#F2F4F8" />
+            android:layout_width="232dp"
+            android:layout_height="232dp"
+            android:contentDescription="Swipe to stop"
+            android:layout_marginBottom="20dp" />
 
-        <Button
-            android:id="@+id/btn_main"
+        <LinearLayout
+            android:id="@+id/row_snooze"
             android:layout_width="match_parent"
-            android:layout_height="72dp"
-            android:backgroundTint="#F2F4F8"
-            android:text="Stop"
-            android:textAllCaps="false"
-            android:textColor="#000000"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            app:cornerRadius="36dp" />
-
-        <Button
-            android:id="@+id/btn_snooze"
-            android:layout_width="match_parent"
-            android:layout_height="64dp"
-            android:backgroundTint="#15181F"
-            android:text="Snooze 5 min"
-            android:textAllCaps="false"
-            android:textColor="#F2F4F8"
-            android:textSize="17sp"
-            android:textStyle="bold"
-            app:cornerRadius="32dp" />
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+            <ImageButton
+                android:id="@+id/btn_snooze_minus"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:background="@drawable/bg_circle_secondary"
+                android:contentDescription="Less"
+                android:padding="16dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_minus"
+                android:tint="#B8BFCC" />
+            <Button
+                android:id="@+id/btn_snooze"
+                android:layout_width="0dp"
+                android:layout_height="64dp"
+                android:layout_marginStart="10dp"
+                android:layout_marginEnd="10dp"
+                android:layout_weight="1"
+                android:backgroundTint="#15181F"
+                android:text="Snooze 5 mins"
+                android:textAllCaps="false"
+                android:textColor="#F2F4F8"
+                android:textSize="17sp"
+                android:textStyle="bold"
+                app:cornerRadius="32dp" />
+            <ImageButton
+                android:id="@+id/btn_snooze_plus"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:background="@drawable/bg_circle_secondary"
+                android:contentDescription="More"
+                android:padding="16dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_plus"
+                android:tint="#B8BFCC" />
+        </LinearLayout>
     </LinearLayout>
 </FrameLayout>
