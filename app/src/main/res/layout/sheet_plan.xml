@@ -4,9 +4,9 @@
     android:layout_height="wrap_content"
     android:background="#0B0D12"
     android:orientation="vertical"
-    android:paddingStart="20dp"
+    android:paddingStart="12dp"
     android:paddingTop="28dp"
-    android:paddingEnd="20dp"
+    android:paddingEnd="12dp"
     android:paddingBottom="36dp">
 
     <TextView

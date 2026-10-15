@@ -34,6 +34,8 @@ class SetupActivity : AppCompatActivity() {
             startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
         }
         findViewById<Button>(R.id.btn_continue).setOnClickListener { finish() }
+        info(R.id.info_notif, R.id.txt_notif); info(R.id.info_exact, R.id.txt_exact)
+        info(R.id.info_battery, R.id.txt_battery); info(R.id.info_overlay, R.id.txt_overlay)
     }
 
     override fun onResume() {
@@ -47,8 +49,13 @@ class SetupActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btn_continue).apply {
             isEnabled = all
             alpha = if (all) 1f else 0.4f
-            text = if (all) "All set — continue" else "${Permissions.missingCount(this@SetupActivity)} left"
+            text = if (all) "Continue" else "${Permissions.missingCount(this@SetupActivity)} left"
         }
+    }
+
+    private fun info(btn: Int, txt: Int) {
+        val t = findViewById<View>(txt)
+        findViewById<View>(btn).setOnClickListener { t.visibility = if (t.visibility == View.VISIBLE) View.GONE else View.VISIBLE }
     }
 
     private fun row(rowId: Int, btnId: Int, tickId: Int, ok: Boolean) {
