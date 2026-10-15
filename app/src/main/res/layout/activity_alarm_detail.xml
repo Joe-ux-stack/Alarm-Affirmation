@@ -92,6 +92,15 @@
             </LinearLayout>
             <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#15181F" />
 
+            <LinearLayout android:id="@+id/row_tomorrow" style="@style/Row" android:background="?android:attr/selectableItemBackground">
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Tomorrow I will" android:textColor="#F2F4F8" android:textSize="16sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/txt_tomorrow" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="Add a line" android:textColor="#7A8294" android:textSize="14sp" />
+                </LinearLayout>
+                <ImageView android:layout_width="18dp" android:layout_height="18dp" android:src="@drawable/ic_chevron" android:tint="#7A8294" android:importantForAccessibility="no" />
+            </LinearLayout>
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#15181F" />
+
             <LinearLayout android:id="@+id/row_voice" style="@style/Row" android:background="?android:attr/selectableItemBackground">
                 <TextView style="@style/RowLabel" android:text="Voice" />
                 <TextView android:id="@+id/txt_voice" style="@style/RowValue" android:text="Sky" />
@@ -100,6 +109,7 @@
             <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#15181F" />
 
             <Button
+            android:letterSpacing="0"
                 android:id="@+id/btn_delete"
                 style="@style/TextButton"
                 android:layout_width="wrap_content"
@@ -121,6 +131,7 @@
         android:paddingEnd="12dp"
         android:paddingBottom="32dp">
         <Button
+            android:letterSpacing="0"
             android:id="@+id/btn_cancel"
             style="@style/OutlineButton"
             android:layout_width="0dp"
@@ -129,6 +140,7 @@
             android:layout_weight="1"
             android:text="Cancel" />
         <Button
+            android:letterSpacing="0"
             android:id="@+id/btn_save"
             style="@style/PrimaryButton"
             android:layout_width="0dp"

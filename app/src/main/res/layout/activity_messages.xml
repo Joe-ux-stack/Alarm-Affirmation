@@ -89,12 +89,15 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
                 android:orientation="horizontal">
-                <Button android:id="@+id/rec_cancel" style="@style/OutlineButton" android:layout_width="0dp" android:layout_weight="1" android:layout_marginEnd="6dp" android:text="Cancel" />
-                <Button android:id="@+id/rec_stop" style="@style/PrimaryButton" android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="1" android:layout_marginStart="6dp" android:text="Stop" />
+                <Button
+            android:letterSpacing="0" android:id="@+id/rec_cancel" style="@style/OutlineButton" android:layout_width="0dp" android:layout_weight="1" android:layout_marginEnd="6dp" android:text="Cancel" />
+                <Button
+            android:letterSpacing="0" android:id="@+id/rec_stop" style="@style/PrimaryButton" android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="1" android:layout_marginStart="6dp" android:text="Stop" />
             </LinearLayout>
         </LinearLayout>
 
         <Button
+            android:letterSpacing="0"
             android:id="@+id/btn_record"
             style="@style/PrimaryButton"
             android:layout_marginTop="28dp"
@@ -104,6 +107,7 @@
             android:text="Record a message" />
 
         <Button
+            android:letterSpacing="0"
             android:id="@+id/btn_import"
             style="@style/OutlineButton"
             android:layout_marginTop="10dp"

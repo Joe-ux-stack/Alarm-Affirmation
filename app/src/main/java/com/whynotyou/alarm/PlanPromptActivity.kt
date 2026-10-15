@@ -36,12 +36,12 @@ class PlanPromptActivity : AppCompatActivity() {
         root.addView(android.view.View(this), LinearLayout.LayoutParams(-1, 0, 1f))
 
         val start = MaterialButton(this).apply {
-            text = "Start"; isAllCaps = false; textSize = 18f; setTextColor(0xFF000000.toInt())
+            text = "Start"; isAllCaps = false; letterSpacing = 0f; typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL); textSize = 18f; setTextColor(0xFF000000.toInt())
             backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFF2F4F8.toInt()); cornerRadius = dp(32)
             setOnClickListener { PlanSheet.show(this@PlanPromptActivity) { finish() } }
         }
         val later = MaterialButton(this).apply {
-            text = "Later"; isAllCaps = false; textSize = 16f; setTextColor(0xFFB8BFCC.toInt())
+            text = "Later"; isAllCaps = false; letterSpacing = 0f; typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL); textSize = 16f; setTextColor(0xFFB8BFCC.toInt())
             backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF15181F.toInt()); cornerRadius = dp(28)
             setOnClickListener {
                 val opts = intArrayOf(15, 30, 60)
@@ -50,7 +50,7 @@ class PlanPromptActivity : AppCompatActivity() {
             }
         }
         val skip = MaterialButton(this, null, com.google.android.material.R.attr.borderlessButtonStyle).apply {
-            text = "Skip tonight"; isAllCaps = false; textSize = 15f; setTextColor(0xFF7A8294.toInt())
+            text = "Skip tonight"; isAllCaps = false; letterSpacing = 0f; typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL); textSize = 15f; setTextColor(0xFF7A8294.toInt())
             setOnClickListener { finish() }
         }
         root.addView(start, LinearLayout.LayoutParams(-1, dp(64)))

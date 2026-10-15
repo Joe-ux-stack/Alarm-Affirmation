@@ -90,6 +90,7 @@
                 android:src="@drawable/ic_minus"
                 android:tint="#B8BFCC" />
             <Button
+            android:letterSpacing="0"
                 android:id="@+id/btn_snooze"
                 android:layout_width="0dp"
                 android:layout_height="64dp"
@@ -101,7 +102,7 @@
                 android:textAllCaps="false"
                 android:textColor="#F2F4F8"
                 android:textSize="17sp"
-                android:textStyle="bold"
+                android:fontFamily="sans-serif-medium"
                 app:cornerRadius="32dp" />
             <ImageButton
                 android:id="@+id/btn_snooze_plus"

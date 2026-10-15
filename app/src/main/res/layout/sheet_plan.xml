@@ -67,6 +67,7 @@
         android:textStyle="bold" />
 
     <Button
+            android:letterSpacing="0"
         android:id="@+id/btn_done"
         style="@style/PrimaryButton"
         android:layout_marginTop="28dp"

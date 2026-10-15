@@ -43,6 +43,7 @@
         android:thumbTint="#F2F4F8" />
 
     <Button
+            android:letterSpacing="0"
         android:id="@+id/btn_done"
         style="@style/PrimaryButton"
         android:layout_marginTop="28dp"

@@ -56,8 +56,11 @@ object Envelope {
     } catch (e: Throwable) { null }
 
     /** Scale so speech peaks reach ~1 and quiet passages stay low (95th percentile as the ceiling). */
-    private fun normalise(a: FloatArray): FloatArray {
-        if (a.isEmpty()) return a
+    private fun normalise(raw: FloatArray): FloatArray {
+        if (raw.isEmpty()) return raw
+        // music is loud all the time: subtract a slow (~0.6 s) average so beats and syllables stand out
+        val a = FloatArray(raw.size); var slow = raw[0]
+        for (i in raw.indices) { slow += (raw[i] - slow) * 0.033f; a[i] = (raw[i] - 0.75f * slow).coerceAtLeast(0f) }
         val sorted = a.sortedArray()
         val ceil = sorted[(sorted.size * 0.95).toInt().coerceAtMost(sorted.size - 1)].coerceAtLeast(0.01f)
         val floor = sorted[(sorted.size * 0.10).toInt()]

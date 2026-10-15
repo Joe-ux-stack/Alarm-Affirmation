@@ -122,7 +122,7 @@ class GuardService : Service() {
 
         val bottom = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), 0, dp(12), dp(48)) }
         val close = MaterialButton(this).apply {
-            text = "Put it down"; isAllCaps = false; textSize = 18f; setTextColor(0xFF000000.toInt())
+            text = "Put it down"; isAllCaps = false; letterSpacing = 0f; typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL); textSize = 18f; setTextColor(0xFF000000.toInt())
             backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFF2F4F8.toInt()); cornerRadius = dp(32)
             setOnClickListener {
                 sessionMs = 0L; removeOverlay()
@@ -130,7 +130,7 @@ class GuardService : Service() {
             }
         }
         val more = MaterialButton(this).apply {
-            text = "5 more minutes"; isAllCaps = false; textSize = 16f; setTextColor(0xFFB8BFCC.toInt())
+            text = "5 more minutes"; isAllCaps = false; letterSpacing = 0f; typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL); textSize = 16f; setTextColor(0xFFB8BFCC.toInt())
             backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF15181F.toInt()); cornerRadius = dp(28)
             setOnClickListener { snoozeUntil = System.currentTimeMillis() + 5 * 60_000L; removeOverlay() }
         }

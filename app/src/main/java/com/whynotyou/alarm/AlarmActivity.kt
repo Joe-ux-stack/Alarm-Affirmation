@@ -144,6 +144,8 @@ class AlarmActivity : AppCompatActivity() {
         p.playWhenReady = true
         p.prepare()
         if (alarm.ramp && !preview) rampVolume()
+        orb.mode = OrbView.Mode.SPEAK
+        followFile(song ?: Uri.parse("android.resource://$packageName/${R.raw.chime}"), Phase.RINGING)
     }
 
     private fun renderSnooze() { snooze.text = "Snooze $snoozeMin mins" }

@@ -8,7 +8,7 @@
     android:paddingStart="20dp"
     android:paddingTop="20dp"
     android:paddingEnd="20dp"
-    android:paddingBottom="12dp">
+    android:paddingBottom="20dp">
 
     <LinearLayout
         android:id="@+id/row_main"

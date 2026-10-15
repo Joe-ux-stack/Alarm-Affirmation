@@ -38,7 +38,7 @@ class OrbView @JvmOverloads constructor(context: Context, attrs: AttributeSet? =
     private val ticker = ValueAnimator.ofFloat(0f, 1f).apply {
         duration = 1000; repeatCount = ValueAnimator.INFINITE; interpolator = LinearInterpolator()
         addUpdateListener {
-            t += 1f / 60f
+            t += (1f / 60f) * (if (mode == Mode.SPEAK) 0.6f + 2.4f * level else 1f)
             level += (targetLevel - level) * (if (targetLevel > level) 0.8f else 0.3f)
             invalidate()
         }

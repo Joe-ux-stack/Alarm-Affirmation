@@ -61,6 +61,8 @@ class AlarmDetailActivity : AppCompatActivity() {
         bind(R.id.sw_snooze, alarm.snooze) { alarm.snooze = it }
         bind(R.id.sw_message, alarm.message) { alarm.message = it }
         bind(R.id.sw_brief, alarm.brief) { alarm.brief = it }
+        renderTomorrow()
+        findViewById<View>(R.id.row_tomorrow).setOnClickListener { PlanSheet.show(this) { renderTomorrow() } }
         val soundLabel = findViewById<TextView>(R.id.txt_sound)
         soundLabel.text = if (alarm.hasCustomSound(this)) alarm.soundName else "Chime"
         findViewById<View>(R.id.row_sound).setOnClickListener {
@@ -105,6 +107,13 @@ class AlarmDetailActivity : AppCompatActivity() {
                 else android.widget.Toast.makeText(this, "Couldn't use that file", android.widget.Toast.LENGTH_SHORT).show()
             }
         }.start()
+    }
+
+    private fun renderTomorrow() {
+        val t = findViewById<TextView>(R.id.txt_tomorrow)
+        val i = Brief.intention(this)
+        t.text = if (i.isBlank()) "Add a line · asked at ${EveningPlan.hour(this).let { h -> "%d:%02d %s".format(if (h % 12 == 0) 12 else h % 12, EveningPlan.minute(this), if (h < 12) "am" else "pm") }}" else i
+        t.setTextColor(if (i.isBlank()) 0xFF7A8294.toInt() else 0xFFF2F4F8.toInt())
     }
 
     private fun bind(id: Int, value: Boolean, set: (Boolean) -> Unit) {

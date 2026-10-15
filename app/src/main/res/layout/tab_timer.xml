@@ -62,6 +62,7 @@
         </LinearLayout>
 
         <Button
+            android:letterSpacing="0"
             android:id="@+id/timer_start"
             android:layout_width="120dp"
             android:layout_height="120dp"
@@ -71,7 +72,7 @@
             android:textAllCaps="false"
             android:textColor="#000000"
             android:textSize="18sp"
-            android:textStyle="bold" />
+            android:fontFamily="sans-serif-medium" />
     </LinearLayout>
 
     <!-- Running state -->
@@ -103,8 +104,10 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal">
-            <Button android:id="@+id/timer_cancel" style="@style/BigRoundOutline" android:text="Cancel" />
-            <Button android:id="@+id/timer_pause" style="@style/BigRoundAmber" android:layout_marginStart="48dp" android:text="Pause" />
+            <Button
+            android:letterSpacing="0" android:id="@+id/timer_cancel" style="@style/BigRoundOutline" android:text="Cancel" />
+            <Button
+            android:letterSpacing="0" android:id="@+id/timer_pause" style="@style/BigRoundAmber" android:layout_marginStart="48dp" android:text="Pause" />
         </LinearLayout>
     </LinearLayout>
 </FrameLayout>
