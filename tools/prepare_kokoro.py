@@ -18,7 +18,8 @@ shutil.copy(f"{src}/tokens.txt", dst)
 shutil.copy(f"{src}/lexicon-us-en.txt", f"{dst}/lexicon.txt")
 open(f"{dst}/voices.txt", "w").write("\n".join(KEEP) + "\n")
 
-sys.path.insert(0, os.path.dirname(__file__))
+os.environ["KOKORO_DIR"] = src
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import kokoro_tts
 tts = kokoro_tts.Kokoro(src, model=os.environ.get("KOKORO_MODEL", f"{src}/model.int8.onnx"))
 for k in KEEP:

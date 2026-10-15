@@ -51,7 +51,8 @@ jobs:
       - name: Build Kokoro asset bundle (voices, lexicon, testers — no model)
         run: |
           pip install -q numpy onnxruntime
-          python3 tools/prepare_kokoro.py kokoro-int8-multi-lang-v1_0 app/src/main/assets/kokoro
+          python3 -u tools/prepare_kokoro.py kokoro-int8-multi-lang-v1_0 app/src/main/assets/kokoro 2>&1 | tee bundle.log
+          test -f app/src/main/assets/kokoro/preview/af_sky.m4a
           du -sh app/src/main/assets/kokoro
 
       - uses: gradle/actions/setup-gradle@v5
@@ -74,6 +75,7 @@ jobs:
           git init -q -b build-errors
           git config user.name "github-actions"; git config user.email "actions@github.com"
           cp "$GITHUB_WORKSPACE/build-errors.txt" . 2>/dev/null || echo "no errors captured" > build-errors.txt
+          cp "$GITHUB_WORKSPACE/bundle.log" . 2>/dev/null || true
           tail -c 200000 "$GITHUB_WORKSPACE/build.log" > build-tail.log 2>/dev/null || true
           git add -A && git commit -q -m "build errors for ${GITHUB_SHA::7}"
           git push -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" build-errors
