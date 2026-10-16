@@ -69,7 +69,8 @@ class AlarmDetailActivity : AppCompatActivity() {
         findViewById<View>(R.id.row_vibration).setOnClickListener {
             val ids = listOf("pulse", "heartbeat", "steady", "gentle")
             val opts = listOf("Pulse" to "Short buzz, pause, repeat", "Heartbeat" to "Two quick buzzes", "Steady" to "One long buzz", "Gentle" to "Starts soft, gets stronger")
-            Sheet.pick(this, "Vibration", opts, ids.indexOf(alarm.vibePattern).coerceAtLeast(0)) { i -> alarm.vibePattern = ids[i]; renderVibe() }
+            Sheet.pick(this, "Vibration", opts, ids.indexOf(alarm.vibePattern).coerceAtLeast(0),
+                onTap = { i -> Preview.vibrate(this, ids[i]) }) { i -> alarm.vibePattern = ids[i]; renderVibe() }
         }
         val soundLabel = findViewById<TextView>(R.id.txt_sound)
         soundLabel.text = if (alarm.hasCustomSound(this)) alarm.soundName else "Chime"
@@ -78,7 +79,13 @@ class AlarmDetailActivity : AppCompatActivity() {
             if (alarm.hasCustomSound(this)) opts.add(alarm.soundName to "From your music")
             opts.add("Choose a file…" to "Songs or recordings on your phone")
             val sel = if (alarm.hasCustomSound(this) && alarm.soundName.isNotEmpty()) 1 else 0
-            Sheet.pick(this, "Sound", opts, sel) { i ->
+            Sheet.pick(this, "Sound", opts, sel, onTap = { i ->
+                when {
+                    i == 0 -> Preview.sound(this, android.net.Uri.parse("android.resource://$packageName/${R.raw.chime}"))
+                    i < opts.size - 1 && alarm.hasCustomSound(this) -> Preview.sound(this, android.net.Uri.fromFile(alarm.soundFile(this)))
+                    else -> Preview.stop()
+                }
+            }) { i ->
                 when {
                     i == 0 -> { alarm.soundName = ""; soundLabel.text = "Chime" }
                     i == opts.size - 1 -> pickSound.launch(arrayOf("audio/*"))

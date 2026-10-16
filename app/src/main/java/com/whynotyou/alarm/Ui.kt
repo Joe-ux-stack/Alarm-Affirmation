@@ -126,7 +126,7 @@ object Sheet {
     }
 
     /** A list of choices with radio dots. Tapping picks; Done (or tapping) applies. */
-    fun pick(a: Activity, title: String, options: List<Pair<String, String?>>, selected: Int, sub: String? = null, onPick: (Int) -> Unit) {
+    fun pick(a: Activity, title: String, options: List<Pair<String, String?>>, selected: Int, sub: String? = null, onTap: ((Int) -> Unit)? = null, onPick: (Int) -> Unit) {
         var sel = selected
         val list = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL }
         fun render() {
@@ -135,7 +135,7 @@ object Sheet {
                 val row = LinearLayout(a).apply {
                     orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; minimumHeight = Ui.dp(a, 56)
                     setPadding(0, Ui.dp(a, 10), 0, Ui.dp(a, 10)); isClickable = true
-                    setOnClickListener { sel = i; render() }
+                    setOnClickListener { sel = i; render(); onTap?.invoke(i) }
                 }
                 val col = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL }
                 col.addView(Ui.text(a, label, 16f).apply { typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL) })
@@ -147,6 +147,47 @@ object Sheet {
             }
         }
         render()
-        show(a, title, sub, list) { onPick(sel) }
+        show(a, title, sub, list) { onPick(sel) }.setOnDismissListener { Preview.stop() }
+    }
+}
+
+/** Short previews when you tap a choice: a vibration pattern or a sound plays for a few seconds. */
+object Preview {
+    private var player: android.media.MediaPlayer? = null
+    private var vib: android.os.Vibrator? = null
+    private val ui = android.os.Handler(android.os.Looper.getMainLooper())
+    private val stopper = Runnable { stop() }
+
+    fun pattern(id: String): Pair<LongArray, Int> = when (id) {
+        "heartbeat" -> longArrayOf(0, 120, 120, 120, 900) to 0
+        "steady" -> longArrayOf(0, 1500, 400) to 0
+        "gentle" -> longArrayOf(0, 200, 1400, 300, 1200, 450, 1000, 600, 800) to 7
+        else -> longArrayOf(0, 500, 1000) to 0
+    }
+
+    fun vibrate(c: Context, id: String, ms: Long = 3500) {
+        stop()
+        val v = if (android.os.Build.VERSION.SDK_INT >= 31) (c.getSystemService(android.os.VibratorManager::class.java)).defaultVibrator
+                else @Suppress("DEPRECATION") c.getSystemService(Context.VIBRATOR_SERVICE) as android.os.Vibrator
+        val (wave, rep) = pattern(id)
+        try { v.vibrate(android.os.VibrationEffect.createWaveform(wave, rep)) } catch (_: Throwable) {}
+        vib = v; ui.postDelayed(stopper, ms)
+    }
+
+    fun sound(c: Context, uri: android.net.Uri, ms: Long = 5000) {
+        stop()
+        try {
+            player = android.media.MediaPlayer().apply {
+                setAudioAttributes(android.media.AudioAttributes.Builder().setUsage(android.media.AudioAttributes.USAGE_ALARM).setContentType(android.media.AudioAttributes.CONTENT_TYPE_MUSIC).build())
+                setDataSource(c, uri); setOnPreparedListener { it.start() }; prepareAsync()
+            }
+        } catch (_: Throwable) { player = null }
+        ui.postDelayed(stopper, ms)
+    }
+
+    fun stop() {
+        ui.removeCallbacks(stopper)
+        try { vib?.cancel() } catch (_: Throwable) {}; vib = null
+        try { player?.stop() } catch (_: Throwable) {}; player?.release(); player = null
     }
 }
