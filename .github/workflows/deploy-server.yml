@@ -58,7 +58,9 @@ jobs:
           RTDN_SECRET: ${{ secrets.RTDN_SECRET }}
         run: |
           for k in GOOGLE_CLIENT_SECRET PRO_EMAILS PLAY_SERVICE_ACCOUNT_JSON RTDN_SECRET; do
-            v="${!k}"; [ -n "$v" ] && printf '%s' "$v" | npx wrangler secret put "$k" >/dev/null && echo "set $k"
+            v="${!k}"
+            if [ -n "$v" ]; then printf '%s' "$v" | npx wrangler secret put "$k" >/dev/null && echo "::notice title=secret::set $k" || { echo "::error title=secret::failed $k"; exit 1; }
+            else echo "::notice title=secret::skipped $k (not set)"; fi
           done
       - name: Smoke test
         if: steps.gate.outputs.ok
