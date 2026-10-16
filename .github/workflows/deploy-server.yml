@@ -11,12 +11,11 @@ jobs:
     defaults: { run: { working-directory: server } }
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v4
       - name: Skip until Cloudflare secrets exist
         id: gate
-        run: if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ]; then echo ok=1 >> $GITHUB_OUTPUT; else echo "::warning::Add CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets"; fi
+        run: if [ -n "$CLOUDFLARE_API_TOKEN" ]; then echo ok=1 >> $GITHUB_OUTPUT; else echo "::warning::Add the CLOUDFLARE_API_TOKEN secret"; fi
       - uses: actions/setup-node@v4
         if: steps.gate.outputs.ok
         with: { node-version: 22 }
