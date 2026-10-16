@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Build the small Kokoro asset bundle (no model!) from the sherpa-onnx int8 package.
 Usage: prepare_kokoro.py <extracted kokoro-int8-multi-lang-v1_0 dir> <output dir>
-Ships: voices.bin trimmed to our 7 voices, tokens.txt, lexicon.txt, and preview/<voice>.m4a testers
+Ships: voices.bin with the English voices, tokens.txt, lexicon.txt, and preview/<voice>.m4a testers
 rendered here with the full pipeline (tools/kokoro_tts.py). The model itself is downloaded by the app."""
 import sys, os, shutil, subprocess, numpy as np
 
-KEEP = ["af_sky", "af_heart", "af_alloy", "af_nova", "bf_emma", "bm_fable", "bm_lewis"]
-ALL_IDX = {"af_sky": 10, "af_heart": 3, "af_alloy": 0, "af_nova": 7, "bf_emma": 21, "bm_fable": 25, "bm_lewis": 27}
+KEEP = ['af_sky', 'af_heart', 'af_alloy', 'af_nova', 'bf_emma', 'bm_fable', 'bm_lewis', 'af_aoede', 'af_bella', 'af_jessica', 'af_kore', 'af_nicole', 'af_river', 'af_sarah', 'am_adam', 'am_echo', 'am_eric', 'am_fenrir', 'am_liam', 'am_michael', 'am_onyx', 'am_puck', 'bf_alice', 'bf_isabella', 'bf_lily', 'bm_daniel', 'bm_george']
+ALL_IDX = {'af_sky': 10, 'af_heart': 3, 'af_alloy': 0, 'af_nova': 7, 'bf_emma': 21, 'bm_fable': 25, 'bm_lewis': 27, 'af_aoede': 1, 'af_bella': 2, 'af_jessica': 4, 'af_kore': 5, 'af_nicole': 6, 'af_river': 8, 'af_sarah': 9, 'am_adam': 11, 'am_echo': 12, 'am_eric': 13, 'am_fenrir': 14, 'am_liam': 15, 'am_michael': 16, 'am_onyx': 17, 'am_puck': 18, 'bf_alice': 20, 'bf_isabella': 22, 'bf_lily': 23, 'bm_daniel': 24, 'bm_george': 26}
 SAMPLE = "Good morning. It's Thursday. Standup at ten, lunch at twelve thirty. You've handled harder."
 src, dst = sys.argv[1], sys.argv[2]
 os.makedirs(f"{dst}/preview", exist_ok=True)

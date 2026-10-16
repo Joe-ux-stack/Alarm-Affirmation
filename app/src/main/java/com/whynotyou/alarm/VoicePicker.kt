@@ -16,12 +16,7 @@ object VoicePicker {
     private const val SAMPLE = VoiceWarmup.SAMPLE
 
     fun show(a: Activity, current: String, onPick: (String) -> Unit) {
-        val dialog = BottomSheetDialog(a, R.style.SheetDark)
-        val root = LinearLayout(a).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundColor(0xFF0D1430.toInt())
-            setPadding(dp(a, 28), dp(a, 24), dp(a, 28), dp(a, 36))
-        }
+        var sel = current
         var player: MediaPlayer? = null
         var speaker: BriefSpeaker? = null
         var playingBtn: ImageButton? = null
@@ -31,50 +26,55 @@ object VoicePicker {
             playingBtn?.setImageResource(R.drawable.ic_play); playingBtn = null
         }
 
-        for (v in VoiceEngine.voices) {
-            val row = LinearLayout(a).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(0, dp(a, 12), 0, dp(a, 12)) }
-            val play = ImageButton(a).apply {
-                setImageResource(R.drawable.ic_play); setColorFilter(0xFFF2F4F8.toInt())
-                setBackgroundResource(R.drawable.bg_circle_outline)
-                layoutParams = LinearLayout.LayoutParams(dp(a, 44), dp(a, 44)).apply { marginEnd = dp(a, 14) }
-                contentDescription = "Play ${v.name}"
-            }
-            val col = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL; layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f) }
-            col.addView(TextView(a).apply { text = v.name; textSize = 17f; setTextColor(0xFFF2F4F8.toInt()); setTypeface(typeface, android.graphics.Typeface.BOLD) })
-            val sub = TextView(a).apply { text = "${v.region} · ${v.sex}"; textSize = 13f; setTextColor(0xFF8A93A8.toInt()) }
-            col.addView(sub)
-            val tick = TextView(a).apply {
-                text = "\u2713"; textSize = 20f; setTextColor(0xFFF2F4F8.toInt())
-                visibility = if (v.id == current) View.VISIBLE else View.INVISIBLE
-                setPadding(dp(a, 12), 0, 0, 0)
-            }
-            play.setOnClickListener {
-                if (playingBtn === play) { stop(); return@setOnClickListener }
-                stop()
-                val f = VoiceWarmup.previewFile(a, v.id)
-                play.setImageResource(R.drawable.ic_stop); playingBtn = play
-                if (!f.exists() || f.length() < 1000) {
-                    // no bundled tester (dev build): phone voice reads the sample
-                    speaker = BriefSpeaker(a) { a.runOnUiThread { if (playingBtn === play) stop() } }.also { it.speak(SAMPLE) }
-                    return@setOnClickListener
+        val list = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL }
+        val radios = HashMap<String, android.widget.FrameLayout>()
+        fun renderRadios() = radios.forEach { (id, holder) -> holder.removeAllViews(); holder.addView(Ui.radio(a, id == sel)) }
+
+        for ((group, region) in listOf("American" to "US", "British" to "UK")) {
+            list.addView(Ui.caption(a, group, if (region == "US") 8 else 24))
+            val vs = VoiceEngine.voices.filter { it.region == region }.sortedWith(compareBy({ it.sex }, { it.name }))
+            vs.forEachIndexed { i, v ->
+                val row = LinearLayout(a).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; minimumHeight = dp(a, 56); setPadding(0, dp(a, 8), 0, dp(a, 8)) }
+                val play = ImageButton(a).apply {
+                    setImageResource(R.drawable.ic_play); setColorFilter(Ui.TEXT)
+                    setBackgroundResource(R.drawable.bg_circle_secondary); setPadding(dp(a, 12), dp(a, 12), dp(a, 12), dp(a, 12)); scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+                    layoutParams = LinearLayout.LayoutParams(dp(a, 40), dp(a, 40)).apply { marginEnd = dp(a, 14) }
+                    contentDescription = "Play ${v.name}"
                 }
-                player = MediaPlayer().apply { setDataSource(f.absolutePath); setOnCompletionListener { stop() }; prepare(); start() }
+                val col = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL; layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f) }
+                col.addView(TextView(a).apply { text = v.name; textSize = 16f; setTextColor(Ui.TEXT); typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL) })
+                col.addView(TextView(a).apply { text = "${v.region} · ${if (v.sex == "F") "female" else "male"}"; textSize = 14f; setTextColor(Ui.GREY) })
+                val holder = android.widget.FrameLayout(a); radios[v.id] = holder
+                play.setOnClickListener {
+                    if (playingBtn === play) { stop(); return@setOnClickListener }
+                    stop()
+                    val f = VoiceWarmup.previewFile(a, v.id)
+                    play.setImageResource(R.drawable.ic_stop); playingBtn = play
+                    if (!f.exists() || f.length() < 1000) {
+                        speaker = BriefSpeaker(a) { a.runOnUiThread { if (playingBtn === play) stop() } }.also { it.speak(SAMPLE) }
+                        return@setOnClickListener
+                    }
+                    player = MediaPlayer().apply { setDataSource(f.absolutePath); setOnCompletionListener { stop() }; prepare(); start() }
+                }
+                row.setOnClickListener { sel = v.id; renderRadios() }
+                row.addView(play); row.addView(col); row.addView(holder)
+                list.addView(row)
+                if (i < vs.size - 1) list.addView(Ui.divider(a))
             }
-            row.setOnClickListener { stop(); onPick(v.id); dialog.dismiss() }
-            col.setOnClickListener { stop(); onPick(v.id); dialog.dismiss() }
-            row.addView(play); row.addView(col); row.addView(tick)
-            root.addView(row)
-            root.addView(View(a).apply { setBackgroundColor(0xFF1F2840.toInt()); layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1) })
         }
-        if (!VoiceEngine.isAvailable(a)) {
-            root.addView(TextView(a).apply {
-                text = if (ModelStore.isDownloading()) "Downloading voices… ${ModelStore.progress}%" else "Voices aren't downloaded yet — the alarm uses the phone's voice until they are. Download in Settings."
-                textSize = 13f; setTextColor(0xFF8A93A8.toInt()); setPadding(0, dp(a, 18), 0, 0)
-            })
-        }
-        Sheet.float(dialog, root)
-        dialog.setOnDismissListener { stop() }
-        dialog.show()
+        renderRadios()
+        if (!VoiceEngine.isAvailable(a)) list.addView(TextView(a).apply {
+            text = if (ModelStore.isDownloading()) "Downloading voices… ${ModelStore.progress}%" else "Voices aren't downloaded yet. Until they are, the alarm uses the phone's voice. Download in Settings → Voices."
+            textSize = 13f; setTextColor(Ui.GREY); setPadding(0, dp(a, 16), 0, 0)
+        })
+        // Long list: scroll inside the sheet, at most ~60% of the screen.
+        val scroll = object : android.widget.ScrollView(a) {
+            override fun onMeasure(w: Int, h: Int) {
+                val max = (a.resources.displayMetrics.heightPixels * 0.6f).toInt()
+                super.onMeasure(w, MeasureSpec.makeMeasureSpec(max, MeasureSpec.AT_MOST))
+            }
+        }.apply { addView(list); isVerticalScrollBarEnabled = false }
+        Sheet.show(a, "Voice", null, scroll) { stop(); onPick(sel) }.setOnDismissListener { stop() }
     }
 
     private fun dp(a: Activity, v: Int) = (v * a.resources.displayMetrics.density).toInt()
