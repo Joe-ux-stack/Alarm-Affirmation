@@ -65,6 +65,9 @@ jobs:
       - name: Smoke test
         if: steps.gate.outputs.ok
         run: |
-          sleep 10
-          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST https://mcp.getwhynotyou.com/mcp)
-          echo "::notice title=smoke::POST /mcp without token -> $code (expect 401)"
+          echo "::notice title=dns::$(dig +short mcp.getwhynotyou.com @1.1.1.1 | tr '\n' ' ') / ns: $(dig +short NS getwhynotyou.com @1.1.1.1 | tr '\n' ' ')"
+          for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -X POST https://mcp.getwhynotyou.com/mcp); [ "$code" = 401 ] && break; sleep 15
+          done
+          meta=$(curl -s https://mcp.getwhynotyou.com/.well-known/oauth-protected-resource/mcp | head -c 300)
+          echo "::notice title=smoke::POST /mcp without token -> $code (expect 401). Metadata: $meta"
