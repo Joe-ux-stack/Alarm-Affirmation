@@ -25,17 +25,31 @@ jobs:
       - name: Database and storage (created once, reused after)
         if: steps.gate.outputs.ok
         run: |
-          D1=$(npx wrangler d1 list --json | jq -r '.[] | select(.name=="whynotyou") | .uuid')
-          [ -z "$D1" ] && npx wrangler d1 create whynotyou >/dev/null && D1=$(npx wrangler d1 list --json | jq -r '.[] | select(.name=="whynotyou") | .uuid')
-          KV=$(npx wrangler kv namespace list | jq -r '.[] | select(.title=="whynotyou-oauth") | .id')
-          [ -z "$KV" ] && npx wrangler kv namespace create whynotyou-oauth >/dev/null && KV=$(npx wrangler kv namespace list | jq -r '.[] | select(.title=="whynotyou-oauth") | .id')
-          [ -n "$D1" ] && [ -n "$KV" ] || { echo "Could not get D1/KV ids"; exit 1; }
+          set +e
+          fail() { msg=$(echo "$2" | tr '\n' ' ' | cut -c1-900); echo "::error title=$1::$msg"; exit 1; }
+          out=$(npx wrangler whoami 2>&1) || fail whoami "$out"
+          out=$(npx wrangler d1 list --json 2>&1) || fail d1-list "$out"
+          D1=$(echo "$out" | jq -r '.[] | select(.name=="whynotyou") | .uuid' 2>/dev/null)
+          if [ -z "$D1" ]; then
+            out=$(npx wrangler d1 create whynotyou 2>&1) || fail d1-create "$out"
+            D1=$(npx wrangler d1 list --json 2>/dev/null | jq -r '.[] | select(.name=="whynotyou") | .uuid')
+          fi
+          out=$(npx wrangler kv namespace list 2>&1) || fail kv-list "$out"
+          KV=$(echo "$out" | jq -r '.[] | select(.title=="whynotyou-oauth") | .id' 2>/dev/null)
+          if [ -z "$KV" ]; then
+            out=$(npx wrangler kv namespace create whynotyou-oauth 2>&1) || fail kv-create "$out"
+            KV=$(npx wrangler kv namespace list 2>/dev/null | jq -r '.[] | select(.title=="whynotyou-oauth") | .id')
+          fi
+          [ -n "$D1" ] && [ -n "$KV" ] || fail ids "D1=$D1 KV=$KV"
           sed -i "s/REPLACE_WITH_D1_ID/$D1/; s/REPLACE_WITH_KV_ID/$KV/" wrangler.toml
-          if [ -n "${{ vars.GOOGLE_CLIENT_ID }}" ]; then sed -i "s/REPLACE_WITH_WEB_CLIENT_ID.apps.googleusercontent.com/${{ vars.GOOGLE_CLIENT_ID }}/" wrangler.toml; fi
-          npx wrangler d1 execute whynotyou --remote --file=schema.sql -y
+          if [ -n "${{ vars.GOOGLE_CLIENT_ID }}" ]; then sed -i "s/REPLACE_WITH_WEB_CLIENT_ID.apps.googleusercontent.com/${{ vars.GOOGLE_CLIENT_ID }}/" wrangler.toml; else echo "::warning::GOOGLE_CLIENT_ID variable missing"; fi
+          out=$(npx wrangler d1 execute whynotyou --remote --file=schema.sql -y 2>&1) || fail schema "$out"
+          echo "ok D1=$D1 KV=$KV"
       - name: Deploy
         if: steps.gate.outputs.ok
-        run: npx wrangler deploy
+        run: |
+          out=$(npx wrangler deploy 2>&1) || { echo "::error title=deploy::$(echo "$out" | tr '\n' ' ' | cut -c1-900)"; exit 1; }
+          echo "$out"
       - name: Secrets
         if: steps.gate.outputs.ok
         env:
@@ -52,4 +66,4 @@ jobs:
         run: |
           sleep 10
           code=$(curl -s -o /dev/null -w '%{http_code}' -X POST https://mcp.getwhynotyou.com/mcp)
-          echo "POST /mcp without token -> $code (expect 401)"
+          echo "::notice title=smoke::POST /mcp without token -> $code (expect 401)"
