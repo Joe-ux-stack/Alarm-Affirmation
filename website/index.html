@@ -169,7 +169,7 @@
 <section class="hero" aria-labelledby="hero-title">
   <div class="wrap">
     <div class="orb-stage" aria-hidden="true"><div class="orb"><span class="rim"></span><span class="ribbons"></span><span class="core"></span><span class="glass"></span></div></div>
-    <h1 id="hero-title">The alarm your AI assistant runs.</h1>
+    <h1 id="hero-title">The alarm your <span class="nowrap">AI assistant runs.</span></h1>
     <p class="lead">Stop the alarm and hear your plan for the day, read aloud in a natural voice that runs right on your phone. Plan it the night before &mdash; or let your AI do it for you.</p>
     <div class="btn-row center">
       <a class="btn btn-primary" href="mailto:support@getwhynotyou.com?subject=Beta%20tester&body=Hi!%20I'd%20like%20to%20test%20Why%20Not%20You%20on%20Android.%0A%0AGoogle%20account%20email%20for%20Play%20testing%3A%20%0APhone%20model%3A%20">Join the beta</a>
@@ -186,8 +186,9 @@
       <h2 id="how-title">Plan it tonight. Hear it at 6:30. Put the phone down.</h2>
       <p class="lead">Three small moments that turn your alarm into the start of a day you actually planned.</p>
     </div>
-    <div class="grid grid-3">
+    <div class="grid grid-3 steps" data-steps>
       <article class="box step">
+        <span class="step-bar" aria-hidden="true"><i></i></span>
         <span class="step-num" aria-hidden="true">1</span>
         <span class="caption">The evening before</span>
         <h3>&ldquo;What&rsquo;s the plan for tomorrow?&rdquo;</h3>
@@ -202,6 +203,7 @@
 </div></div>
       </article>
       <article class="box step">
+        <span class="step-bar" aria-hidden="true"><i></i></span>
         <span class="step-num" aria-hidden="true">2</span>
         <span class="caption">When you wake up</span>
         <h3>Your plan, read aloud</h3>
@@ -215,6 +217,7 @@
 </div></div>
       </article>
       <article class="box step">
+        <span class="step-bar" aria-hidden="true"><i></i></span>
         <span class="step-num" aria-hidden="true">3</span>
         <span class="caption">During the day</span>
         <h3>Phone down</h3>
@@ -412,5 +415,6 @@
   </div>
 </footer>
 <script src="/orb.js" defer></script>
+<script src="/steps.js" defer></script>
 </body>
 </html>
