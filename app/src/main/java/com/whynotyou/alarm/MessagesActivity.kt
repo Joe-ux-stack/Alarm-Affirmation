@@ -5,6 +5,8 @@ import android.view.Gravity
 import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.appcompat.widget.SwitchCompat
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 /** Settings (the gear). Kept under this class name so existing links keep working. */
 class MessagesActivity : ScreenActivity() {
@@ -29,7 +31,10 @@ class MessagesActivity : ScreenActivity() {
             ModelStore.isDownloaded(this, v) -> "${v.label} · ready"
             else -> "Download · ${v.mb} MB"
         }
+        val acct = if (Account.signedIn(this)) row("Account", Account.email(this)) { AccountUi.sheet(this) { rebuild() } }
+                   else row("Sign in with Google", sub = "So your AI can reach your alarms") { AccountUi.signIn(this) { rebuild() } }
         add(boxOf(
+            acct,
             row("Connect your AI", sub = "Claude, ChatGPT and more") { startActivity(Intent(this, ConnectAiActivity::class.java)) },
             row("Calendar", badge = "PRO") {
                 if (Pro.isPro(this)) startActivity(Intent(this, CalendarActivity::class.java))
@@ -79,4 +84,48 @@ class MessagesActivity : ScreenActivity() {
     }
 
     override fun onPause() { super.onPause(); col.removeCallbacks(voiceTick) }
+}
+
+/** Sign-in and the account pop-up, shared by Settings and Connect your AI. */
+object AccountUi {
+    fun signIn(a: androidx.appcompat.app.AppCompatActivity, done: () -> Unit) {
+        a.lifecycleScope.launch {
+            val err = Account.signIn(a)
+            if (!err.isNullOrEmpty()) Toast.makeText(a, err, Toast.LENGTH_LONG).show()
+            else if (err == null) Toast.makeText(a, "Signed in as ${Account.email(a)}", Toast.LENGTH_SHORT).show()
+            done()
+        }
+    }
+
+    fun sheet(a: androidx.appcompat.app.AppCompatActivity, done: () -> Unit) {
+        val col = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL }
+        val last = Account.lastSync(a)
+        val when_ = if (last == 0L) "Not synced yet" else "Last synced " + android.text.format.DateUtils.getRelativeTimeSpanString(last)
+        col.addView(Ui.text(a, when_, 14f, Ui.GREY))
+        var d: com.google.android.material.bottomsheet.BottomSheetDialog? = null
+        col.addView(Ui.button(a, "Sync now", true, 56) {
+            a.lifecycleScope.launch {
+                val n = Sync.run(a)
+                Toast.makeText(a, when { n < 0 -> "Couldn't sync. Check your connection."; n == 0 -> "Up to date"; else -> "$n change${if (n == 1) "" else "s"} from your AI" }, Toast.LENGTH_SHORT).show()
+                d?.dismiss(); done()
+            }
+        }.apply { (layoutParams as LinearLayout.LayoutParams).topMargin = Ui.dp(a, 20) })
+        col.addView(Ui.button(a, "Sign out", false, 52) { Account.signOut(a); d?.dismiss(); done() }
+            .apply { (layoutParams as LinearLayout.LayoutParams).topMargin = Ui.dp(a, 8) })
+        col.addView(Ui.text(a, "Delete account", 15f, 0xFFFF8A8A.toInt()).apply {
+            gravity = Gravity.CENTER; minHeight = Ui.dp(a, 48); setPadding(0, Ui.dp(a, 12), 0, 0)
+            setOnClickListener {
+                androidx.appcompat.app.AlertDialog.Builder(a)
+                    .setTitle("Delete your account?")
+                    .setMessage("This removes your alarms, plans and screen time from our server and disconnects your AI. Alarms on this phone stay.")
+                    .setPositiveButton("Delete") { _, _ -> a.lifecycleScope.launch {
+                        val ok = Account.delete(a)
+                        Toast.makeText(a, if (ok) "Account deleted" else "Couldn't delete. Try again online.", Toast.LENGTH_LONG).show()
+                        d?.dismiss(); done()
+                    } }
+                    .setNegativeButton("Cancel", null).show()
+            }
+        })
+        d = Sheet.show(a, "Account", Account.email(a), col, done = null)
+    }
 }

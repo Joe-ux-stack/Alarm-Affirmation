@@ -1,6 +1,8 @@
 package com.whynotyou.alarm
 
 import android.content.Intent
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -84,7 +86,12 @@ class MainActivity : AppCompatActivity() {
         if (i == 2) stopwatch?.onShow()
     }
 
-    override fun onResume() { super.onResume(); CalendarSync.refreshToday(this); refresh(); timer?.onShow(); if (tab == 3) phone?.render() }
+    override fun onResume() { super.onResume(); CalendarSync.refreshToday(this); syncNow(); refresh(); timer?.onShow(); if (tab == 3) phone?.render() }
+    /** Pull what the user's AI changed (if signed in) and redraw when something arrived. */
+    private fun syncNow() {
+        if (!Account.signedIn(this)) return
+        lifecycleScope.launch { if (Sync.run(this@MainActivity) > 0) refresh() }
+    }
     override fun onPause() { super.onPause(); stopwatch?.onHide() }
 
     private fun refresh() {

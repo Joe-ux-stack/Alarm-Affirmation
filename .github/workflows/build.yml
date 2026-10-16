@@ -61,6 +61,7 @@ jobs:
       - name: Build release APK
         env:
           DEV_KEYSTORE_PASS: ${{ secrets.DEV_KEYSTORE_PASS }}
+          GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
         run: |
           set -o pipefail
           ./gradlew assembleRelease --no-daemon 2>&1 | tee build.log || true

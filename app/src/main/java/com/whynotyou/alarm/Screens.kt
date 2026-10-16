@@ -1,5 +1,8 @@
 package com.whynotyou.alarm
 
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+
 import android.content.Context
 import android.content.Intent
 import android.graphics.Typeface
@@ -227,6 +230,13 @@ class ConnectAiActivity : ScreenActivity() {
         "Perplexity" to "In Perplexity, open Settings → Connectors → Add connector",
         "Grok" to "In Grok, open Settings → Connectors → Add",
         "Le Chat" to "In Le Chat, open Connectors → Add a custom connector")
+    private val openUrl = mapOf(
+        "Claude" to "https://claude.ai/settings/connectors",
+        "ChatGPT" to "https://chatgpt.com/#settings/Connectors",
+        "Perplexity" to "https://www.perplexity.ai/account/connectors",
+        "Grok" to "https://grok.com",
+        "Le Chat" to "https://chat.mistral.ai/connections")
+    override fun onResume() { super.onResume(); if (Account.signedIn(this)) lifecycleScope.launch { Sync.run(this@ConnectAiActivity); rebuild() } }
     override fun build() {
         header("Connect your AI")
         para("Let the AI you already use see your alarms and plans, and change them for you.", top = 4)
@@ -254,12 +264,21 @@ class ConnectAiActivity : ScreenActivity() {
         }
         val s2 = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, dp(12), 0, dp(12)) }
         s2.addView(step(2, "Paste this link")); s2.addView(link, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10); marginStart = dp(26) })
-        add(boxOf(step(1, steps[name]!!), s2, step(3, "Sign in with your Why Not You account")), 0)
+        val signed = Account.signedIn(this)
+        add(boxOf(step(1, steps[name]!!), s2, step(3, "Sign in with Google, using ${if (signed) Account.email(this) else "the same account as in this app"}")), 0)
         val dot = LinearLayout(this).apply { gravity = Gravity.CENTER; orientation = LinearLayout.HORIZONTAL }
-        dot.addView(View(this).apply { background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(Ui.CAPTION) } }, LinearLayout.LayoutParams(dp(8), dp(8)).apply { marginEnd = dp(8) })
-        dot.addView(Ui.text(this, "Not connected yet", 14f, Ui.GREY))
+        dot.addView(View(this).apply { background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(if (signed) Ui.GREEN else Ui.CAPTION) } }, LinearLayout.LayoutParams(dp(8), dp(8)).apply { marginEnd = dp(8) })
+        dot.addView(Ui.text(this, if (signed) "This phone is signed in · syncs every 15 min" else "Sign in on this phone first", 14f, Ui.GREY))
         add(dot, 16)
-        pinned(Ui.button(this, "Open $name", true, 60) { soon("Connecting your AI") })
+        val recent = Account.actions(this).take(5)
+        if (signed && recent.isNotEmpty()) {
+            col.addView(Ui.caption(this, "Recently by your AI", 28))
+            add(boxOf(*recent.map { row(it, chevron = false) }.toTypedArray()), 0)
+        }
+        if (!signed) pinned(Ui.button(this, "Sign in with Google", true, 60) { AccountUi.signIn(this) { rebuild() } })
+        else pinned(Ui.button(this, "Open $name", true, 60) {
+            try { startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(openUrl[name]))) } catch (_: Throwable) { soon("Opening $name") }
+        })
     }
     private fun step(n: Int, t: String) = LinearLayout(this).apply {
         orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(12), 0, dp(12))
@@ -267,7 +286,7 @@ class ConnectAiActivity : ScreenActivity() {
         addView(Ui.text(this@ConnectAiActivity, t, 15f), LinearLayout.LayoutParams(0, -2, 1f))
     }
 }
-object AiLink { const val URL = "mcp.getwhynotyou.com" }
+object AiLink { const val URL = "https://mcp.getwhynotyou.com/mcp" }
 
 /** 7.4 Calendar (Pro): which phone calendars feed the plan. */
 class CalendarActivity : ScreenActivity() {

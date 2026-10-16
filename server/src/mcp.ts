@@ -174,7 +174,7 @@ export async function handleMcp(request: Request, env: Env, props: Props): Promi
       const t = tools.find((x) => x.name === msg.params?.name);
       if (!t) return rpcErr(msg.id, -32602, `Unknown tool: ${msg.params?.name}`);
       if (!(await isPro(env, props.userId)))
-        return rpc(msg.id, { isError: true, content: [{ type: "text", text: "Connecting an AI needs Why Not You Pro. The user can start a free trial in the app: Settings → Try Pro free." }] });
+        return rpc(msg.id, { isError: true, content: [{ type: "text", text: "Connecting an AI needs Why Not You Pro. The user can start a free trial in the app (Settings → Try Pro free), signed in with this same Google account." }] });
       try {
         const text = await t.run(env, props.userId, msg.params?.arguments ?? {});
         return rpc(msg.id, { content: [{ type: "text", text }] });
