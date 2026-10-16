@@ -1,0 +1,21 @@
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  Cross-Origin-Opener-Policy: same-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()
+  Content-Security-Policy: default-src 'self'; script-src 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests
+  Cache-Control: public, max-age=0, must-revalidate
+
+/styles.css
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/favicon.svg
+  Cache-Control: public, max-age=604800
+
+/og.png
+  Cache-Control: public, max-age=604800
+
+/_shots/*
+  X-Robots-Tag: noindex
