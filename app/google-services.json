@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "758653362763",
+    "project_id": "why-not-you-511616",
+    "storage_bucket": "why-not-you-511616.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:758653362763:android:1a66d70571396c639863ce",
+        "android_client_info": {
+          "package_name": "com.whynotyou.alarm"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "758653362763-nsirs4ip6tdhn5a2c01d8lv9rqr1uord.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAlta_klNIBf8YzznQyDPmDKyaiZNP39AI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "758653362763-nsirs4ip6tdhn5a2c01d8lv9rqr1uord.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
