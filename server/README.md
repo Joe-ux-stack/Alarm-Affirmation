@@ -33,4 +33,3 @@ Then in Google Cloud: OAuth client (Web) with redirect URI `https://mcp.getwhyno
 npm run check                       # TypeScript
 npx wrangler dev                    # local; POST /mcp without a token must return 401
 ```
-
