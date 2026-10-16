@@ -1,6 +1,7 @@
 // The AI connection: a small, stateless MCP server (JSON-RPC over Streamable HTTP, JSON responses).
 // Every request arrives already authenticated by the OAuth provider; ctx.props.userId says whose data.
 import { type Env, type Props, now, isPro } from "./env";
+import { wakePhones } from "./push";
 
 const PROTOCOL = "2025-06-18";
 
@@ -30,6 +31,7 @@ async function queue(env: Env, userId: string, kind: string, payload: unknown, s
     env.DB.prepare("INSERT INTO changes (user_id, kind, payload, created_at) VALUES (?, ?, ?, ?)").bind(userId, kind, JSON.stringify(payload), now()),
     env.DB.prepare("INSERT INTO actions (user_id, summary, created_at) VALUES (?, ?, ?)").bind(userId, summary, now()),
   ]);
+  await wakePhones(env, userId);
 }
 
 const fmtAlarm = (a: any) => {

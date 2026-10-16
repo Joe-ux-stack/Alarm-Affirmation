@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
-    <solid android:color="#FFFFFF" />
-    <size android:width="20dp" android:height="20dp" />
-    <stroke android:width="3dp" android:color="#00000000" />
-</shape>
+<!-- 28dp box (same height as the track) with a 22dp knob inset 3dp, so the knob sits inside the track. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:width="28dp" android:height="28dp">
+        <shape android:shape="oval"><solid android:color="#00000000" /></shape>
+    </item>
+    <item android:top="3dp" android:bottom="3dp" android:left="3dp" android:right="3dp">
+        <shape android:shape="oval">
+            <solid android:color="#FFFFFF" />
+            <size android:width="22dp" android:height="22dp" />
+        </shape>
+    </item>
+</layer-list>

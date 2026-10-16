@@ -70,11 +70,15 @@ export const appHandler = {
 
       // Phone → server: latest state. Server → phone: changes the AI asked for, plus Pro status.
       if (p === "/api/sync" && request.method === "POST") {
-        const b = (await request.json()) as { alarms?: unknown; plan?: string; tomorrow?: unknown; usage?: unknown; limits?: unknown; applied?: number[] };
+        const b = (await request.json()) as { push?: string; alarms?: unknown; plan?: string; tomorrow?: unknown; usage?: unknown; limits?: unknown; applied?: number[] };
         await env.DB.prepare(`UPDATE state SET alarms = COALESCE(?, alarms), plan = COALESCE(?, plan), tomorrow = COALESCE(?, tomorrow),
           usage = COALESCE(?, usage), limits = COALESCE(?, limits), updated_at = ? WHERE user_id = ?`)
           .bind(b.alarms ? JSON.stringify(b.alarms) : null, b.plan ?? null, b.tomorrow ? JSON.stringify(b.tomorrow) : null,
             b.usage ? JSON.stringify(b.usage) : null, b.limits ? JSON.stringify(b.limits) : null, now(), userId).run();
+        if (typeof b.push === "string" && b.push.length > 20 && b.push.length < 4096) {
+          await env.DB.prepare(`INSERT INTO devices (token, user_id, updated_at) VALUES (?, ?, ?)
+            ON CONFLICT(token) DO UPDATE SET user_id = excluded.user_id, updated_at = excluded.updated_at`).bind(b.push, userId, now()).run();
+        }
         if (b.applied?.length) {
           const ids = b.applied.filter((n) => Number.isInteger(n)).slice(0, 200);
           await env.DB.prepare(`UPDATE changes SET applied_at = ? WHERE user_id = ? AND id IN (${ids.map(() => "?").join(",")})`)

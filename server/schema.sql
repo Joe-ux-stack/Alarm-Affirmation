@@ -38,6 +38,13 @@ CREATE TABLE IF NOT EXISTS actions (
   created_at  INTEGER NOT NULL
 );
 
+-- Phones to wake with a push message when the AI changes something (Firebase Cloud Messaging tokens).
+CREATE TABLE IF NOT EXISTS devices (
+  token       TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  updated_at  INTEGER NOT NULL
+);
+
 -- Google Play purchases, keyed by purchase token.
 CREATE TABLE IF NOT EXISTS purchases (
   token       TEXT PRIMARY KEY,

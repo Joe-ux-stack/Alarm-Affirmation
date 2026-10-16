@@ -46,12 +46,15 @@ const b64url = (b: ArrayBuffer | Uint8Array | string) => {
   return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 };
 
-async function playAccessToken(env: Env): Promise<string> {
-  const sa = JSON.parse(env.PLAY_SERVICE_ACCOUNT_JSON) as { client_email: string; private_key: string };
+const playAccessToken = (env: Env) => serviceAccessToken(env.PLAY_SERVICE_ACCOUNT_JSON, "https://www.googleapis.com/auth/androidpublisher");
+
+/** OAuth access token for a Google service account (JWT signed with WebCrypto). */
+export async function serviceAccessToken(json: string, scope: string): Promise<string> {
+  const sa = JSON.parse(json) as { client_email: string; private_key: string };
   const now = Math.floor(Date.now() / 1000);
   const header = b64url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
   const claim = b64url(JSON.stringify({
-    iss: sa.client_email, scope: "https://www.googleapis.com/auth/androidpublisher",
+    iss: sa.client_email, scope,
     aud: "https://oauth2.googleapis.com/token", iat: now, exp: now + 3600,
   }));
   const pem = sa.private_key.replace(/-----[^-]+-----/g, "").replace(/\s+/g, "");
@@ -62,7 +65,7 @@ async function playAccessToken(env: Env): Promise<string> {
     method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({ grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion: `${header}.${claim}.${b64url(sig)}` }),
   });
-  if (!r.ok) throw new Error("play auth failed: " + r.status);
+  if (!r.ok) throw new Error("service auth failed: " + r.status);
   return ((await r.json()) as { access_token: string }).access_token;
 }
 

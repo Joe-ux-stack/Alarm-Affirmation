@@ -3,6 +3,9 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+// Firebase (push messages that wake the phone when the AI changes something). Only when the config file exists.
+if (file("google-services.json").exists()) apply(plugin = "com.google.gms.google-services")
+
 android {
     namespace = "com.whynotyou.alarm"
     compileSdk = 35
@@ -11,8 +14,8 @@ android {
         applicationId = "com.whynotyou.alarm"
         minSdk = 26
         targetSdk = 35
-        versionCode = 55
-        versionName = "0.55"
+        versionCode = 56
+        versionName = "0.56"
         ndk { abiFilters += listOf("arm64-v8a") }
         // Google sign-in: the Web OAuth client ID (public). CI passes it from the GOOGLE_CLIENT_ID repo variable.
         buildConfigField("String", "WEB_CLIENT_ID", "\"${System.getenv("GOOGLE_CLIENT_ID") ?: ""}\"")
@@ -73,4 +76,5 @@ dependencies {
     implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
     implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
+    implementation("com.google.firebase:firebase-messaging:24.1.0")
 }

@@ -56,8 +56,9 @@ jobs:
           PRO_EMAILS: ${{ secrets.PRO_EMAILS }}
           PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
           RTDN_SECRET: ${{ secrets.RTDN_SECRET }}
+          FCM_SERVICE_ACCOUNT_JSON: ${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}
         run: |
-          for k in GOOGLE_CLIENT_SECRET PRO_EMAILS PLAY_SERVICE_ACCOUNT_JSON RTDN_SECRET; do
+          for k in GOOGLE_CLIENT_SECRET PRO_EMAILS PLAY_SERVICE_ACCOUNT_JSON RTDN_SECRET FCM_SERVICE_ACCOUNT_JSON; do
             v="${!k}"
             if [ -n "$v" ]; then printf '%s' "$v" | npx wrangler secret put "$k" -c wrangler.toml >/dev/null && echo "::notice title=secret::set $k" || { echo "::error title=secret::failed $k"; exit 1; }
             else echo "::notice title=secret::skipped $k (not set)"; fi

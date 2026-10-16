@@ -12,6 +12,8 @@ export interface Env {
   RTDN_SECRET: string;
   /** Optional secret: comma-separated emails that get Pro without paying (testers). */
   PRO_EMAILS?: string;
+  /** Optional secret: Firebase service account JSON, to wake the phone instantly. */
+  FCM_SERVICE_ACCOUNT_JSON?: string;
 }
 
 export type Props = { userId: string };

@@ -53,12 +53,14 @@ object Account {
         if (!r.has("token")) return "The server didn't accept the sign-in."
         p(a).edit().putString("token", r.getString("token")).putString("email", r.optString("email")).putBoolean("pro", r.optBoolean("pro")).apply()
         Sync.schedule(a)
+        Push.refresh(a)
         Sync.run(a)
         return null
     }
 
     fun signOut(c: Context) {
-        p(c).edit().clear().apply()
+        val push = Push.token(c)
+        p(c).edit().clear().apply { if (push != null) putString("push", push) }.apply()
         WorkManager.getInstance(c).cancelUniqueWork(Sync.WORK)
     }
 
@@ -127,7 +129,7 @@ object Sync {
             val f = java.text.SimpleDateFormat("EEE HH:mm", java.util.Locale.US)
             Brief.cachedEvents(c).forEach { e -> a.put(JSONObject().put("time", if (e.allDay) "all day" else f.format(java.util.Date(e.startMillis))).put("title", e.title)) }
         }
-        val o = JSONObject().put("alarms", alarms).put("plan", Brief.intention(c)).put("tomorrow", tomorrow)
+        val o = JSONObject().apply { Push.token(c)?.let { put("push", it) } }.put("alarms", alarms).put("plan", Brief.intention(c)).put("tomorrow", tomorrow)
             .put("limits", JSONObject().put("on", PhoneDown.isEnabled(c)).put("minutes", PhoneDown.limitMin(c)).put("apps", JSONArray(PhoneDown.watchedNames(c))))
         usage(c)?.let { o.put("usage", it) }
         return o
