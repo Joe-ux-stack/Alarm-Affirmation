@@ -587,9 +587,10 @@ td .note { display: block; font-size: .86rem; color: var(--text-2); }
   .steps.js .step.active .step-bar i { animation: none; width: 100%; }
 }
 
-/* ---------- "Works with" AI logos (official marks, shown in white) ---------- */
-.ai-logos { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 30px; list-style: none; padding: 0; margin: 4px 0 18px; }
-.ai-logos li { display: flex; align-items: center; gap: 10px; color: var(--text, #F2F4F8); font-weight: 600; font-size: 19px; letter-spacing: -.01em; opacity: .9; }
-.ai-logos img { height: 26px; width: auto; display: block; }
-.ai-logos img.word { height: 31px; }
-@media (max-width: 520px) { .ai-logos { gap: 12px 22px; } .ai-logos li { font-size: 17px; } .ai-logos img { height: 22px; } .ai-logos img.word { height: 27px; } }
+/* ---------- "Works with" AI logos: official marks, unmodified, in light pills ---------- */
+.ai-logos { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; list-style: none; padding: 0; margin: 4px 0 18px; }
+.ai-logos li { display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 18px; border-radius: 24px;
+  background: #FFFFFF; color: #0B1020; font-weight: 600; font-size: 17px; letter-spacing: -.01em; }
+.ai-logos img { height: 22px; width: auto; display: block; }
+.ai-logos img.word { height: 24px; }
+@media (max-width: 520px) { .ai-logos li { height: 44px; padding: 0 14px; font-size: 16px; } .ai-logos img { height: 20px; } .ai-logos img.word { height: 22px; } }
