@@ -7,8 +7,7 @@ import android.text.style.ForegroundColorSpan
 import android.widget.TextView
 
 /**
- * Shows the brief one sentence at a time. The full text is laid out from the start (so nothing
- * jumps), with unrevealed sentences transparent; each one fades in when it is spoken.
+ * Shows the brief one sentence at a time; each one fades in when it is spoken.
  */
 class SentenceReveal(private val tv: TextView, text: String) {
     private val parts = split(text)
@@ -46,9 +45,12 @@ class SentenceReveal(private val tv: TextView, text: String) {
         shown = i
     }
 
+    /** Only sentences already spoken are laid out, so centred lines stay centred. */
     private fun render() {
-        val sp = SpannableString(full)
-        for (i in parts.indices) {
+        if (shown < 0) { tv.text = ""; return }
+        val end = starts[shown] + parts[shown].length
+        val sp = SpannableString(full.substring(0, end))
+        for (i in 0..shown) {
             val a = (alpha[i] * 255).toInt().coerceIn(0, 255)
             val base = if (i == shown) 0xF2F4F8 else 0x9AA3B5
             sp.setSpan(ForegroundColorSpan((a shl 24) or base), starts[i], starts[i] + parts[i].length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
