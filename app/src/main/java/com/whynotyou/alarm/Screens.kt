@@ -266,7 +266,7 @@ class ConnectAiActivity : ScreenActivity() {
         addView(Ui.text(this@ConnectAiActivity, t, 15f), LinearLayout.LayoutParams(0, -2, 1f))
     }
 }
-object AiLink { const val URL = "mcp.whynotyou.app" }
+object AiLink { const val URL = "mcp.getwhynotyou.com" }
 
 /** 7.4 Calendar (Pro): which phone calendars feed the plan. */
 class CalendarActivity : ScreenActivity() {

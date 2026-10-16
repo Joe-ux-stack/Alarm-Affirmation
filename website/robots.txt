@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /_shots/
 
-Sitemap: https://whynotyou.app/sitemap.xml
+Sitemap: https://getwhynotyou.com/sitemap.xml

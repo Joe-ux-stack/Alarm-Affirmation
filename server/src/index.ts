@@ -22,5 +22,5 @@ export default new OAuthProvider<Env>({
   clientRegistrationEndpoint: "/register",
   scopesSupported: ["alarms"],
   // Must match PUBLIC_URL in wrangler.toml.
-  resourceMetadata: { resource: "https://mcp.whynotyou.app/mcp", resource_name: "Why Not You", scopes_supported: ["alarms"] },
+  resourceMetadata: { resource: "https://mcp.getwhynotyou.com/mcp", resource_name: "Why Not You", scopes_supported: ["alarms"] },
 });

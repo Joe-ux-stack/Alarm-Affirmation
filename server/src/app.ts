@@ -123,7 +123,7 @@ export const appHandler = {
       return new Response("ok");
     }
 
-    if (p === "/" || p === "") return page("Why Not You", `<h1>Why Not You</h1><p>This is the connection server for the Why Not You alarm app.</p><a class="btn" href="https://whynotyou.app">whynotyou.app</a>`);
+    if (p === "/" || p === "") return page("Why Not You", `<h1>Why Not You</h1><p>This is the connection server for the Why Not You alarm app.</p><a class="btn" href="https://getwhynotyou.com">getwhynotyou.com</a>`);
     return new Response("Not found", { status: 404 });
   },
 };

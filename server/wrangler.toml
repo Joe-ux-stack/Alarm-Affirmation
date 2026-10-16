@@ -5,8 +5,8 @@ main = "src/index.ts"
 compatibility_date = "2026-09-01"
 compatibility_flags = ["nodejs_compat"]
 
-# Served at https://mcp.whynotyou.app (add the custom domain in the Cloudflare dashboard).
-routes = [{ pattern = "mcp.whynotyou.app", custom_domain = true }]
+# Served at https://mcp.getwhynotyou.com (add the custom domain in the Cloudflare dashboard).
+routes = [{ pattern = "mcp.getwhynotyou.com", custom_domain = true }]
 
 [[d1_databases]]
 binding = "DB"
@@ -18,7 +18,7 @@ binding = "OAUTH_KV"
 id = "REPLACE_WITH_KV_ID"
 
 [vars]
-PUBLIC_URL = "https://mcp.whynotyou.app"
+PUBLIC_URL = "https://mcp.getwhynotyou.com"
 PACKAGE_NAME = "com.whynotyou.alarm"
 # GOOGLE_CLIENT_ID (web client, for "Continue with Google" in the browser and on the phone)
 GOOGLE_CLIENT_ID = "REPLACE_WITH_WEB_CLIENT_ID.apps.googleusercontent.com"

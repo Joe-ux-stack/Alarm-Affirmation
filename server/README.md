@@ -1,6 +1,6 @@
 # Why Not You server
 
-One Cloudflare Worker at `https://mcp.whynotyou.app` that does four jobs:
+One Cloudflare Worker at `https://mcp.getwhynotyou.com` that does four jobs:
 
 | Path | What it does |
 |---|---|
@@ -25,7 +25,7 @@ npx wrangler secret put RTDN_SECRET                  # any long random string
 npm run deploy
 ```
 
-Then in Google Cloud: OAuth client (Web) with redirect URI `https://mcp.whynotyou.app/auth/google`; put its client ID in `wrangler.toml` (`GOOGLE_CLIENT_ID`). In Play Console → Monetization setup → Real-time developer notifications: a Pub/Sub topic with a push subscription to `https://mcp.whynotyou.app/play/rtdn?k=<RTDN_SECRET>`.
+Then in Google Cloud: OAuth client (Web) with redirect URI `https://mcp.getwhynotyou.com/auth/google`; put its client ID in `wrangler.toml` (`GOOGLE_CLIENT_ID`). In Play Console → Monetization setup → Real-time developer notifications: a Pub/Sub topic with a push subscription to `https://mcp.getwhynotyou.com/play/rtdn?k=<RTDN_SECRET>`.
 
 ## Check
 
