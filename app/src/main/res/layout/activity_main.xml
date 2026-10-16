@@ -219,9 +219,10 @@
     <LinearLayout
         android:id="@+id/nav"
         android:layout_width="match_parent"
-        android:layout_height="76dp"
+        android:layout_height="100dp"
         android:layout_gravity="bottom"
-        android:gravity="center"
+        android:background="@drawable/bg_nav_fade"
+        android:gravity="bottom|center_horizontal"
         android:orientation="horizontal"
         android:paddingBottom="12dp">
         <FrameLayout android:id="@+id/nav_alarm" style="@style/NavItem" android:contentDescription="Alarm">

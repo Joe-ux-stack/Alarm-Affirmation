@@ -37,12 +37,12 @@ class PlanPromptActivity : AppCompatActivity() {
 
         val start = MaterialButton(this).apply {
             text = "Start"; isAllCaps = false; letterSpacing = 0f; typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL); textSize = 18f; setTextColor(0xFFFFFFFF.toInt())
-            backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF3461FF.toInt()); cornerRadius = dp(32)
+            backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF3461FF.toInt()); cornerRadius = dp(32); insetTop = 0; insetBottom = 0
             setOnClickListener { PlanSheet.show(this@PlanPromptActivity) { finish() } }
         }
         val later = MaterialButton(this).apply {
             text = "Later"; isAllCaps = false; letterSpacing = 0f; typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL); textSize = 16f; setTextColor(0xFFC9D4FF.toInt())
-            backgroundTintList = android.content.res.ColorStateList.valueOf(0x292D5BFF); cornerRadius = dp(28)
+            backgroundTintList = android.content.res.ColorStateList.valueOf(0x292D5BFF); cornerRadius = dp(28); insetTop = 0; insetBottom = 0
             setOnClickListener {
                 val opts = intArrayOf(15, 30, 60)
                 Sheet.pick(this@PlanPromptActivity, "Remind me in", listOf("15 minutes" to null, "30 minutes" to null, "1 hour" to null), 1) { i ->

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Filled box, no stroke: faint blue light from the top-left into navy. -->
+<!-- Filled box, no stroke, almost flat: only a whisper of light at the top-left. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <gradient android:type="linear" android:angle="315" android:startColor="#1A2350" android:centerColor="#141B3A" android:endColor="#0F1530" />
+    <gradient android:type="linear" android:angle="315" android:startColor="#161E3D" android:centerColor="#131A36" android:endColor="#111731" />
     <corners android:radius="24dp" />
 </shape>

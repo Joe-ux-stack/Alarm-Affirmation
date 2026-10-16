@@ -72,8 +72,8 @@ abstract class ScreenActivity : AppCompatActivity() {
     protected fun boxOf(vararg rows: View): LinearLayout = Ui.box(this).apply {
         rows.forEachIndexed { i, r -> addView(r); if (i < rows.size - 1) addView(Ui.divider(this@ScreenActivity)) }
     }
-    protected fun bullet(t: String, sub: String? = null) = LinearLayout(this).apply {
-        orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(10), 0, dp(10))
+    protected fun bullet(t: String, sub: String? = null, pad: Int = 10) = LinearLayout(this).apply {
+        orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(pad), 0, dp(pad))
         addView(FrameLayout(this@ScreenActivity).apply {
             background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(0xFF26315A.toInt()) }
             addView(Ui.text(this@ScreenActivity, "✓", 12f, Ui.ACCENT, true).apply { gravity = Gravity.CENTER }, FrameLayout.LayoutParams(-1, -1))
@@ -113,20 +113,21 @@ class TrialActivity : ScreenActivity() {
     private var plan = 0
     override fun build() {
         Onboarding.setTrialShown(this)
+        col.setPadding(dp(20), dp(16), dp(20), dp(150))   // must fit one screen: no scrolling
         val top = LinearLayout(this).apply { gravity = Gravity.END }
-        top.addView(Ui.text(this, "Not now", 15f, Ui.GREY).apply { setPadding(dp(4), dp(10), dp(4), dp(10)); setOnClickListener { finish() } })
+        top.addView(Ui.text(this, "Not now", 15f, Ui.GREY).apply { setPadding(dp(4), dp(6), dp(4), dp(6)); setOnClickListener { finish() } })
         col.addView(top)
         val head = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-        head.addView(Ui.text(this, "Try Pro free\nfor 7 days", 30f, Ui.TEXT, true), LinearLayout.LayoutParams(0, -2, 1f))
+        head.addView(Ui.text(this, "Try Pro free\nfor 7 days", 28f, Ui.TEXT, true), LinearLayout.LayoutParams(0, -2, 1f))
         head.addView(FrameLayout(this).apply {
             addView(View(this@TrialActivity).apply { setBackgroundResource(R.drawable.bg_glow) }, FrameLayout.LayoutParams(-1, -1))
             addView(OrbView(this@TrialActivity).apply { mode = OrbView.Mode.BREATHE }, FrameLayout.LayoutParams(-1, -1))
-        }, LinearLayout.LayoutParams(dp(132), dp(132)))
+        }, LinearLayout.LayoutParams(dp(104), dp(104)))
         col.addView(head)
-        add(bullet("Your calendar, read to you", "Tomorrow's events in your wake-up plan"), 12)
-        col.addView(bullet("Your AI plans your day", "Works with Claude, ChatGPT and more"))
-        col.addView(bullet("Unlimited app limits", "Plus strict mode you can't skip"))
-        col.addView(bullet("Screen time stats", "See your week at a glance"))
+        add(bullet("Your calendar, read to you", "Tomorrow's events in your wake-up plan", 6), 4)
+        col.addView(bullet("Your AI plans your day", "Works with Claude, ChatGPT and more", 6))
+        col.addView(bullet("Unlimited app limits", "Plus strict mode you can't skip", 6))
+        col.addView(bullet("Screen time stats", "See your week at a glance", 6))
         val plans = listOf(Triple("Yearly", "$39.99", "$3.33 a month · 7 days free"), Triple("Monthly", "$6.99", "7 days free"), Triple("Lifetime", "$79", "Early supporters only · pay once"))
         val holder = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         fun render() {
@@ -134,8 +135,8 @@ class TrialActivity : ScreenActivity() {
             plans.forEachIndexed { i, (n, price, sub) ->
                 val on = i == plan
                 holder.addView(LinearLayout(this).apply {
-                    orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(16), dp(16), dp(16), dp(16))
-                    background = GradientDrawable().apply { setColor(0xFF141B3A.toInt()); cornerRadius = dp(20).toFloat(); if (on) setStroke(dp(2), Ui.ACCENT) }
+                    orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(16), dp(12), dp(16), dp(12))
+                    background = GradientDrawable().apply { setColor(0xFF141B37.toInt()); cornerRadius = dp(20).toFloat(); if (on) setStroke(dp(2), Ui.ACCENT) }
                     addView(Ui.radio(this@TrialActivity, on).apply { (layoutParams as LinearLayout.LayoutParams).marginEnd = dp(14) })
                     val c = LinearLayout(this@TrialActivity).apply { orientation = LinearLayout.VERTICAL }
                     val nr = LinearLayout(this@TrialActivity).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
@@ -147,10 +148,10 @@ class TrialActivity : ScreenActivity() {
                     addView(c, LinearLayout.LayoutParams(0, -2, 1f))
                     addView(Ui.text(this@TrialActivity, price, 16f).apply { typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL) })
                     setOnClickListener { plan = i; render() }
-                }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
+                }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
             }
         }
-        render(); add(holder, 12)
+        render(); add(holder, 4)
         pinned(Ui.button(this, "Start free trial", true, 64) { soon("Buying Pro") })
         pinned(Ui.text(this, "Free for 7 days, then $39.99 a year. Cancel anytime in Google Play.", 13f, Ui.GREY).apply { gravity = Gravity.CENTER }, 8)
     }

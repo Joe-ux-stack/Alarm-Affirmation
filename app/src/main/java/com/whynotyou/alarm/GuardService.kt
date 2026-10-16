@@ -128,7 +128,7 @@ class GuardService : Service() {
         val bottom = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), 0, dp(20), dp(48)) }
         val close = MaterialButton(this).apply {
             text = if (strict) "Close $app" else "Put it down"; isAllCaps = false; letterSpacing = 0f; typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL); textSize = 18f; setTextColor(0xFFFFFFFF.toInt())
-            backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF3461FF.toInt()); cornerRadius = dp(32)
+            backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF3461FF.toInt()); cornerRadius = dp(32); insetTop = 0; insetBottom = 0
             setOnClickListener {
                 sessionMs = 0L; removeOverlay()
                 startActivity(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
@@ -136,7 +136,7 @@ class GuardService : Service() {
         }
         val more = MaterialButton(this).apply {
             text = "5 more minutes"; isAllCaps = false; letterSpacing = 0f; typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL); textSize = 16f; setTextColor(0xFFC9D4FF.toInt())
-            backgroundTintList = android.content.res.ColorStateList.valueOf(0x292D5BFF); cornerRadius = dp(28)
+            backgroundTintList = android.content.res.ColorStateList.valueOf(0x292D5BFF); cornerRadius = dp(28); insetTop = 0; insetBottom = 0
             setOnClickListener { snoozeUntil = System.currentTimeMillis() + 5 * 60_000L; removeOverlay() }
         }
         bottom.addView(close, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(64)))
