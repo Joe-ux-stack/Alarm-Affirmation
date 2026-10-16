@@ -108,6 +108,7 @@ object Sync {
     /** Returns how many AI changes were applied, or -1 if it couldn't sync. */
     suspend fun run(c: Context): Int = lock.withLock {
         if (!Account.signedIn(c)) return -1
+        withContext(Dispatchers.IO) { Push.ensure(c) }
         var r = Account.call(c, "POST", "/api/sync", state(c)) ?: return -1
         val changes = r.optJSONArray("changes") ?: JSONArray()
         val applied = JSONArray()

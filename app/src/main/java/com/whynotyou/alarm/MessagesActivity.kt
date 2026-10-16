@@ -100,7 +100,8 @@ object AccountUi {
     fun sheet(a: androidx.appcompat.app.AppCompatActivity, done: () -> Unit) {
         val col = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL }
         val last = Account.lastSync(a)
-        val when_ = if (last == 0L) "Not synced yet" else "Last synced " + android.text.format.DateUtils.getRelativeTimeSpanString(last)
+        val when_ = (if (last == 0L) "Not synced yet" else "Last synced " + android.text.format.DateUtils.getRelativeTimeSpanString(last)) +
+            "\nInstant sync: " + (if (Push.token(a) != null) "on" else "off" + (Push.lastError?.let { " ($it)" } ?: ""))
         col.addView(Ui.text(a, when_, 14f, Ui.GREY))
         var d: com.google.android.material.bottomsheet.BottomSheetDialog? = null
         col.addView(Ui.button(a, "Sync now", true, 56) {

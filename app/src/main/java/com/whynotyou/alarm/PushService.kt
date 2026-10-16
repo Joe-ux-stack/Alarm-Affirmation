@@ -35,6 +35,16 @@ object Push {
         } catch (_: Throwable) {}
     }
 
+    /** Blocking: make sure we have this phone's token before a sync (call off the main thread). */
+    fun ensure(c: Context): String? {
+        token(c)?.let { return it }
+        return try {
+            val t = com.google.android.gms.tasks.Tasks.await(FirebaseMessaging.getInstance().token, 8, java.util.concurrent.TimeUnit.SECONDS)
+            if (t != null) save(c, t); t
+        } catch (e: Throwable) { lastError = e.message ?: e.javaClass.simpleName; null }
+    }
+    @Volatile var lastError: String? = null
+
     /** One-off sync as soon as there's a network. */
     fun fallback(c: Context) {
         val req = androidx.work.OneTimeWorkRequestBuilder<SyncWorker>()
