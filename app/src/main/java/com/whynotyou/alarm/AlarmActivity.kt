@@ -261,7 +261,6 @@ class AlarmActivity : AppCompatActivity() {
         sub.text = SimpleDateFormat("EEEE", Locale.getDefault()).format(Date())
         reveal = SentenceReveal(briefView, text.replace("Phone down.", "").trim())
         briefView.visibility = View.VISIBLE
-        orb.layoutParams = orb.layoutParams.apply { width = dp(120); height = dp(120) }
 
         val cached = BriefAudio.cached(this, alarm.id, text, alarm.voice)
         if (cached != null) { playBriefFile(cached); return }
