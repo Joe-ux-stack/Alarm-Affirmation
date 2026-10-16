@@ -48,7 +48,7 @@ jobs:
         if: steps.gate.outputs.ok
         run: |
           out=$(npx wrangler deploy 2>&1) || { echo "::error title=deploy::$(echo "$out" | tr '\n' ' ' | cut -c1-900)"; exit 1; }
-          echo "$out"
+          echo "::notice title=deploy::$(echo "$out" | grep -iE "getwhynotyou|custom|route" | tr "\n" " " | cut -c1-600)"
       - name: Secrets
         if: steps.gate.outputs.ok
         env:
