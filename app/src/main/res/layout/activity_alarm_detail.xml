@@ -67,6 +67,12 @@
             <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#15181F" />
 
             <LinearLayout style="@style/Row">
+                <TextView style="@style/RowLabel" android:text="Vibration" />
+                <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_vibrate" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+            </LinearLayout>
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#15181F" />
+
+            <LinearLayout style="@style/Row">
                 <TextView style="@style/RowLabel" android:text="Ramp up gently" />
                 <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_ramp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
             </LinearLayout>

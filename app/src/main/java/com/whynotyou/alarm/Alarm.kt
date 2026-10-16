@@ -14,6 +14,7 @@ data class Alarm(
     var enabled: Boolean = true,
     var volume: Int = 80,            // 0–100 of max alarm volume
     var ramp: Boolean = true,        // quiet start, full after 10 s
+    var vibrate: Boolean = true,     // pulse while ringing
     var snooze: Boolean = true,      // 5 min, max 2
     var message: Boolean = true,     // play a loved one's message after Stop
     var brief: Boolean = true,       // read calendar + intention after the message
@@ -48,7 +49,7 @@ data class Alarm(
     fun toJson(): JSONObject = JSONObject()
         .put("id", id).put("h", hour).put("m", minute)
         .put("days", JSONArray().also { a -> days.forEach { a.put(it) } })
-        .put("on", enabled).put("vol", volume).put("ramp", ramp).put("snooze", snooze)
+        .put("on", enabled).put("vol", volume).put("ramp", ramp).put("vib", vibrate).put("snooze", snooze)
         .put("msg", message).put("brief", brief).put("voice", voice).put("sound", soundName)
 
     companion object {
@@ -58,7 +59,7 @@ data class Alarm(
                 id = o.getString("id"), hour = o.getInt("h"), minute = o.getInt("m"),
                 days = BooleanArray(7) { i -> d?.optBoolean(i, i < 5) ?: (i < 5) },
                 enabled = o.optBoolean("on", true), volume = o.optInt("vol", 80),
-                ramp = o.optBoolean("ramp", true), snooze = o.optBoolean("snooze", true),
+                ramp = o.optBoolean("ramp", true), vibrate = o.optBoolean("vib", true), snooze = o.optBoolean("snooze", true),
                 message = o.optBoolean("msg", true), brief = o.optBoolean("brief", true),
                 voice = o.optString("voice", VoiceEngine.DEFAULT_VOICE),
                 soundName = o.optString("sound", "")

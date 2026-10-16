@@ -58,6 +58,7 @@ class AlarmDetailActivity : AppCompatActivity() {
         })
 
         bind(R.id.sw_ramp, alarm.ramp) { alarm.ramp = it }
+        bind(R.id.sw_vibrate, alarm.vibrate) { alarm.vibrate = it }
         bind(R.id.sw_snooze, alarm.snooze) { alarm.snooze = it }
         bind(R.id.sw_message, alarm.message) { alarm.message = it }
         bind(R.id.sw_brief, alarm.brief) { alarm.brief = it }

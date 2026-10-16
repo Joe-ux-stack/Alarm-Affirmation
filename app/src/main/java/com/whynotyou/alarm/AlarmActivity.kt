@@ -147,9 +147,20 @@ class AlarmActivity : AppCompatActivity() {
         p.playWhenReady = true
         p.prepare()
         if (alarm.ramp && !preview) rampVolume()
+        if (alarm.vibrate && !preview && !timerMode) startVibration()
         orb.mode = OrbView.Mode.SPEAK
         followFile(song ?: Uri.parse("android.resource://$packageName/${R.raw.chime}"), Phase.RINGING)
     }
+
+    private var vibrator: android.os.Vibrator? = null
+    /** Pulse: 0.5 s on, 1 s off, repeating while it rings. */
+    private fun startVibration() {
+        vibrator = if (Build.VERSION.SDK_INT >= 31) (getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as android.os.VibratorManager).defaultVibrator
+                   else @Suppress("DEPRECATION") (getSystemService(Context.VIBRATOR_SERVICE) as android.os.Vibrator)
+        val attrs = android.media.AudioAttributes.Builder().setUsage(android.media.AudioAttributes.USAGE_ALARM).build()
+        try { vibrator?.vibrate(android.os.VibrationEffect.createWaveform(longArrayOf(0, 500, 1000), 0), attrs) } catch (_: Throwable) {}
+    }
+    private fun stopVibration() { try { vibrator?.cancel() } catch (_: Throwable) {}; vibrator = null }
 
     private fun renderSnooze() { snooze.text = "Snooze $snoozeMin mins" }
 
@@ -163,6 +174,7 @@ class AlarmActivity : AppCompatActivity() {
     // ---- MESSAGE ---------------------------------------------------------------------------
     private fun startMessage() {
         phase = Phase.MESSAGE
+        stopVibration()
         ringControls.animate().alpha(0f).setDuration(250).withEndAction { ringControls.visibility = View.GONE }.start()
         orb.mode = OrbView.Mode.SPEAK
 
@@ -336,6 +348,7 @@ class AlarmActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        stopVibration()
         ui.removeCallbacksAndMessages(null)
         visualizer?.release()
         speaker?.release()
