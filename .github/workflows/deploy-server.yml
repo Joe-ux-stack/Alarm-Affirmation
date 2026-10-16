@@ -42,13 +42,13 @@ jobs:
           [ -n "$D1" ] && [ -n "$KV" ] || fail ids "D1=$D1 KV=$KV"
           sed -i "s/REPLACE_WITH_D1_ID/$D1/; s/REPLACE_WITH_KV_ID/$KV/" wrangler.toml
           if [ -n "${{ vars.GOOGLE_CLIENT_ID }}" ]; then sed -i "s/REPLACE_WITH_WEB_CLIENT_ID.apps.googleusercontent.com/${{ vars.GOOGLE_CLIENT_ID }}/" wrangler.toml; else echo "::warning::GOOGLE_CLIENT_ID variable missing"; fi
-          out=$(npx wrangler d1 execute whynotyou --remote --file=schema.sql -y 2>&1) || fail schema "$out"
+          out=$(npx wrangler d1 execute whynotyou -c wrangler.toml --remote --file=schema.sql -y 2>&1) || fail schema "$out"
           echo "ok D1=$D1 KV=$KV"
       - name: Deploy
         if: steps.gate.outputs.ok
         run: |
-          out=$(npx wrangler deploy 2>&1) || { echo "::error title=deploy::$(echo "$out" | tr '\n' ' ' | cut -c1-900)"; exit 1; }
-          echo "::notice title=deploy::$(echo "$out" | grep -iE "getwhynotyou|custom|route" | tr "\n" " " | cut -c1-600)"
+          out=$(npx wrangler deploy -c wrangler.toml 2>&1) || { echo "::error title=deploy::$(echo "$out" | tr '\n' ' ' | cut -c1-900)"; exit 1; }
+          echo "::notice title=deploy::$(echo "$out" | grep -iE "Uploaded|Deployed|getwhynotyou|custom|route" | tr "\n" " " | cut -c1-600)"
       - name: Secrets
         if: steps.gate.outputs.ok
         env:
@@ -59,7 +59,7 @@ jobs:
         run: |
           for k in GOOGLE_CLIENT_SECRET PRO_EMAILS PLAY_SERVICE_ACCOUNT_JSON RTDN_SECRET; do
             v="${!k}"
-            if [ -n "$v" ]; then printf '%s' "$v" | npx wrangler secret put "$k" >/dev/null && echo "::notice title=secret::set $k" || { echo "::error title=secret::failed $k"; exit 1; }
+            if [ -n "$v" ]; then printf '%s' "$v" | npx wrangler secret put "$k" -c wrangler.toml >/dev/null && echo "::notice title=secret::set $k" || { echo "::error title=secret::failed $k"; exit 1; }
             else echo "::notice title=secret::skipped $k (not set)"; fi
           done
       - name: Smoke test
