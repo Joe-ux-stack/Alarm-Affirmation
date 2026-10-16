@@ -10,6 +10,8 @@ export interface Env {
   GOOGLE_CLIENT_SECRET: string;
   PLAY_SERVICE_ACCOUNT_JSON: string;
   RTDN_SECRET: string;
+  /** Optional secret: comma-separated emails that get Pro without paying (testers). */
+  PRO_EMAILS?: string;
 }
 
 export type Props = { userId: string };
@@ -28,6 +30,8 @@ export async function upsertUser(env: Env, sub: string, email: string): Promise<
 }
 
 export async function isPro(env: Env, userId: string): Promise<boolean> {
-  const u = await env.DB.prepare("SELECT pro_until FROM users WHERE id = ?").bind(userId).first<{ pro_until: number }>();
-  return !!u && u.pro_until > now();
+  const u = await env.DB.prepare("SELECT pro_until, email FROM users WHERE id = ?").bind(userId).first<{ pro_until: number; email: string }>();
+  if (!u) return false;
+  const testers = (env.PRO_EMAILS ?? "").toLowerCase().split(",").map((e) => e.trim()).filter(Boolean);
+  return u.pro_until > now() || testers.includes((u.email ?? "").toLowerCase());
 }

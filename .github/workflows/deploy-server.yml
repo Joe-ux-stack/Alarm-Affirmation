@@ -1,0 +1,55 @@
+name: Deploy server
+on:
+  push:
+    branches: [kokoro-ort]
+    paths: ["server/**", ".github/workflows/deploy-server.yml"]
+  workflow_dispatch:
+concurrency: deploy-server
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: server } }
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Skip until Cloudflare secrets exist
+        id: gate
+        run: if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ]; then echo ok=1 >> $GITHUB_OUTPUT; else echo "::warning::Add CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets"; fi
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.ok
+        with: { node-version: 22 }
+      - if: steps.gate.outputs.ok
+        run: npm ci
+      - name: Database and storage (created once, reused after)
+        if: steps.gate.outputs.ok
+        run: |
+          D1=$(npx wrangler d1 list --json | jq -r '.[] | select(.name=="whynotyou") | .uuid')
+          [ -z "$D1" ] && npx wrangler d1 create whynotyou >/dev/null && D1=$(npx wrangler d1 list --json | jq -r '.[] | select(.name=="whynotyou") | .uuid')
+          KV=$(npx wrangler kv namespace list | jq -r '.[] | select(.title=="whynotyou-oauth") | .id')
+          [ -z "$KV" ] && npx wrangler kv namespace create whynotyou-oauth >/dev/null && KV=$(npx wrangler kv namespace list | jq -r '.[] | select(.title=="whynotyou-oauth") | .id')
+          [ -n "$D1" ] && [ -n "$KV" ] || { echo "Could not get D1/KV ids"; exit 1; }
+          sed -i "s/REPLACE_WITH_D1_ID/$D1/; s/REPLACE_WITH_KV_ID/$KV/" wrangler.toml
+          if [ -n "${{ vars.GOOGLE_CLIENT_ID }}" ]; then sed -i "s/REPLACE_WITH_WEB_CLIENT_ID.apps.googleusercontent.com/${{ vars.GOOGLE_CLIENT_ID }}/" wrangler.toml; fi
+          npx wrangler d1 execute whynotyou --remote --file=schema.sql -y
+      - name: Deploy
+        if: steps.gate.outputs.ok
+        run: npx wrangler deploy
+      - name: Secrets
+        if: steps.gate.outputs.ok
+        env:
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          PRO_EMAILS: ${{ secrets.PRO_EMAILS }}
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          RTDN_SECRET: ${{ secrets.RTDN_SECRET }}
+        run: |
+          for k in GOOGLE_CLIENT_SECRET PRO_EMAILS PLAY_SERVICE_ACCOUNT_JSON RTDN_SECRET; do
+            v="${!k}"; [ -n "$v" ] && printf '%s' "$v" | npx wrangler secret put "$k" >/dev/null && echo "set $k"
+          done
+      - name: Smoke test
+        if: steps.gate.outputs.ok
+        run: |
+          sleep 10
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST https://mcp.getwhynotyou.com/mcp)
+          echo "POST /mcp without token -> $code (expect 401)"
