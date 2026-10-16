@@ -105,6 +105,14 @@ class MainActivity : AppCompatActivity() {
             content.setOnClickListener {
                 startActivity(Intent(this, AlarmDetailActivity::class.java).putExtra(AlarmDetailActivity.EXTRA_ID, a.id))
             }
+            val askDelete = View.OnLongClickListener {
+                androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Delete this alarm?")
+                    .setPositiveButton("Delete") { _, _ -> AlarmStore.delete(this, a.id); refresh() }
+                    .setNegativeButton("Cancel", null).show()
+                true
+            }
+            content.setOnLongClickListener(askDelete)
+            v.findViewById<View>(R.id.row_main).setOnLongClickListener(askDelete)
 
             plan.visibility = View.GONE
             list.addView(v)

@@ -81,7 +81,7 @@ class AlarmDetailActivity : AppCompatActivity() {
         }
 
         findViewById<Button>(R.id.btn_delete).apply {
-            visibility = if (isNew) View.GONE else View.VISIBLE
+            visibility = View.GONE   // delete lives on the alarm list (long-press a card)
             setOnClickListener { AlarmStore.delete(this@AlarmDetailActivity, alarm.id); finish() }
         }
         findViewById<Button>(R.id.btn_cancel).setOnClickListener { finish() }
