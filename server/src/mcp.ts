@@ -1,7 +1,7 @@
 // The AI connection: a small, stateless MCP server (JSON-RPC over Streamable HTTP, JSON responses).
 // Every request arrives already authenticated by the OAuth provider; ctx.props.userId says whose data.
 import { type Env, type Props, now, isPro } from "./env";
-import { wakePhones } from "./push";
+import { wakePhones, pushStatus } from "./push";
 
 const PROTOCOL = "2025-06-18";
 
@@ -70,6 +70,7 @@ const tools: Tool[] = [
       return JSON.stringify({
         alarms: on.map(fmtAlarm), plan: s.plan || null,
         calendar: s.tomorrow, lastSyncedFromPhone: s.updatedAt ? new Date(s.updatedAt).toISOString() : null,
+        instantSync: await pushStatus(env, userId),
       });
     },
   },
