@@ -33,7 +33,10 @@ class SetupActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btn_overlay).setOnClickListener {
             startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
         }
-        findViewById<Button>(R.id.btn_continue).setOnClickListener { finish() }
+        findViewById<Button>(R.id.btn_continue).setOnClickListener {
+            if (!Onboarding.trialShown(this)) startActivity(android.content.Intent(this, TrialActivity::class.java))
+            finish()
+        }
         info(R.id.info_notif, R.id.txt_notif); info(R.id.info_exact, R.id.txt_exact)
         info(R.id.info_battery, R.id.txt_battery); info(R.id.info_overlay, R.id.txt_overlay)
     }
@@ -48,7 +51,8 @@ class SetupActivity : AppCompatActivity() {
         val all = Permissions.allGranted(this)
         findViewById<Button>(R.id.btn_continue).apply {
             isEnabled = all
-            alpha = if (all) 1f else 0.4f
+            backgroundTintList = android.content.res.ColorStateList.valueOf(if (all) Ui.BLUE else Ui.SEC)
+            setTextColor(if (all) 0xFFFFFFFF.toInt() else 0xFF6F7EA6.toInt())
             text = if (all) "Continue" else "${Permissions.missingCount(this@SetupActivity)} left"
         }
     }

@@ -23,7 +23,9 @@ object AlarmScheduler {
 
     /** Recompute and arm the soonest alarm. Call after any alarm change. */
     fun reschedule(c: Context) {
+        val sn = snoozedUntil(c); val snId = prefs(c).getString("snooze_id", null)
         val next = AlarmStore.next(c)
+        if (sn != null && snId != null && (next == null || sn <= next.second)) { arm(c, snId, sn); return }
         if (next == null) { cancel(c); return }
         arm(c, next.first.id, next.second)
     }
@@ -36,8 +38,19 @@ object AlarmScheduler {
     fun snooze(c: Context, alarmId: String, minutes: Int = 5) {
         val used = prefs(c).getInt(KEY_SNOOZES, 0)
         if (used >= MAX_SNOOZES) return
-        prefs(c).edit().putInt(KEY_SNOOZES, used + 1).apply()
-        arm(c, alarmId, System.currentTimeMillis() + minutes * 60_000L)
+        val at = System.currentTimeMillis() + minutes * 60_000L
+        prefs(c).edit().putInt(KEY_SNOOZES, used + 1).putLong("snooze_at", at).putString("snooze_id", alarmId).apply()
+        arm(c, alarmId, at)
+    }
+
+    /** When a snoozed alarm will ring again, or null if nothing is snoozed. */
+    fun snoozedUntil(c: Context): Long? = prefs(c).getLong("snooze_at", -1L).takeIf { it > System.currentTimeMillis() }
+
+    /** Cancel a snooze from the home screen: counts as dismissing that alarm. */
+    fun stopSnooze(c: Context) {
+        val id = prefs(c).getString("snooze_id", null)
+        prefs(c).edit().remove("snooze_at").remove("snooze_id").apply()
+        if (id != null) onDismissed(c, id) else reschedule(c)
     }
 
     fun snoozesLeft(c: Context) = (MAX_SNOOZES - prefs(c).getInt(KEY_SNOOZES, 0)).coerceAtLeast(0)
@@ -52,7 +65,7 @@ object AlarmScheduler {
 
     fun onFired(c: Context) {
         val due = prefs(c).getLong(KEY_PENDING_AT, -1L)
-        prefs(c).edit().putLong("log_due", due).putLong("log_fired", System.currentTimeMillis()).remove("log_shown").remove(KEY_PENDING_AT).apply()
+        prefs(c).edit().putLong("log_due", due).putLong("log_fired", System.currentTimeMillis()).remove("log_shown").remove(KEY_PENDING_AT).remove("snooze_at").apply()
     }
     fun onShown(c: Context) { prefs(c).edit().putLong("log_shown", System.currentTimeMillis()).apply() }
     /** "due 6:30:00 · fired +1s · screen +2s" for the last alarm, or null. */

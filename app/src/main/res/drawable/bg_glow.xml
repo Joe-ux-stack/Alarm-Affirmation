@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Soft blue glow behind the orb. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
+    <gradient android:type="radial" android:gradientRadius="50%p" android:startColor="#552D5BFF" android:centerColor="#222D5BFF" android:endColor="#002D5BFF" />
+</shape>

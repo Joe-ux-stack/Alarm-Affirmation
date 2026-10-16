@@ -22,7 +22,7 @@ object TimerSettings {
     fun showSheet(activity: Activity, onDone: () -> Unit) {
         val dialog = BottomSheetDialog(activity, R.style.SheetDark)
         val v = LayoutInflater.from(activity).inflate(R.layout.sheet_timer_settings, null)
-        dialog.setContentView(v)
+        Sheet.float(dialog, v)
         val pr = presets(activity)
         val e1 = v.findViewById<EditText>(R.id.p1); val e2 = v.findViewById<EditText>(R.id.p2); val e3 = v.findViewById<EditText>(R.id.p3)
         e1.setText(pr[0].toString()); e2.setText(pr[1].toString()); e3.setText(pr[2].toString())

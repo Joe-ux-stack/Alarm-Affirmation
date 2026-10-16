@@ -2,7 +2,7 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000000">
+    android:background="#060B18">
 
     <ScrollView
         android:layout_width="match_parent"
@@ -12,9 +12,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingStart="12dp"
+            android:paddingStart="20dp"
             android:paddingTop="48dp"
-            android:paddingEnd="12dp"
+            android:paddingEnd="20dp"
             android:paddingBottom="140dp">
 
             <LinearLayout
@@ -22,107 +22,130 @@
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:orientation="horizontal">
-                <com.whynotyou.alarm.WheelView android:id="@+id/wheel_h" android:layout_width="104dp" android:layout_height="200dp" />
-                <com.whynotyou.alarm.WheelView android:id="@+id/wheel_m" android:layout_width="104dp" android:layout_height="200dp" />
+                <com.whynotyou.alarm.WheelView android:id="@+id/wheel_h" android:layout_width="96dp" android:layout_height="200dp" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingBottom="6dp" android:text=":" android:textColor="#F2F4F8" android:textSize="34sp" android:textStyle="bold" />
+                <com.whynotyou.alarm.WheelView android:id="@+id/wheel_m" android:layout_width="96dp" android:layout_height="200dp" />
                 <com.whynotyou.alarm.WheelView android:id="@+id/wheel_ap" android:layout_width="80dp" android:layout_height="200dp" />
             </LinearLayout>
 
-            <LinearLayout
-                android:id="@+id/row_days"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:orientation="horizontal" />
-
-            <TextView style="@style/Caption" android:layout_marginTop="36dp" android:text="Sound" />
+            <TextView style="@style/Caption" android:layout_marginTop="28dp" android:text="Alarm" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:orientation="vertical">
-                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
-                    <TextView style="@style/RowLabel" android:text="Volume" />
-                    <TextView android:id="@+id/txt_volume" style="@style/RowValue" android:text="80%" />
-                </LinearLayout>
-                <SeekBar
-                    android:id="@+id/seek_volume"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_box"
+                android:orientation="vertical"
+                android:paddingStart="16dp"
+                android:paddingTop="4dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="4dp">
+
+                <LinearLayout
+                    android:id="@+id/row_days"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:max="100"
-                    android:paddingStart="0dp"
-                    android:paddingEnd="0dp"
-                    android:progressTint="#F2F4F8"
-                    android:progressBackgroundTint="#22262F"
-                    android:thumbTint="#F2F4F8" />
-            </LinearLayout>
-            <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginTop="10dp" android:background="#15181F" />
+                    android:paddingTop="14dp"
+                    android:paddingBottom="14dp"
+                    android:orientation="horizontal" />
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#1F2840" />
 
-            <LinearLayout android:id="@+id/row_sound" style="@style/Row" android:background="?android:attr/selectableItemBackground">
-                <TextView style="@style/RowLabel" android:text="Sound" />
-                <TextView android:id="@+id/txt_sound" style="@style/RowValue" android:maxWidth="200dp" android:singleLine="true" android:ellipsize="end" android:text="Chime" />
-                <ImageView android:layout_width="18dp" android:layout_height="18dp" android:layout_marginStart="8dp" android:src="@drawable/ic_chevron" android:tint="#7A8294" android:importantForAccessibility="no" />
-            </LinearLayout>
-            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#15181F" />
-
-            <LinearLayout style="@style/Row">
-                <TextView style="@style/RowLabel" android:text="Vibration" />
-                <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_vibrate" android:layout_width="wrap_content" android:layout_height="wrap_content" />
-            </LinearLayout>
-            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#15181F" />
-
-            <LinearLayout style="@style/Row">
-                <TextView style="@style/RowLabel" android:text="Ramp up gently" />
-                <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_ramp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
-            </LinearLayout>
-            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#15181F" />
-
-            <LinearLayout style="@style/Row">
-                <TextView style="@style/RowLabel" android:text="Snooze" />
-                <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_snooze" android:layout_width="wrap_content" android:layout_height="wrap_content" />
-            </LinearLayout>
-            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#15181F" />
-
-            <TextView style="@style/Caption" android:layout_marginTop="36dp" android:text="After you stop it" />
-
-            <LinearLayout style="@style/Row" android:layout_marginTop="4dp">
-                <TextView style="@style/RowLabel" android:text="Message" />
-                <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_message" android:layout_width="wrap_content" android:layout_height="wrap_content" />
-            </LinearLayout>
-            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#15181F" />
-
-            <LinearLayout style="@style/Row">
-                <TextView style="@style/RowLabel" android:text="Read my day" />
-                <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_brief" android:layout_width="wrap_content" android:layout_height="wrap_content" />
-            </LinearLayout>
-            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#15181F" />
-
-            <LinearLayout android:id="@+id/row_tomorrow" style="@style/Row" android:background="?android:attr/selectableItemBackground">
-                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Tomorrow I will" android:textColor="#F2F4F8" android:textSize="16sp" android:textStyle="bold" />
-                    <TextView android:id="@+id/txt_tomorrow" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="Add a line" android:textColor="#7A8294" android:textSize="14sp" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="14dp"
+                    android:paddingBottom="14dp"
+                    android:orientation="vertical">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+                        <TextView style="@style/RowLabel" android:text="Volume" />
+                        <TextView android:id="@+id/txt_volume" style="@style/RowValue" android:text="80%" />
+                    </LinearLayout>
+                    <SeekBar
+                        android:id="@+id/seek_volume"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:max="100"
+                        android:paddingStart="0dp"
+                        android:paddingEnd="0dp"
+                        android:progressTint="#F2F4F8"
+                        android:progressBackgroundTint="#2A3550"
+                        android:thumbTint="#F2F4F8" />
                 </LinearLayout>
-                <ImageView android:layout_width="18dp" android:layout_height="18dp" android:src="@drawable/ic_chevron" android:tint="#7A8294" android:importantForAccessibility="no" />
-            </LinearLayout>
-            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#15181F" />
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#1F2840" />
 
-            <LinearLayout android:id="@+id/row_voice" style="@style/Row" android:background="?android:attr/selectableItemBackground">
-                <TextView style="@style/RowLabel" android:text="Voice" />
-                <TextView android:id="@+id/txt_voice" style="@style/RowValue" android:text="Sky" />
-                <ImageView android:layout_width="18dp" android:layout_height="18dp" android:layout_marginStart="8dp" android:src="@drawable/ic_chevron" android:tint="#7A8294" android:importantForAccessibility="no" />
-            </LinearLayout>
-            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#15181F" />
+                <LinearLayout android:id="@+id/row_sound" style="@style/Row" android:minHeight="64dp" android:background="?android:attr/selectableItemBackground">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Sound" android:textColor="#F2F4F8" android:textSize="16sp" android:textStyle="bold" />
+                        <TextView android:id="@+id/txt_sound" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:maxWidth="260dp" android:singleLine="true" android:ellipsize="end" android:text="Chime" android:textColor="#93AEFF" android:textSize="14sp" />
+                    </LinearLayout>
+                    <ImageView android:layout_width="18dp" android:layout_height="18dp" android:src="@drawable/ic_chevron" android:tint="#8A93A8" android:importantForAccessibility="no" />
+                </LinearLayout>
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#1F2840" />
 
-            <Button
-            android:letterSpacing="0"
-                android:id="@+id/btn_delete"
-                style="@style/TextButton"
-                android:layout_width="wrap_content"
-                android:layout_height="44dp"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginTop="24dp"
-                android:text="Delete alarm" />
+                <LinearLayout style="@style/Row" android:minHeight="64dp">
+                    <LinearLayout android:id="@+id/row_vibration" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:background="?android:attr/selectableItemBackground">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Vibration" android:textColor="#F2F4F8" android:textSize="16sp" android:textStyle="bold" />
+                        <TextView android:id="@+id/txt_vibration" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="Pulse" android:textColor="#93AEFF" android:textSize="14sp" />
+                    </LinearLayout>
+                    <View android:layout_width="1dp" android:layout_height="28dp" android:layout_marginEnd="12dp" android:background="#2A3550" />
+                    <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_vibrate" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                </LinearLayout>
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#1F2840" />
+
+                <LinearLayout style="@style/Row">
+                    <TextView style="@style/RowLabel" android:text="Ramp up gently" />
+                    <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_ramp" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                </LinearLayout>
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#1F2840" />
+
+                <LinearLayout style="@style/Row">
+                    <TextView style="@style/RowLabel" android:text="Snooze" />
+                    <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_snooze" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView style="@style/Caption" android:layout_marginTop="32dp" android:text="After you stop it" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_box"
+                android:orientation="vertical"
+                android:paddingStart="16dp"
+                android:paddingTop="4dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="4dp">
+
+                <LinearLayout style="@style/Row" android:minHeight="64dp">
+                    <LinearLayout android:id="@+id/row_voice" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:background="?android:attr/selectableItemBackground">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Read my plans" android:textColor="#F2F4F8" android:textSize="16sp" android:textStyle="bold" />
+                        <TextView android:id="@+id/txt_voice" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="Sky" android:textColor="#93AEFF" android:textSize="14sp" />
+                    </LinearLayout>
+                    <View android:layout_width="1dp" android:layout_height="28dp" android:layout_marginEnd="12dp" android:background="#2A3550" />
+                    <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_brief" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                </LinearLayout>
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#1F2840" />
+
+                <LinearLayout style="@style/Row" android:minHeight="64dp">
+                    <LinearLayout android:id="@+id/row_reminder" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:background="?android:attr/selectableItemBackground">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Planning reminder" android:textColor="#F2F4F8" android:textSize="16sp" android:textStyle="bold" />
+                        <TextView android:id="@+id/txt_reminder" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="9:00 pm the night before" android:textColor="#93AEFF" android:textSize="14sp" />
+                    </LinearLayout>
+                    <View android:layout_width="1dp" android:layout_height="28dp" android:layout_marginEnd="12dp" android:background="#2A3550" />
+                    <androidx.appcompat.widget.SwitchCompat android:id="@+id/sw_reminder" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                </LinearLayout>
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#1F2840" />
+
+                <LinearLayout android:id="@+id/row_tomorrow" style="@style/Row" android:minHeight="64dp" android:background="?android:attr/selectableItemBackground">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Plan for tomorrow" android:textColor="#F2F4F8" android:textSize="16sp" android:textStyle="bold" />
+                        <TextView android:id="@+id/txt_tomorrow" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:maxLines="2" android:ellipsize="end" android:text="Not set" android:textColor="#8A93A8" android:textSize="14sp" />
+                    </LinearLayout>
+                    <ImageView android:layout_width="18dp" android:layout_height="18dp" android:src="@drawable/ic_chevron" android:tint="#8A93A8" android:importantForAccessibility="no" />
+                </LinearLayout>
+            </LinearLayout>
         </LinearLayout>
     </ScrollView>
 
@@ -130,12 +153,12 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:background="#000000"
+        android:background="#060B18"
         android:orientation="horizontal"
-        android:paddingStart="12dp"
+        android:paddingStart="20dp"
         android:paddingTop="12dp"
-        android:paddingEnd="12dp"
-        android:paddingBottom="32dp">
+        android:paddingEnd="20dp"
+        android:paddingBottom="28dp">
         <Button
             android:letterSpacing="0"
             android:id="@+id/btn_cancel"

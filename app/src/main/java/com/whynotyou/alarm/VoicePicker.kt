@@ -19,7 +19,7 @@ object VoicePicker {
         val dialog = BottomSheetDialog(a, R.style.SheetDark)
         val root = LinearLayout(a).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(0xFF0B0D12.toInt())
+            setBackgroundColor(0xFF0D1430.toInt())
             setPadding(dp(a, 28), dp(a, 24), dp(a, 28), dp(a, 36))
         }
         var player: MediaPlayer? = null
@@ -41,7 +41,7 @@ object VoicePicker {
             }
             val col = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL; layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f) }
             col.addView(TextView(a).apply { text = v.name; textSize = 17f; setTextColor(0xFFF2F4F8.toInt()); setTypeface(typeface, android.graphics.Typeface.BOLD) })
-            val sub = TextView(a).apply { text = "${v.region} · ${v.sex}"; textSize = 13f; setTextColor(0xFF7A8294.toInt()) }
+            val sub = TextView(a).apply { text = "${v.region} · ${v.sex}"; textSize = 13f; setTextColor(0xFF8A93A8.toInt()) }
             col.addView(sub)
             val tick = TextView(a).apply {
                 text = "\u2713"; textSize = 20f; setTextColor(0xFFF2F4F8.toInt())
@@ -64,15 +64,15 @@ object VoicePicker {
             col.setOnClickListener { stop(); onPick(v.id); dialog.dismiss() }
             row.addView(play); row.addView(col); row.addView(tick)
             root.addView(row)
-            root.addView(View(a).apply { setBackgroundColor(0xFF15181F.toInt()); layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1) })
+            root.addView(View(a).apply { setBackgroundColor(0xFF1F2840.toInt()); layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1) })
         }
         if (!VoiceEngine.isAvailable(a)) {
             root.addView(TextView(a).apply {
                 text = if (ModelStore.isDownloading()) "Downloading voices… ${ModelStore.progress}%" else "Voices aren't downloaded yet — the alarm uses the phone's voice until they are. Download in Settings."
-                textSize = 13f; setTextColor(0xFF7A8294.toInt()); setPadding(0, dp(a, 18), 0, 0)
+                textSize = 13f; setTextColor(0xFF8A93A8.toInt()); setPadding(0, dp(a, 18), 0, 0)
             })
         }
-        dialog.setContentView(root)
+        Sheet.float(dialog, root)
         dialog.setOnDismissListener { stop() }
         dialog.show()
     }

@@ -19,7 +19,11 @@ data class Alarm(
     var message: Boolean = true,     // play a loved one's message after Stop
     var brief: Boolean = true,       // read calendar + intention after the message
     var voice: String = VoiceEngine.DEFAULT_VOICE,
-    var soundName: String = ""       // "" = built-in chime; else a song copied into filesDir/sounds
+    var soundName: String = "",      // "" = built-in chime; else a song copied into filesDir/sounds
+    var vibePattern: String = "pulse", // pulse | heartbeat | steady | gentle
+    var planRemind: Boolean = true,  // remind the night before to write the plan
+    var planHour: Int = 21,
+    var planMinute: Int = 0
 ) {
     fun soundFile(c: android.content.Context) = java.io.File(c.filesDir, "sounds/$id.audio")
     fun hasCustomSound(c: android.content.Context) = soundName.isNotEmpty() && soundFile(c).exists()
@@ -51,6 +55,7 @@ data class Alarm(
         .put("days", JSONArray().also { a -> days.forEach { a.put(it) } })
         .put("on", enabled).put("vol", volume).put("ramp", ramp).put("vib", vibrate).put("snooze", snooze)
         .put("msg", message).put("brief", brief).put("voice", voice).put("sound", soundName)
+        .put("vibp", vibePattern).put("pr", planRemind).put("ph", planHour).put("pm", planMinute)
 
     companion object {
         fun fromJson(o: JSONObject): Alarm {
@@ -62,7 +67,9 @@ data class Alarm(
                 ramp = o.optBoolean("ramp", true), vibrate = o.optBoolean("vib", true), snooze = o.optBoolean("snooze", true),
                 message = o.optBoolean("msg", true), brief = o.optBoolean("brief", true),
                 voice = o.optString("voice", VoiceEngine.DEFAULT_VOICE),
-                soundName = o.optString("sound", "")
+                soundName = o.optString("sound", ""),
+                vibePattern = o.optString("vibp", "pulse"),
+                planRemind = o.optBoolean("pr", true), planHour = o.optInt("ph", 21), planMinute = o.optInt("pm", 0)
             )
         }
         fun new(hour: Int = 7, minute: Int = 0) = Alarm(System.currentTimeMillis().toString(36), hour, minute)

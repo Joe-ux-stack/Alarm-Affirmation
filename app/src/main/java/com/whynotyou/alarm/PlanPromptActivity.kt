@@ -22,7 +22,7 @@ class PlanPromptActivity : AppCompatActivity() {
         fun dp(v: Int) = (v * d).toInt()
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL
-            setBackgroundColor(0xFF000000.toInt()); setPadding(dp(16), dp(96), dp(16), dp(32))
+            setBackgroundColor(0xFF060B18.toInt()); setPadding(dp(20), dp(96), dp(20), dp(32))
         }
         root.addView(OrbView(this).apply { mode = OrbView.Mode.BREATHE }, LinearLayout.LayoutParams(dp(200), dp(200)))
         root.addView(TextView(this).apply {
@@ -31,26 +31,27 @@ class PlanPromptActivity : AppCompatActivity() {
         val a = EveningPlan.tomorrowAlarm(this)
         root.addView(TextView(this).apply {
             text = if (a != null) "Alarm at ${"%d:%02d".format(if (a.hour % 12 == 0) 12 else a.hour % 12, a.minute)} ${if (a.hour < 12) "am" else "pm"}" else ""
-            textSize = 15f; setTextColor(0xFF7A8294.toInt()); gravity = Gravity.CENTER
+            textSize = 15f; setTextColor(0xFF8A93A8.toInt()); gravity = Gravity.CENTER
         }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
         root.addView(android.view.View(this), LinearLayout.LayoutParams(-1, 0, 1f))
 
         val start = MaterialButton(this).apply {
-            text = "Start"; isAllCaps = false; letterSpacing = 0f; typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL); textSize = 18f; setTextColor(0xFF000000.toInt())
-            backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFF2F4F8.toInt()); cornerRadius = dp(32)
+            text = "Start"; isAllCaps = false; letterSpacing = 0f; typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL); textSize = 18f; setTextColor(0xFFFFFFFF.toInt())
+            backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF3461FF.toInt()); cornerRadius = dp(32)
             setOnClickListener { PlanSheet.show(this@PlanPromptActivity) { finish() } }
         }
         val later = MaterialButton(this).apply {
-            text = "Later"; isAllCaps = false; letterSpacing = 0f; typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL); textSize = 16f; setTextColor(0xFFB8BFCC.toInt())
-            backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF15181F.toInt()); cornerRadius = dp(28)
+            text = "Later"; isAllCaps = false; letterSpacing = 0f; typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL); textSize = 16f; setTextColor(0xFFC9D4FF.toInt())
+            backgroundTintList = android.content.res.ColorStateList.valueOf(0x292D5BFF); cornerRadius = dp(28)
             setOnClickListener {
                 val opts = intArrayOf(15, 30, 60)
-                AlertDialog.Builder(this@PlanPromptActivity).setTitle("Remind me in")
-                    .setItems(opts.map { "$it min" }.toTypedArray()) { _, i -> EveningPlan.later(this@PlanPromptActivity, opts[i]); finish() }.show()
+                Sheet.pick(this@PlanPromptActivity, "Remind me in", listOf("15 minutes" to null, "30 minutes" to null, "1 hour" to null), 1) { i ->
+                    EveningPlan.later(this@PlanPromptActivity, opts[i]); finish()
+                }
             }
         }
         val skip = MaterialButton(this, null, com.google.android.material.R.attr.borderlessButtonStyle).apply {
-            text = "Skip tonight"; isAllCaps = false; letterSpacing = 0f; typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL); textSize = 15f; setTextColor(0xFF7A8294.toInt())
+            text = "Skip tonight"; isAllCaps = false; letterSpacing = 0f; typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL); textSize = 15f; setTextColor(0xFF8A93A8.toInt())
             setOnClickListener { finish() }
         }
         root.addView(start, LinearLayout.LayoutParams(-1, dp(64)))

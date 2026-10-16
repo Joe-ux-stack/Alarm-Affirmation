@@ -1,4 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_bg">#000000</color>
+    <color name="bg">#060B18</color>
+    <color name="sheet">#0D1430</color>
+    <color name="sec">#1C2541</color>
+    <color name="line">#1F2840</color>
+    <color name="text">#F2F4F8</color>
+    <color name="grey">#8A93A8</color>
+    <color name="caption">#5E6880</color>
+    <color name="accent">#93AEFF</color>
+    <color name="blue">#2D5BFF</color>
+    <color name="placeholder">#6F7EA6</color>
 </resources>

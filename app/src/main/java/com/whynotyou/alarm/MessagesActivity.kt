@@ -1,255 +1,82 @@
 package com.whynotyou.alarm
 
-import android.Manifest
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.media.MediaPlayer
-import android.media.MediaRecorder
-import android.os.Build
-import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.view.Gravity
-import android.view.View
-import android.widget.Button
-import android.widget.EditText
-import android.widget.ImageButton
 import android.widget.LinearLayout
-import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
-import java.io.File
+import androidx.appcompat.widget.SwitchCompat
 
-class MessagesActivity : AppCompatActivity() {
+/** Settings (the gear). Kept under this class name so existing links keep working. */
+class MessagesActivity : ScreenActivity() {
 
-    private lateinit var list: LinearLayout
-    private lateinit var recorderBox: View
-    private lateinit var recTime: TextView
-    private lateinit var recFrom: EditText
-    private lateinit var recOrb: OrbView
+    private val voiceTick = Runnable { if (!isFinishing) rebuild() }
 
-    private var recorder: MediaRecorder? = null
-    private var recFile: File? = null
-    private var recStart = 0L
-    private val ui = Handler(Looper.getMainLooper())
-    private var preview: MediaPlayer? = null
+    override fun build() {
+        header("Settings")
+        val pro = Pro.isPro(this)
 
-    private val pickImport = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri == null) return@registerForActivityResult
-        askFrom { from ->
-            val m = MessageStore.import(this, uri, from)
-            Toast.makeText(this, if (m != null) "Added" else "Couldn't read that file", Toast.LENGTH_SHORT).show()
-            refresh()
-        }
-    }
-    private val askMic = registerForActivityResult(ActivityResultContracts.RequestPermission()) { ok -> if (ok) startRecording() }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_messages)
-        list = findViewById(R.id.list); recorderBox = findViewById(R.id.recorder)
-        recTime = findViewById(R.id.rec_time); recFrom = findViewById(R.id.rec_from); recOrb = findViewById(R.id.rec_orb)
-
-        findViewById<ImageButton>(R.id.btn_back).setOnClickListener { finish() }
-        findViewById<Button>(R.id.btn_record).setOnClickListener {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) startRecording()
-            else askMic.launch(Manifest.permission.RECORD_AUDIO)
-        }
-        findViewById<Button>(R.id.btn_import).setOnClickListener { pickImport.launch(arrayOf("audio/*", "video/*")) }
-        findViewById<Button>(R.id.rec_cancel).setOnClickListener { stopRecording(save = false) }
-        findViewById<Button>(R.id.rec_stop).setOnClickListener { stopRecording(save = true) }
-
-        findViewById<View>(R.id.row_plan).setOnClickListener { startActivity(Intent(this, EveningPlanActivity::class.java)) }
-        findViewById<View>(R.id.row_phonedown).setOnClickListener { startActivity(Intent(this, PhoneDownActivity::class.java)) }
-        findViewById<View>(R.id.row_permissions).setOnClickListener { startActivity(Intent(this, SetupActivity::class.java)) }
-        findViewById<View>(R.id.row_test).setOnClickListener {
-            AlarmScheduler.scheduleTestInMinutes(this, 1)
-            Toast.makeText(this, "Lock the phone. Firing in 60 s.", Toast.LENGTH_LONG).show()
-        }
-        findViewById<View>(R.id.row_voices).setOnClickListener {
-            val v = ModelStore.selected(this)
-            if (ModelStore.isDownloaded(this, v)) {
-                android.app.AlertDialog.Builder(this, R.style.SheetDark).setTitle("Voices downloaded")
-                    .setMessage("${v.label} quality, ${v.mb} MB on this phone.")
-                    .setPositiveButton("Keep", null)
-                    .setNegativeButton("Delete") { _, _ -> ModelStore.delete(this, v); renderVoiceRows() }.show()
-            } else if (!ModelStore.isDownloading()) {
-                ModelStore.download(this, v) { ok -> runOnUiThread { renderVoiceRows(); if (ok) VoiceWarmup.start(this) else Toast.makeText(this, "Download failed: ${ModelStore.error}", Toast.LENGTH_LONG).show() } }
-                renderVoiceRows()
+        if (!pro) {
+            val card = row("Try Pro free", sub = "Calendar, your AI, unlimited limits") { startActivity(Intent(this, TrialActivity::class.java)) }.apply {
+                setBackgroundResource(R.drawable.bg_snooze); setPadding(dp(16), dp(18), dp(16), dp(18))
+                ((getChildAt(0) as LinearLayout).getChildAt(1) as? android.widget.TextView)?.setTextColor(Ui.ACCENT)
             }
+            add(card, 20)
         }
-        findViewById<View>(R.id.row_quality).setOnClickListener {
-            val names = ModelStore.variants.map { "${it.label} · ${it.mb} MB" }.toTypedArray()
-            val cur = ModelStore.variants.indexOf(ModelStore.selected(this))
-            android.app.AlertDialog.Builder(this, R.style.SheetDark).setTitle("Voice quality")
-                .setSingleChoiceItems(names, cur) { d, i -> ModelStore.select(this, ModelStore.variants[i].id); renderVoiceRows(); d.dismiss() }.show()
-        }
-        findViewById<View>(R.id.row_voicetest).setOnClickListener {
-            VoiceEngine.clearProbe(this); VoiceEngine.unmarkBroken(this)
-            val probe = findViewById<TextView>(R.id.txt_probe)
-            probe.visibility = View.VISIBLE; probe.text = "running…"
-            Thread {
-                val f = File(cacheDir, "voicetest.wav")
-                val ok = VoiceEngine.synthesizeToFile(this, "Good morning.", VoiceEngine.DEFAULT_VOICE, f)
-                runOnUiThread {
-                    probe.text = (VoiceEngine.probeLog(this) ?: "") + "\nresult=$ok err=${VoiceEngine.lastError}"
-                    if (ok) MediaPlayer().apply { setDataSource(f.absolutePath); setOnCompletionListener { release() }; prepare(); start() }
-                }
-            }.start()
-        }
-        VoiceEngine.probeLog(this)?.let { findViewById<TextView>(R.id.txt_probe).apply { visibility = View.VISIBLE; text = it } }
 
-        findViewById<View>(R.id.row_preview).setOnClickListener {
-            startActivity(Intent(this, AlarmActivity::class.java).putExtra(AlarmActivity.EXTRA_PREVIEW, true))
-        }
-    }
-
-    override fun onResume() {
-        super.onResume(); refresh(); renderVoiceRows()
-        AlarmScheduler.lastFireLog(this)?.let { log ->
-            val p = findViewById<TextView>(R.id.txt_probe); p.visibility = View.VISIBLE
-            if (!p.text.contains("Last alarm")) p.text = log + (if (p.text.isNotBlank()) "\n" + p.text else "")
-        }
-        findViewById<TextView>(R.id.txt_plan_setting).text = if (EveningPlan.isOn(this)) EveningPlan.hour(this).let { h -> "%d:%02d %s".format(if (h % 12 == 0) 12 else h % 12, EveningPlan.minute(this), if (h < 12) "am" else "pm") } else "Off"
-        findViewById<TextView>(R.id.txt_phonedown).text = if (PhoneDown.isEnabled(this)) "${PhoneDown.limitMin(this)} min" else "Off"
-    }
-
-    private val voiceTick = object : Runnable { override fun run() { renderVoiceRows() } }
-    private fun renderVoiceRows() {
         val v = ModelStore.selected(this)
-        findViewById<TextView>(R.id.txt_quality).text = v.label
-        val t = findViewById<TextView>(R.id.txt_voices)
-        t.removeCallbacks(voiceTick)
-        t.text = when {
-            ModelStore.isDownloading() -> { t.postDelayed(voiceTick, 500); "Downloading ${ModelStore.progress}%" }
-            ModelStore.isDownloaded(this, v) -> "Downloaded"
+        val voices = when {
+            ModelStore.isDownloading() -> { col.postDelayed(voiceTick, 700); "Downloading ${ModelStore.progress}%" }
+            ModelStore.isDownloaded(this, v) -> "${v.label} · ready"
             else -> "Download · ${v.mb} MB"
         }
-    }
-    override fun onPause() { super.onPause(); stopPreview(); if (recorder != null) stopRecording(save = true) }
+        add(boxOf(
+            row("Connect your AI", sub = "Claude, ChatGPT and more") { startActivity(Intent(this, ConnectAiActivity::class.java)) },
+            row("Calendar", badge = "PRO") {
+                if (Pro.isPro(this)) startActivity(Intent(this, CalendarActivity::class.java))
+                else Pro.lock(this, "Your calendar with Pro", "Tomorrow's events go into your wake-up plan and the evening reminder.")
+            },
+            row("Subscription", if (pro) "Pro" else "Free") { startActivity(Intent(this, SubscriptionActivity::class.java)) },
+            row("Voices", voices) { voiceSheet() },
+            row("Permissions", if (Permissions.allGranted(this)) "All set ✓" else "${Permissions.missingCount(this)} missing") { startActivity(Intent(this, SetupActivity::class.java)) }
+        ), if (pro) 20 else 14)
 
-    private fun refresh() {
-        list.removeAllViews()
-        val msgs = MessageStore.all(this)
-        val next = MessageStore.peekNext(this)
-        for (m in msgs) {
-            val row = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
-                setPadding(0, dp(14), 0, dp(14))
-            }
-            val play = ImageButton(this).apply {
-                setImageResource(R.drawable.ic_play); setColorFilter(0xFFF2F4F8.toInt())
-                setBackgroundResource(R.drawable.bg_circle_outline)
-                layoutParams = LinearLayout.LayoutParams(dp(44), dp(44)).apply { marginEnd = dp(14) }
-                contentDescription = "Play"
-                setOnClickListener { playPreview(m, this) }
-            }
-            val col = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-            }
-            col.addView(TextView(this).apply {
-                text = if (m.from.isNotBlank()) m.from else m.name; textSize = 17f; setTextColor(0xFFF2F4F8.toInt())
-                setTypeface(typeface, android.graphics.Typeface.BOLD)
-            })
-            col.addView(TextView(this).apply {
-                text = "%d:%02d".format(m.durationMs / 60000, (m.durationMs / 1000) % 60) + (if (m == next && msgs.size > 1) " · next" else "")
-                textSize = 13f; setTextColor(0xFF7A8294.toInt())
-            })
-            val del = TextView(this).apply {
-                text = "Remove"; textSize = 13f; setTextColor(0xFF555B68.toInt()); minHeight = dp(44); gravity = Gravity.CENTER
-                setPadding(dp(12), 0, 0, 0)
-                setOnClickListener { MessageStore.remove(this@MessagesActivity, m.id); refresh() }
-            }
-            row.addView(play); row.addView(col); row.addView(del)
-            list.addView(row)
-            list.addView(View(this).apply {
-                setBackgroundColor(0xFF15181F.toInt())
-                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1)
-            })
-        }
-        findViewById<TextView>(R.id.txt_permissions).text = if (Permissions.allGranted(this)) "All set ✓" else "${Permissions.missingCount(this)} missing"
-    }
-
-    // ---- preview playback ------------------------------------------------------------------
-    private fun playPreview(m: Message, btn: ImageButton) {
-        if (preview != null) { stopPreview(); return }
-        preview = MediaPlayer().apply {
-            setDataSource(m.file(this@MessagesActivity).absolutePath)
-            setOnCompletionListener { stopPreview() }
-            prepare(); start()
-        }
-        btn.setImageResource(R.drawable.ic_stop)
-    }
-    private fun stopPreview() {
-        preview?.release(); preview = null
-        refresh()
-    }
-
-    // ---- recording -------------------------------------------------------------------------
-    private fun startRecording() {
-        stopPreview()
-        val f = File(cacheDir, "rec_${System.currentTimeMillis()}.m4a")
-        try {
-            recorder = (if (Build.VERSION.SDK_INT >= 31) MediaRecorder(this) else @Suppress("DEPRECATION") MediaRecorder()).apply {
-                setAudioSource(MediaRecorder.AudioSource.MIC)
-                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-                setAudioEncodingBitRate(96_000); setAudioSamplingRate(44_100)
-                setOutputFile(f.absolutePath)
-                prepare(); start()
-            }
-        } catch (e: Exception) {
-            Toast.makeText(this, "Couldn't start the microphone", Toast.LENGTH_SHORT).show(); return
-        }
-        recFile = f; recStart = System.currentTimeMillis()
-        recorderBox.visibility = View.VISIBLE
-        findViewById<View>(R.id.btn_record).visibility = View.GONE
-        findViewById<View>(R.id.btn_import).visibility = View.GONE
-        recOrb.mode = OrbView.Mode.SPEAK
-        ui.post(tick)
-    }
-
-    private val tick = object : Runnable {
-        override fun run() {
-            val r = recorder ?: return
-            val s = (System.currentTimeMillis() - recStart) / 1000
-            recTime.text = "%d:%02d".format(s / 60, s % 60)
-            val amp = try { r.maxAmplitude / 32767f } catch (e: Exception) { 0f }
-            recOrb.setLevel(amp * 2.5f)
-            if (s >= 120) { stopRecording(save = true); return }
-            ui.postDelayed(this, 100)
+        col.addView(Ui.caption(this, "Test", 28))
+        val proRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; minimumHeight = dp(56) }
+        val pl = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        pl.addView(Ui.text(this, "Pretend I have Pro", 16f, Ui.TEXT, true))
+        pl.addView(Ui.text(this, "Until buying is set up", 14f, Ui.GREY))
+        proRow.addView(pl, LinearLayout.LayoutParams(0, -2, 1f))
+        proRow.addView(SwitchCompat(this).apply { isChecked = pro; setOnCheckedChangeListener { _, on -> Pro.setTestPro(this@MessagesActivity, on); rebuild() } })
+        add(boxOf(
+            row("Preview wake-up") { startActivity(Intent(this, AlarmActivity::class.java).putExtra(AlarmActivity.EXTRA_PREVIEW, true)) },
+            row("Test alarm in 1 min") {
+                AlarmScheduler.scheduleTestInMinutes(this, 1)
+                Toast.makeText(this, "Lock the phone. Firing in 60 s.", Toast.LENGTH_LONG).show()
+            },
+            proRow
+        ), 0)
+        AlarmScheduler.lastFireLog(this)?.let { log ->
+            add(Ui.text(this, log, 12f, Ui.GREY).apply { typeface = android.graphics.Typeface.MONOSPACE; setPadding(dp(4), 0, dp(4), 0); setTextIsSelectable(true) }, 12)
         }
     }
 
-    private fun stopRecording(save: Boolean) {
-        ui.removeCallbacks(tick)
-        try { recorder?.stop() } catch (e: Exception) { }
-        recorder?.release(); recorder = null
-        recorderBox.visibility = View.GONE
-        findViewById<View>(R.id.btn_record).visibility = View.VISIBLE
-        findViewById<View>(R.id.btn_import).visibility = View.VISIBLE
-        val f = recFile ?: return
-        val longEnough = System.currentTimeMillis() - recStart > 1500
-        if (save && longEnough) {
-            MessageStore.import(this, android.net.Uri.fromFile(f), recFrom.text.toString().trim())
-            recFrom.setText("")
+    private fun voiceSheet() {
+        val variants = ModelStore.variants
+        val subs = mapOf("standard" to "good on every phone", "high" to "clearer, slower to prepare")
+        val opts = variants.map { it.label to "${it.mb} MB · ${subs[it.id] ?: ""}" + if (ModelStore.isDownloaded(this, it)) " · ready" else "" }
+        Sheet.pick(this, "Voices", opts, variants.indexOf(ModelStore.selected(this)),
+            sub = "Downloaded once over Wi-Fi. Until then the phone's own voice is used.") { i ->
+            val pick = variants[i]
+            ModelStore.select(this, pick.id)
+            if (!ModelStore.isDownloaded(this, pick) && !ModelStore.isDownloading()) {
+                ModelStore.download(this, pick) { ok -> runOnUiThread {
+                    if (ok) VoiceWarmup.start(this) else Toast.makeText(this, "Download failed: ${ModelStore.error}", Toast.LENGTH_LONG).show()
+                    rebuild()
+                } }
+            }
+            rebuild()
         }
-        f.delete(); recFile = null
-        refresh()
     }
 
-    private fun askFrom(then: (String) -> Unit) {
-        val input = EditText(this).apply { hint = "From"; setPadding(dp(24), dp(16), dp(24), dp(16)) }
-        AlertDialog.Builder(this, R.style.DialogDark)
-            .setView(input)
-            .setPositiveButton("Add") { _, _ -> then(input.text.toString().trim()) }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
+    override fun onPause() { super.onPause(); col.removeCallbacks(voiceTick) }
 }

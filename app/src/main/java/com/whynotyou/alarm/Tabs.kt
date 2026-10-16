@@ -67,6 +67,8 @@ class TimerTab(private val a: Activity, root: View) {
 
     private fun render() {
         val ms = TimerState.remainingMs(a); val sec = (ms + 999) / 1000
+        val total = TimerState.lastDuration(a) / 1000
+        a.findViewById<TextView>(R.id.timer_sub)?.text = "Timer · " + if (total >= 3600) "${total / 3600} h ${(total % 3600) / 60} min" else if (total >= 60) "${total / 60} min" else "$total s"
         remaining.text = if (sec >= 3600) "%d:%02d:%02d".format(sec / 3600, (sec % 3600) / 60, sec % 60) else "%d:%02d".format(sec / 60, sec % 60)
         val paused = TimerState.isPaused(a)
         orb.mode = if (paused) OrbView.Mode.STILL else OrbView.Mode.BREATHE
@@ -103,14 +105,14 @@ class StopwatchTab(private val a: Activity, root: View) {
         val now = elapsed(); val prev = lapTimes.lastOrNull() ?: 0L
         lapTimes.add(now)
         val row = LinearLayout(a).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(14), 0, dp(14)) }
-        row.addView(TextView(a).apply { text = "Lap ${lapTimes.size}"; setTextColor(0xFF7A8294.toInt()); textSize = 16f; layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f) })
+        row.addView(TextView(a).apply { text = "Lap ${lapTimes.size}"; setTextColor(0xFF8A93A8.toInt()); textSize = 16f; layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f) })
         row.addView(TextView(a).apply { text = fmt(now - prev); setTextColor(0xFFF2F4F8.toInt()); textSize = 16f; gravity = Gravity.END })
         laps.addView(row, 0)
-        laps.addView(View(a).apply { setBackgroundColor(0xFF15181F.toInt()); layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1) }, 1)
+        laps.addView(View(a).apply { setBackgroundColor(0xFF1F2840.toInt()); layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1) }, 1)
     }
 
     private val tick = object : Runnable { override fun run() { render(); if (running) ui.postDelayed(this, 33) } }
-    private fun render() { time.text = fmt(elapsed()) }
+    private fun render() { time.text = fmt(elapsed()); a.findViewById<TextView>(R.id.sw_sub)?.text = if (lapTimes.isEmpty()) "Stopwatch" else "Stopwatch · lap ${lapTimes.size + 1}" }
     private fun fmt(ms: Long): String { val cs = (ms / 10) % 100; val s = (ms / 1000) % 60; val m = ms / 60000; return "%02d:%02d.%02d".format(m, s, cs) }
 
     fun onShow() { if (running) ui.post(tick) }

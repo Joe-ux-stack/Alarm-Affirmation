@@ -2,53 +2,89 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000000">
+    android:background="#060B18">
 
     <!-- ALARM TAB -->
     <ScrollView
         android:id="@+id/tab_alarm"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:paddingBottom="88dp"
         android:clipToPadding="false">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingStart="12dp"
-            android:paddingTop="56dp"
-            android:paddingEnd="12dp"
-            android:paddingBottom="100dp">
+            android:paddingStart="20dp"
+            android:paddingTop="40dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="190dp">
 
-            <LinearLayout
+            <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="44dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-                <TextView
-                    android:id="@+id/txt_next"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text=""
-                    android:textColor="#7A8294"
-                    android:textSize="13sp" />
+                android:layout_height="wrap_content">
                 <ImageButton
                     android:id="@+id/btn_gear"
                     android:layout_width="44dp"
                     android:layout_height="44dp"
+                    android:layout_gravity="end"
+                    android:layout_marginEnd="-6dp"
                     android:background="@android:color/transparent"
-                    android:contentDescription="Messages and setup"
+                    android:contentDescription="Settings"
                     android:src="@drawable/ic_gear"
-                    android:tint="#7A8294" />
-            </LinearLayout>
+                    android:tint="#C9D4FF" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical">
+                    <FrameLayout
+                        android:layout_width="170dp"
+                        android:layout_height="170dp">
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@drawable/bg_glow" />
+                        <com.whynotyou.alarm.OrbView
+                            android:id="@+id/home_orb"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent" />
+                    </FrameLayout>
+                    <TextView
+                        android:id="@+id/txt_title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="No alarms yet"
+                        android:textColor="#FFFFFF"
+                        android:textSize="36sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="-0.01"
+                        android:shadowColor="#994F78FF"
+                        android:shadowRadius="24" />
+                    <TextView
+                        android:id="@+id/txt_next"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:background="@drawable/bg_pill_soft"
+                        android:paddingStart="14dp"
+                        android:paddingTop="6dp"
+                        android:paddingEnd="14dp"
+                        android:paddingBottom="6dp"
+                        android:text=""
+                        android:textColor="#B9C9FF"
+                        android:textSize="16sp"
+                        android:fontFamily="sans-serif-medium" />
+                </LinearLayout>
+            </FrameLayout>
 
             <TextView
                 android:id="@+id/txt_warning"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="20dp"
                 android:background="@drawable/bg_card_amber"
                 android:padding="14dp"
                 android:text=""
@@ -72,24 +108,80 @@
                 android:visibility="gone" />
 
             <LinearLayout
+                android:id="@+id/row_snoozed"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:background="@drawable/bg_snooze"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="20dp"
+                android:paddingTop="14dp"
+                android:paddingEnd="14dp"
+                android:paddingBottom="14dp"
+                android:visibility="gone">
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Snoozed" android:textColor="#F2F4F8" android:textSize="16sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/txt_snoozed" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="" android:textColor="#93AEFF" android:textSize="14sp" />
+                </LinearLayout>
+                <TextView
+                    android:id="@+id/btn_stop_snooze"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:background="@drawable/bg_pill_soft"
+                    android:gravity="center"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:text="Stop"
+                    android:textColor="#C9D4FF"
+                    android:textSize="14sp"
+                    android:fontFamily="sans-serif-medium" />
+            </LinearLayout>
+
+            <LinearLayout
                 android:id="@+id/list_alarms"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="32dp"
                 android:orientation="vertical" />
 
-            <TextView
-                android:id="@+id/txt_empty"
+            <LinearLayout
+                android:id="@+id/box_empty"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="80dp"
-                android:gravity="center"
-                android:text="No alarms"
-                android:textColor="#3A3F4B"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:visibility="gone" />
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_box"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:padding="24dp"
+                android:visibility="gone">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Set your first alarm" android:textColor="#F2F4F8" android:textSize="17sp" android:textStyle="bold" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:gravity="center" android:lineSpacingExtra="3dp" android:text="Then tell it tomorrow's plan, and it reads it to you when you wake up." android:textColor="#8A93A8" android:textSize="15sp" />
+                <Button android:id="@+id/btn_add_first" style="@style/PrimaryButton" android:layout_height="52dp" android:layout_marginTop="18dp" android:text="Add alarm" />
+            </LinearLayout>
         </LinearLayout>
+    </ScrollView>
+
+    <!-- PHONE DOWN TAB -->
+    <ScrollView
+        android:id="@+id/tab_phonedown"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:visibility="gone">
+        <LinearLayout
+            android:id="@+id/pd_col"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingStart="20dp"
+            android:paddingTop="48dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="120dp" />
     </ScrollView>
 
     <!-- TIMER TAB -->
@@ -113,34 +205,36 @@
         android:layout_width="64dp"
         android:layout_height="64dp"
         android:layout_gravity="bottom|end"
-        android:layout_marginEnd="12dp"
-        android:layout_marginBottom="108dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="96dp"
         android:background="@drawable/bg_circle_amber"
         android:contentDescription="Add alarm"
         android:src="@drawable/ic_plus"
-        android:tint="#000000" />
+        android:tint="#FFFFFF"
+        android:elevation="10dp"
+        android:outlineSpotShadowColor="#2D5BFF"
+        android:outlineAmbientShadowColor="#2D5BFF" />
 
-    <!-- BOTTOM NAV -->
+    <!-- BOTTOM NAV: icons only, no background -->
     <LinearLayout
         android:id="@+id/nav"
         android:layout_width="match_parent"
-        android:layout_height="88dp"
+        android:layout_height="76dp"
         android:layout_gravity="bottom"
-        android:background="#000000"
         android:gravity="center"
         android:orientation="horizontal"
-        android:paddingBottom="14dp">
-        <LinearLayout android:id="@+id/nav_alarm" style="@style/NavItem">
-            <ImageView android:layout_width="22dp" android:layout_height="22dp" android:src="@drawable/ic_alarm" android:tint="#F2F4F8" android:importantForAccessibility="no" />
-            <TextView style="@style/NavLabel" android:text="Alarm" android:textColor="#F2F4F8" />
-        </LinearLayout>
-        <LinearLayout android:id="@+id/nav_timer" style="@style/NavItem">
-            <ImageView android:layout_width="22dp" android:layout_height="22dp" android:src="@drawable/ic_timer" android:tint="#555B68" android:importantForAccessibility="no" />
-            <TextView style="@style/NavLabel" android:text="Timer" android:textColor="#555B68" />
-        </LinearLayout>
-        <LinearLayout android:id="@+id/nav_stopwatch" style="@style/NavItem">
-            <ImageView android:layout_width="22dp" android:layout_height="22dp" android:src="@drawable/ic_stopwatch" android:tint="#555B68" android:importantForAccessibility="no" />
-            <TextView style="@style/NavLabel" android:text="Stopwatch" android:textColor="#555B68" />
-        </LinearLayout>
+        android:paddingBottom="12dp">
+        <FrameLayout android:id="@+id/nav_alarm" style="@style/NavItem" android:contentDescription="Alarm">
+            <ImageView android:layout_width="26dp" android:layout_height="26dp" android:layout_gravity="center" android:src="@drawable/ic_alarm" android:importantForAccessibility="no" />
+        </FrameLayout>
+        <FrameLayout android:id="@+id/nav_phonedown" style="@style/NavItem" android:contentDescription="Phone down">
+            <ImageView android:layout_width="28dp" android:layout_height="28dp" android:layout_gravity="center" android:src="@drawable/ic_phonedown" android:importantForAccessibility="no" />
+        </FrameLayout>
+        <FrameLayout android:id="@+id/nav_timer" style="@style/NavItem" android:contentDescription="Timer">
+            <ImageView android:layout_width="26dp" android:layout_height="26dp" android:layout_gravity="center" android:src="@drawable/ic_timer" android:importantForAccessibility="no" />
+        </FrameLayout>
+        <FrameLayout android:id="@+id/nav_stopwatch" style="@style/NavItem" android:contentDescription="Stopwatch">
+            <ImageView android:layout_width="26dp" android:layout_height="26dp" android:layout_gravity="center" android:src="@drawable/ic_stopwatch" android:importantForAccessibility="no" />
+        </FrameLayout>
     </LinearLayout>
 </FrameLayout>

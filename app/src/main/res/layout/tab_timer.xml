@@ -10,7 +10,9 @@
         android:layout_height="match_parent"
         android:gravity="center_horizontal"
         android:orientation="vertical"
-        android:paddingTop="56dp"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:paddingTop="40dp"
         android:paddingBottom="100dp">
 
         <LinearLayout
@@ -26,7 +28,7 @@
                 android:background="@android:color/transparent"
                 android:contentDescription="Timer settings"
                 android:src="@drawable/ic_gear"
-                android:tint="#7A8294" />
+                android:tint="#8A93A8" />
         </LinearLayout>
 
         <LinearLayout
@@ -70,7 +72,9 @@
             android:background="@drawable/bg_circle_amber"
             android:text="Start"
             android:textAllCaps="false"
-            android:textColor="#000000"
+            android:textColor="#FFFFFF"
+            android:elevation="10dp"
+            android:outlineSpotShadowColor="#2D5BFF"
             android:textSize="18sp"
             android:fontFamily="sans-serif-medium" />
     </LinearLayout>
@@ -82,8 +86,8 @@
         android:layout_height="match_parent"
         android:gravity="center_horizontal"
         android:orientation="vertical"
-        android:paddingTop="140dp"
-        android:paddingBottom="100dp"
+        android:paddingTop="80dp"
+        android:paddingBottom="120dp"
         android:visibility="gone">
         <TextView
             android:id="@+id/timer_remaining"
@@ -91,14 +95,23 @@
             android:layout_height="wrap_content"
             android:text="23:00"
             android:textColor="#F2F4F8"
-            android:textSize="80sp"
+            android:textSize="88sp"
+            android:fontFeatureSettings="tnum"
             android:textStyle="bold"
             android:letterSpacing="-0.03" />
+        <TextView
+            android:id="@+id/timer_sub"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="Timer"
+            android:textColor="#8A93A8"
+            android:textSize="14sp" />
         <com.whynotyou.alarm.OrbView
             android:id="@+id/timer_orb"
-            android:layout_width="160dp"
-            android:layout_height="160dp"
-            android:layout_marginTop="56dp" />
+            android:layout_width="220dp"
+            android:layout_height="220dp"
+            android:layout_marginTop="30dp" />
         <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1" />
         <LinearLayout
             android:layout_width="wrap_content"

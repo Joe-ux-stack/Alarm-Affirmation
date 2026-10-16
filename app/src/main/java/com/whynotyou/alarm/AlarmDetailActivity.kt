@@ -42,6 +42,7 @@ class AlarmDetailActivity : AppCompatActivity() {
         for (i in 0 until 7) {
             val tv = TextView(this).apply {
                 text = letters[i].toString(); textSize = 13f; gravity = Gravity.CENTER
+                contentDescription = listOf("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday")[i]
                 setTypeface(typeface, android.graphics.Typeface.BOLD)
                 layoutParams = LinearLayout.LayoutParams(0, dp(42), 1f).apply { if (i < 6) marginEnd = dp(6) }
                 setOnClickListener { alarm.days[i] = !alarm.days[i]; renderDays() }
@@ -60,20 +61,29 @@ class AlarmDetailActivity : AppCompatActivity() {
         bind(R.id.sw_ramp, alarm.ramp) { alarm.ramp = it }
         bind(R.id.sw_vibrate, alarm.vibrate) { alarm.vibrate = it }
         bind(R.id.sw_snooze, alarm.snooze) { alarm.snooze = it }
-        bind(R.id.sw_message, alarm.message) { alarm.message = it }
         bind(R.id.sw_brief, alarm.brief) { alarm.brief = it }
-        renderTomorrow()
-        findViewById<View>(R.id.row_tomorrow).setOnClickListener { PlanSheet.show(this) { renderTomorrow() } }
+        bind(R.id.sw_reminder, alarm.planRemind) { alarm.planRemind = it }
+        renderTomorrow(); renderReminder(); renderVibe()
+        findViewById<View>(R.id.row_tomorrow).setOnClickListener { startActivity(android.content.Intent(this, PlanActivity::class.java)) }
+        findViewById<View>(R.id.row_reminder).setOnClickListener { reminderSheet() }
+        findViewById<View>(R.id.row_vibration).setOnClickListener {
+            val ids = listOf("pulse", "heartbeat", "steady", "gentle")
+            val opts = listOf("Pulse" to "Short buzz, pause, repeat", "Heartbeat" to "Two quick buzzes", "Steady" to "One long buzz", "Gentle" to "Starts soft, gets stronger")
+            Sheet.pick(this, "Vibration", opts, ids.indexOf(alarm.vibePattern).coerceAtLeast(0)) { i -> alarm.vibePattern = ids[i]; renderVibe() }
+        }
         val soundLabel = findViewById<TextView>(R.id.txt_sound)
         soundLabel.text = if (alarm.hasCustomSound(this)) alarm.soundName else "Chime"
         findViewById<View>(R.id.row_sound).setOnClickListener {
-            val items = if (alarm.soundName.isNotEmpty()) arrayOf("Chime", "Choose from my music…", "Keep “${alarm.soundName}”") else arrayOf("Chime", "Choose from my music…")
-            androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Sound").setItems(items) { _, i ->
-                when (i) {
-                    0 -> { alarm.soundName = ""; soundLabel.text = "Chime" }
-                    1 -> pickSound.launch(arrayOf("audio/*"))
+            val opts = mutableListOf<Pair<String, String?>>("Chime" to "Built in")
+            if (alarm.hasCustomSound(this)) opts.add(alarm.soundName to "From your music")
+            opts.add("Choose a file…" to "Songs or recordings on your phone")
+            val sel = if (alarm.hasCustomSound(this) && alarm.soundName.isNotEmpty()) 1 else 0
+            Sheet.pick(this, "Sound", opts, sel) { i ->
+                when {
+                    i == 0 -> { alarm.soundName = ""; soundLabel.text = "Chime" }
+                    i == opts.size - 1 -> pickSound.launch(arrayOf("audio/*"))
                 }
-            }.show()
+            }
         }
         val voiceLabel = findViewById<TextView>(R.id.txt_voice)
         voiceLabel.text = VoiceEngine.voice(alarm.voice).name
@@ -81,10 +91,6 @@ class AlarmDetailActivity : AppCompatActivity() {
             VoicePicker.show(this, alarm.voice) { id -> alarm.voice = id; voiceLabel.text = VoiceEngine.voice(id).name }
         }
 
-        findViewById<Button>(R.id.btn_delete).apply {
-            visibility = View.GONE   // delete lives on the alarm list (long-press a card)
-            setOnClickListener { AlarmStore.delete(this@AlarmDetailActivity, alarm.id); finish() }
-        }
         findViewById<Button>(R.id.btn_cancel).setOnClickListener { finish() }
         findViewById<Button>(R.id.btn_save).setOnClickListener { alarm.enabled = true; AlarmStore.save(this, alarm); finish() }
 
@@ -110,11 +116,38 @@ class AlarmDetailActivity : AppCompatActivity() {
         }.start()
     }
 
+    override fun onResume() { super.onResume(); renderTomorrow() }
+
     private fun renderTomorrow() {
         val t = findViewById<TextView>(R.id.txt_tomorrow)
         val i = Brief.intention(this)
-        t.text = if (i.isBlank()) "Add a line · asked at ${EveningPlan.hour(this).let { h -> "%d:%02d %s".format(if (h % 12 == 0) 12 else h % 12, EveningPlan.minute(this), if (h < 12) "am" else "pm") }}" else i
-        t.setTextColor(if (i.isBlank()) 0xFF7A8294.toInt() else 0xFFF2F4F8.toInt())
+        t.text = if (i.isBlank()) "Not set" else i
+        t.setTextColor(if (i.isBlank()) Ui.GREY else Ui.TEXT)
+    }
+
+    private fun renderReminder() {
+        val h = alarm.planHour
+        findViewById<TextView>(R.id.txt_reminder).text = "%d:%02d %s the night before".format(if (h % 12 == 0) 12 else h % 12, alarm.planMinute, if (h < 12) "am" else "pm")
+    }
+    private fun renderVibe() {
+        findViewById<TextView>(R.id.txt_vibration).text = alarm.vibePattern.replaceFirstChar { it.uppercase() }
+    }
+
+    /** 2.7: time for this alarm's planning reminder, on the same wheels as the alarm. */
+    private fun reminderSheet() {
+        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER; setPadding(0, dp(24), 0, dp(24)) }
+        val h = WheelView(this); val m = WheelView(this); val ap = WheelView(this)
+        h.setRange(1, 12); m.setRange(0, 59); ap.setRange(0, 1); ap.labels = listOf("am", "pm"); ap.wrap = false
+        val h12 = alarm.planHour % 12; h.value = if (h12 == 0) 12 else h12; m.value = alarm.planMinute; ap.value = if (alarm.planHour < 12) 0 else 1
+        row.addView(h, LinearLayout.LayoutParams(dp(88), dp(200)))
+        row.addView(TextView(this).apply { text = ":"; textSize = 34f; setTextColor(Ui.TEXT); setTypeface(typeface, android.graphics.Typeface.BOLD) })
+        row.addView(m, LinearLayout.LayoutParams(dp(88), dp(200)))
+        row.addView(ap, LinearLayout.LayoutParams(dp(76), dp(200)))
+        Sheet.show(this, "Planning reminder", "The night before this alarm", row) {
+            alarm.planHour = (h.value % 12) + if (ap.value == 1) 12 else 0; alarm.planMinute = m.value
+            alarm.planRemind = true; findViewById<SwitchCompat>(R.id.sw_reminder).isChecked = true
+            renderReminder()
+        }
     }
 
     private fun bind(id: Int, value: Boolean, set: (Boolean) -> Unit) {
@@ -137,8 +170,8 @@ class AlarmDetailActivity : AppCompatActivity() {
         for (i in 0 until 7) {
             val tv = dayViews[i] ?: continue
             val on = alarm.days[i]
-            tv.setBackgroundResource(if (on) R.drawable.bg_pill_amber else R.drawable.bg_pill_outline)
-            tv.setTextColor(if (on) 0xFF000000.toInt() else 0xFF7A8294.toInt())
+            tv.setBackgroundResource(if (on) R.drawable.bg_day_on else 0)
+            tv.setTextColor(if (on) 0xFF93AEFF.toInt() else 0xFF5E6880.toInt())
         }
     }
 

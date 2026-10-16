@@ -158,7 +158,14 @@ class AlarmActivity : AppCompatActivity() {
         vibrator = if (Build.VERSION.SDK_INT >= 31) (getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as android.os.VibratorManager).defaultVibrator
                    else @Suppress("DEPRECATION") (getSystemService(Context.VIBRATOR_SERVICE) as android.os.Vibrator)
         val attrs = android.media.AudioAttributes.Builder().setUsage(android.media.AudioAttributes.USAGE_ALARM).build()
-        try { vibrator?.vibrate(android.os.VibrationEffect.createWaveform(longArrayOf(0, 500, 1000), 0), attrs) } catch (_: Throwable) {}
+        val wave = when (alarm.vibePattern) {
+            "heartbeat" -> longArrayOf(0, 120, 120, 120, 900)
+            "steady" -> longArrayOf(0, 1500, 400)
+            "gentle" -> longArrayOf(0, 200, 1400, 300, 1200, 450, 1000, 600, 800)
+            else -> longArrayOf(0, 500, 1000)
+        }
+        val repeatAt = if (alarm.vibePattern == "gentle") 7 else 0
+        try { vibrator?.vibrate(android.os.VibrationEffect.createWaveform(wave, repeatAt), attrs) } catch (_: Throwable) {}
     }
     private fun stopVibration() { try { vibrator?.cancel() } catch (_: Throwable) {}; vibrator = null }
 
@@ -340,7 +347,10 @@ class AlarmActivity : AppCompatActivity() {
 
     private fun finishAlarm(realDismiss: Boolean) {
         (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).cancel(AlarmReceiver.NOTIFICATION_ID)
-        if (!preview && !timerMode && realDismiss) AlarmScheduler.onDismissed(this, alarm.id)
+        if (!preview && !timerMode && realDismiss) {
+            try { Mornings.recordWake(this, AlarmScheduler.snoozesLeft(this) == AlarmScheduler.MAX_SNOOZES) } catch (_: Throwable) {}
+            AlarmScheduler.onDismissed(this, alarm.id)
+        }
         finishAndRemoveTask()
     }
 

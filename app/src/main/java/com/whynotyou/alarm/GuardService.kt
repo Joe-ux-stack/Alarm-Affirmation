@@ -69,15 +69,15 @@ class GuardService : Service() {
         val interactive = (getSystemService(Context.POWER_SERVICE) as PowerManager).isInteractive
         updateForeground(now)
         val pkg = current
-        val watched = interactive && pkg != null && pkg in PhoneDown.watched(this)
+        val watched = interactive && pkg != null && pkg in PhoneDown.effectiveWatched(this)
         if (watched) {
             sessionMs += dt; awaySince = 0L
             val limit = PhoneDown.limitMin(this) * 60_000L
-            if (sessionMs >= limit && now >= snoozeUntil && overlay == null) showOverlay(pkg!!)
+            if ((sessionMs >= limit && now >= snoozeUntil || PhoneDown.blockedToday(this, pkg!!)) && overlay == null) showOverlay(pkg)
         } else {
             if (awaySince == 0L) awaySince = now
             if (now - awaySince > 2 * 60_000L) sessionMs = 0L
-            if (overlay != null && pkg != null && pkg != packageName && pkg !in PhoneDown.watched(this)) removeOverlay()
+            if (overlay != null && pkg != null && pkg != packageName && pkg !in PhoneDown.effectiveWatched(this)) removeOverlay()
         }
     }
 
@@ -103,39 +103,44 @@ class GuardService : Service() {
         fun dp(v: Int) = (v * d).toInt()
         val mins = PhoneDown.limitMin(this)
         val app = PhoneDown.appName(this, pkg)
+        val strict = PhoneDown.isStrict(this)
+        if (strict) PhoneDown.blockForToday(this, pkg)
 
-        val root = FrameLayout(this).apply { setBackgroundColor(0xF2000000.toInt()) }
+        val root = FrameLayout(this).apply { setBackgroundColor(0xF5060B18.toInt()) }
         val col = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL
             setPadding(dp(24), dp(96), dp(24), dp(48))
         }
         col.addView(TextView(this).apply {
-            text = "$mins min on $app"; textSize = 14f; setTextColor(0xFF7A8294.toInt())
+            text = if (strict) "$mins min on $app · Strict mode" else "$mins min on $app"; textSize = 14f; setTextColor(0xFF8A93A8.toInt())
         })
         col.addView(OrbView(this).apply { mode = OrbView.Mode.BREATHE },
             LinearLayout.LayoutParams(dp(220), dp(220)).apply { topMargin = dp(40) })
         col.addView(TextView(this).apply {
-            text = PhoneDown.nextMessage(this@GuardService); textSize = 28f; setTextColor(0xFFF2F4F8.toInt())
+            text = if (strict) "That's your $mins minutes." else PhoneDown.nextMessage(this@GuardService); textSize = 28f; setTextColor(0xFFF2F4F8.toInt())
             setTypeface(typeface, android.graphics.Typeface.BOLD); gravity = Gravity.CENTER
         }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(36) })
+        if (strict) col.addView(TextView(this).apply {
+            text = "$app is closed until tomorrow."; textSize = 16f; setTextColor(0xFF8A93A8.toInt()); gravity = Gravity.CENTER
+        }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(10) })
         root.addView(col, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT))
 
-        val bottom = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), 0, dp(12), dp(48)) }
+        val bottom = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), 0, dp(20), dp(48)) }
         val close = MaterialButton(this).apply {
-            text = "Put it down"; isAllCaps = false; letterSpacing = 0f; typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL); textSize = 18f; setTextColor(0xFF000000.toInt())
-            backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFF2F4F8.toInt()); cornerRadius = dp(32)
+            text = if (strict) "Close $app" else "Put it down"; isAllCaps = false; letterSpacing = 0f; typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL); textSize = 18f; setTextColor(0xFFFFFFFF.toInt())
+            backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF3461FF.toInt()); cornerRadius = dp(32)
             setOnClickListener {
                 sessionMs = 0L; removeOverlay()
                 startActivity(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             }
         }
         val more = MaterialButton(this).apply {
-            text = "5 more minutes"; isAllCaps = false; letterSpacing = 0f; typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL); textSize = 16f; setTextColor(0xFFB8BFCC.toInt())
-            backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF15181F.toInt()); cornerRadius = dp(28)
+            text = "5 more minutes"; isAllCaps = false; letterSpacing = 0f; typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL); textSize = 16f; setTextColor(0xFFC9D4FF.toInt())
+            backgroundTintList = android.content.res.ColorStateList.valueOf(0x292D5BFF); cornerRadius = dp(28)
             setOnClickListener { snoozeUntil = System.currentTimeMillis() + 5 * 60_000L; removeOverlay() }
         }
         bottom.addView(close, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(64)))
-        bottom.addView(more, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(56)).apply { topMargin = dp(8) })
+        if (!strict) bottom.addView(more, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(56)).apply { topMargin = dp(8) })
         root.addView(bottom, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM))
 
         val lp = WindowManager.LayoutParams(

@@ -76,6 +76,35 @@
             android:exported="false" />
 
         <activity
+            android:name=".WelcomeActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".TrialActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".StatsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ConnectAiActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".CalendarActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".SubscriptionActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".PlanActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
             android:name=".EveningPlanActivity"
             android:exported="false" />
 

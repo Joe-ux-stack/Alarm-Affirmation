@@ -15,7 +15,7 @@ class EveningPlanActivity : AppCompatActivity() {
     private lateinit var col: LinearLayout
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), dp(56), dp(12), dp(48)); setBackgroundColor(0xFF000000.toInt()) }
+        col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), dp(56), dp(12), dp(48)); setBackgroundColor(0xFF060B18.toInt()) }
         setContentView(col)
     }
     override fun onResume() { super.onResume(); render() }
@@ -25,7 +25,7 @@ class EveningPlanActivity : AppCompatActivity() {
         col.addView(TextView(this).apply { text = "Evening plan"; textSize = 28f; setTextColor(0xFFF2F4F8.toInt()); setTypeface(typeface, android.graphics.Typeface.BOLD) })
         col.addView(TextView(this).apply {
             text = "On evenings before an alarm, a screen asks what tomorrow is for. Your answer is read to you in the morning."
-            textSize = 14f; setTextColor(0xFF7A8294.toInt()); setPadding(0, dp(6), 0, dp(20))
+            textSize = 14f; setTextColor(0xFF8A93A8.toInt()); setPadding(0, dp(6), 0, dp(20))
         })
         row("On") { addView(SwitchCompat(this@EveningPlanActivity).apply {
             isChecked = EveningPlan.isOn(this@EveningPlanActivity)
@@ -47,7 +47,7 @@ class EveningPlanActivity : AppCompatActivity() {
             col.addView(TextView(this).apply {
                 text = if (next == null) "No alarms set this week, so no plan screen." else
                     "Next: " + java.text.SimpleDateFormat("EEEE", java.util.Locale.getDefault()).format(java.util.Date(next))
-                textSize = 13f; setTextColor(0xFF555B68.toInt()); setPadding(0, dp(12), 0, 0)
+                textSize = 13f; setTextColor(0xFF5E6880.toInt()); setPadding(0, dp(12), 0, 0)
             })
         }
         row("Plan now") {
@@ -67,8 +67,8 @@ class EveningPlanActivity : AppCompatActivity() {
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         })
         r.build(); col.addView(r)
-        col.addView(View(this).apply { setBackgroundColor(0xFF15181F.toInt()); layoutParams = LinearLayout.LayoutParams(-1, 1) })
+        col.addView(View(this).apply { setBackgroundColor(0xFF1F2840.toInt()); layoutParams = LinearLayout.LayoutParams(-1, 1) })
     }
-    private fun value(t: String) = TextView(this).apply { text = t; textSize = 15f; setTextColor(0xFF9AA3B5.toInt()) }
+    private fun value(t: String) = TextView(this).apply { text = t; textSize = 15f; setTextColor(0xFF8A93A8.toInt()) }
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
 }

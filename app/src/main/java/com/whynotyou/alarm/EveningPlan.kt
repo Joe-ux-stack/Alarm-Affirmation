@@ -28,27 +28,21 @@ object EveningPlan {
         schedule(c)
     }
 
-    /** The next alarm-eve at the plan time, or null if no alarms in the coming week. */
+    /** The next planning reminder: for each alarm with it on, the evening before its next ring, at its own time. */
     fun next(c: Context, from: Long = System.currentTimeMillis()): Long? {
-        val alarms = AlarmStore.all(c).filter { it.enabled }
-        if (alarms.isEmpty()) return null
-        val cal = Calendar.getInstance().apply {
-            timeInMillis = from
-            set(Calendar.HOUR_OF_DAY, hour(c)); set(Calendar.MINUTE, minute(c)); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-            if (timeInMillis <= from) add(Calendar.DAY_OF_YEAR, 1)
-        }
-        repeat(8) {
-            val eve = cal.timeInMillis
-            val tomorrow = Calendar.getInstance().apply { timeInMillis = eve; add(Calendar.DAY_OF_YEAR, 1) }
-            val hasAlarm = alarms.any { a ->
-                val t = a.nextTrigger(eve) ?: return@any false
-                val tc = Calendar.getInstance().apply { timeInMillis = t }
-                tc.get(Calendar.YEAR) == tomorrow.get(Calendar.YEAR) && tc.get(Calendar.DAY_OF_YEAR) == tomorrow.get(Calendar.DAY_OF_YEAR)
+        var best: Long? = null
+        for (a in AlarmStore.all(c).filter { it.enabled && it.planRemind }) {
+            var t = a.nextTrigger(from) ?: continue
+            for (k in 0 until 8) {
+                val eve = Calendar.getInstance().apply {
+                    timeInMillis = t; add(Calendar.DAY_OF_YEAR, -1)
+                    set(Calendar.HOUR_OF_DAY, a.planHour); set(Calendar.MINUTE, a.planMinute); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+                }.timeInMillis
+                if (eve > from) { if (best == null || eve < best!!) best = eve; break }
+                t = a.nextTrigger(t) ?: break
             }
-            if (hasAlarm) return eve
-            cal.add(Calendar.DAY_OF_YEAR, 1)
         }
-        return null
+        return best
     }
 
     /** First alarm tomorrow (relative to now), for the prompt's subtitle. */

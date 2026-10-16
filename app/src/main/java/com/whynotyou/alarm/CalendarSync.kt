@@ -18,7 +18,7 @@ object CalendarSync {
 
     /** Events for the given day, timed only, not declined, not all-day. */
     fun eventsFor(c: Context, day: Calendar = Calendar.getInstance()): List<BriefItem> {
-        if (!hasPermission(c)) return emptyList()
+        if (!hasPermission(c) || !Pro.isPro(c)) return emptyList()
 
         val start = (day.clone() as Calendar).apply {
             set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
@@ -32,7 +32,8 @@ object CalendarSync {
             CalendarContract.Instances.TITLE,
             CalendarContract.Instances.ALL_DAY,
             CalendarContract.Instances.SELF_ATTENDEE_STATUS,
-            CalendarContract.Instances.VISIBLE
+            CalendarContract.Instances.VISIBLE,
+            CalendarContract.Instances.CALENDAR_ID
         )
         val out = mutableListOf<BriefItem>()
         try {
@@ -42,6 +43,7 @@ object CalendarSync {
                     val status = cur.getInt(3)
                     val visible = cur.getInt(4) == 1
                     if (!visible) continue
+                    if (!CalendarPrefs.isOn(c, cur.getLong(5))) continue
                     if (status == CalendarContract.Attendees.ATTENDEE_STATUS_DECLINED) continue
                     val title = cur.getString(1)?.trim().orEmpty()
                     if (title.isEmpty()) continue
@@ -55,6 +57,6 @@ object CalendarSync {
     /** Cache today's events for the brief. Called when the alarm fires and when the app opens. */
     fun refreshToday(c: Context) {
         if (!hasPermission(c)) return
-        Brief.storeEvents(c, eventsFor(c))
+        Brief.storeEvents(c, eventsFor(c))   // empty without Pro
     }
 }

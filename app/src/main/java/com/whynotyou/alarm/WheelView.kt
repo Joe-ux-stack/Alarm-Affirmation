@@ -34,6 +34,21 @@ class WheelView @JvmOverloads constructor(context: Context, attrs: AttributeSet?
         color = 0xFFF2F4F8.toInt()
     }
     private val scroller = OverScroller(context)
+
+    /** 0..1: the wheel you are turning lights up periwinkle, then fades back 0.5 s after it stops. */
+    private var hot = 0f
+    private var hotAnim: android.animation.ValueAnimator? = null
+    private fun animateHot(to: Float, ms: Long) {
+        hotAnim?.cancel()
+        hotAnim = android.animation.ValueAnimator.ofFloat(hot, to).apply {
+            duration = ms; addUpdateListener { hot = it.animatedValue as Float; invalidate() }; start()
+        }
+    }
+    private val cool = Runnable { animateHot(0f, 400) }
+    private fun lerpColor(a: Int, b: Int, t: Float): Int {
+        fun ch(s: Int) = (((a shr s) and 0xFF) + (((b shr s) and 0xFF) - ((a shr s) and 0xFF)) * t).toInt() shl s
+        return (0xFF shl 24) or ch(16) or ch(8) or ch(0)
+    }
     private var velocity: VelocityTracker? = null
     private var lastY = 0f
     private var dragging = false
@@ -63,9 +78,10 @@ class WheelView @JvmOverloads constructor(context: Context, attrs: AttributeSet?
             if (y < -rowH || y > height + rowH) continue
             if (!wrap && (idx < 0 || idx >= range)) continue
             val dist = abs(i - frac)
+            paint.color = lerpColor(0xFFF2F4F8.toInt(), 0xFF93AEFF.toInt(), hot)
             paint.alpha = when {
                 dist < 0.5f -> 255
-                dist < 1.5f -> 56
+                dist < 1.5f -> (56 + 84 * hot).toInt()
                 else -> 0
             }
             if (paint.alpha == 0) continue
@@ -82,6 +98,7 @@ class WheelView @JvmOverloads constructor(context: Context, attrs: AttributeSet?
         when (e.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 scroller.forceFinished(true); lastY = e.y; dragging = false
+                removeCallbacks(cool); animateHot(1f, 120)
                 parent?.requestDisallowInterceptTouchEvent(true)
                 return true
             }
@@ -107,6 +124,7 @@ class WheelView @JvmOverloads constructor(context: Context, attrs: AttributeSet?
                     clampOffset(); invalidate(); onChange?.invoke(value)
                     performClick()
                 } else if (abs(vy) > 400) fling(vy / rowH) else snap()
+                removeCallbacks(cool); postDelayed(cool, if (abs(vy) > 400) 1100L else 500L)
                 return true
             }
         }
