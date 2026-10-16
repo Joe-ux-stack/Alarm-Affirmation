@@ -1,0 +1,11 @@
+// The website (getwhynotyou.com), served by Cloudflare as static files from ./website.
+// The AI-connection server has its own config in server/wrangler.toml.
+{
+  "name": "getwhynotyou-site",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./website",
+    "not_found_handling": "404-page",
+    "html_handling": "auto-trailing-slash"
+  }
+}
