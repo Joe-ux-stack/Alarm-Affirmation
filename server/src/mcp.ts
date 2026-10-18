@@ -321,6 +321,10 @@ const tools: Tool[] = [
   },
 ];
 
+// Phone down (app limits, screen time) is off for v1; the tools stay in the code for later.
+const OFF = new Set(["set_app_limit", "get_screen_time"]);
+const live = () => tools.filter((t) => !OFF.has(t.name));
+
 const rpc = (id: unknown, result: unknown) => Response.json({ jsonrpc: "2.0", id, result });
 const rpcErr = (id: unknown, code: number, message: string) => Response.json({ jsonrpc: "2.0", id, error: { code, message } });
 
@@ -346,11 +350,11 @@ export async function handleMcp(request: Request, env: Env, props: Props): Promi
       return rpc(msg.id, {});
     case "tools/list":
       return rpc(msg.id, {
-        tools: tools.map((t) => ({ name: t.name, title: t.title, description: t.description, inputSchema: t.inputSchema,
+        tools: live().map((t) => ({ name: t.name, title: t.title, description: t.description, inputSchema: t.inputSchema,
           annotations: { readOnlyHint: !!t.readOnly, destructiveHint: !!t.destructive, openWorldHint: false } })),
       });
     case "tools/call": {
-      const t = tools.find((x) => x.name === msg.params?.name);
+      const t = live().find((x) => x.name === msg.params?.name);
       if (!t) return rpcErr(msg.id, -32602, `Unknown tool: ${msg.params?.name}`);
       if (!(await isPro(env, props.userId)))
         return rpc(msg.id, { isError: true, content: [{ type: "text", text: "Connecting an AI needs Why Not You Pro. The user can start a free trial in the app (Settings → Try Pro free), signed in with this same Google account." }] });

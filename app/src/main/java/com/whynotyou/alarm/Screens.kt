@@ -102,7 +102,7 @@ class WelcomeActivity : ScreenActivity() {
     override fun build() {
         orb(220, 48)
         add(Ui.text(this, "The alarm your\nAI assistant runs", 32f, Ui.TEXT, true).apply { gravity = Gravity.CENTER; setLineSpacing(0f, 1.1f) }, 32)
-        para("Wake up to your plan for the day. Keep your phone down when it matters. Let your AI plan tomorrow for you.", center = true, top = 14)
+        para("Wake up to your plan for the day. Give every alarm its own message. Let your AI set it all up for you.", center = true, top = 14)
         pinned(Ui.button(this, "Get started", true, 64) {
             Onboarding.setDone(this)
             startActivity(Intent(this, SetupActivity::class.java)); finish()
@@ -129,8 +129,8 @@ class TrialActivity : ScreenActivity() {
         col.addView(head)
         add(bullet("Your calendar, read to you", "Tomorrow's events in your wake-up plan", 6), 4)
         col.addView(bullet("Your AI plans your day", "Works with Claude, ChatGPT and more", 6))
-        col.addView(bullet("Unlimited app limits", "Plus strict mode you can't skip", 6))
-        col.addView(bullet("Screen time stats", "See your week at a glance", 6))
+        col.addView(bullet("Follow-up questions", "\"Are they crisp?\" Yes or No decides what's next", 6))
+        col.addView(bullet("Plan the whole week", "Every alarm and message, set in one go", 6))
         val plans = listOf(Triple("Yearly", "$39.99", "$3.33 a month · 7 days free"), Triple("Monthly", "$6.99", "7 days free"), Triple("Lifetime", "$79", "Early supporters only · pay once"))
         val holder = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         fun render() {
@@ -349,12 +349,12 @@ class SubscriptionActivity : ScreenActivity() {
         card.addView(OrbView(this).apply { mode = OrbView.Mode.BREATHE }, LinearLayout.LayoutParams(dp(64), dp(64)).apply { marginEnd = dp(16) })
         val c = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         c.addView(Ui.text(this, if (pro) "Pro" else "Free", 20f, Ui.TEXT, true))
-        c.addView(Ui.text(this, if (pro) "Test mode · billing isn't connected yet" else "Alarms, plans and 2 app limits", 14f, Ui.GREY))
+        c.addView(Ui.text(this, if (pro) "Test mode · billing isn't connected yet" else "Alarms, plans and a message on every alarm", 14f, Ui.GREY))
         card.addView(c, LinearLayout.LayoutParams(0, -2, 1f))
         add(card, 16)
         col.addView(Ui.caption(this, if (pro) "Included" else "With Pro", 28))
         col.addView(bullet("Your calendar, read to you")); col.addView(bullet("Your AI plans your day"))
-        col.addView(bullet("Unlimited app limits and strict mode")); col.addView(bullet("Screen time stats"))
+        col.addView(bullet("Follow-up questions")); col.addView(bullet("Plan the whole week in one go"))
         add(boxOf(
             row(if (pro) "Change plan" else "Try Pro free") { startActivity(Intent(this, TrialActivity::class.java)) },
             row("Manage in Google Play") { try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/account/subscriptions"))) } catch (_: Exception) {} },

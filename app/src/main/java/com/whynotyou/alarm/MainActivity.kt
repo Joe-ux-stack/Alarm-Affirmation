@@ -38,7 +38,8 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         try { VoiceWarmup.start(this) } catch (_: Throwable) {}
-        try { GuardService.start(this) } catch (_: Throwable) {}
+        // Phone down is off for v1 (kept in the code): stop the watcher if an older version started it.
+        try { stopService(android.content.Intent(this, GuardService::class.java)); PhoneDown.setEnabled(this, false) } catch (_: Throwable) {}
         setContentView(R.layout.activity_main)
 
         tabAlarm = findViewById(R.id.tab_alarm); tabTimer = findViewById(R.id.tab_timer); tabStopwatch = findViewById(R.id.tab_stopwatch)
@@ -55,7 +56,7 @@ class MainActivity : AppCompatActivity() {
         warning.setOnClickListener { startActivity(Intent(this, SetupActivity::class.java)) }
 
         findViewById<View>(R.id.nav_alarm).setOnClickListener { showTab(0) }
-        findViewById<View>(R.id.nav_phonedown).setOnClickListener { showTab(3) }
+        findViewById<View>(R.id.nav_phonedown).visibility = View.GONE
         findViewById<View>(R.id.nav_timer).setOnClickListener { showTab(1) }
         findViewById<View>(R.id.nav_stopwatch).setOnClickListener { showTab(2) }
 
@@ -66,7 +67,7 @@ class MainActivity : AppCompatActivity() {
             if (!Onboarding.done(this)) startActivity(Intent(this, WelcomeActivity::class.java))
             else if (!Permissions.allGranted(this)) startActivity(Intent(this, SetupActivity::class.java))
         }
-        showTab(if (intent?.getBooleanExtra(EXTRA_PHONE_TAB, false) == true) 3 else 0)
+        showTab(0)
     }
 
     private fun showTab(i: Int) {

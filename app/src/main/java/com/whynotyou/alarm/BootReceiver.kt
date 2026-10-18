@@ -8,7 +8,7 @@ import android.content.Intent
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         AlarmScheduler.restore(context)
-        GuardService.start(context)
+        // Phone down is off for v1 (kept in the code for later).
         EveningPlan.schedule(context)
     }
 }

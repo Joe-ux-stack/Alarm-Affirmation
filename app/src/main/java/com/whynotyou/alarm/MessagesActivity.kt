@@ -18,7 +18,7 @@ class MessagesActivity : ScreenActivity() {
         val pro = Pro.isPro(this)
 
         if (!pro) {
-            val card = row("Try Pro free", sub = "Calendar, your AI, unlimited limits") { startActivity(Intent(this, TrialActivity::class.java)) }.apply {
+            val card = row("Try Pro free", sub = "Calendar, your AI, follow-up questions") { startActivity(Intent(this, TrialActivity::class.java)) }.apply {
                 setBackgroundResource(R.drawable.bg_snooze); setPadding(dp(16), dp(18), dp(16), dp(18))
                 ((getChildAt(0) as LinearLayout).getChildAt(1) as? android.widget.TextView)?.setTextColor(Ui.ACCENT)
             }
@@ -118,7 +118,7 @@ object AccountUi {
             setOnClickListener {
                 androidx.appcompat.app.AlertDialog.Builder(a)
                     .setTitle("Delete your account?")
-                    .setMessage("This removes your alarms, plans and screen time from our server and disconnects your AI. Alarms on this phone stay.")
+                    .setMessage("This removes your alarms, plans and answers from our server and disconnects your AI. Alarms on this phone stay.")
                     .setPositiveButton("Delete") { _, _ -> a.lifecycleScope.launch {
                         val ok = Account.delete(a)
                         Toast.makeText(a, if (ok) "Account deleted" else "Couldn't delete. Try again online.", Toast.LENGTH_LONG).show()

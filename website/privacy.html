@@ -80,7 +80,6 @@
       <li><strong>Plans.</strong> The line you type in the evening Planning reminder (&ldquo;What&rsquo;s the plan for tomorrow?&rdquo;) and the plan that is read to you when you wake up.</li>
       <li><strong>Voice.</strong> The spoken wake-up plan is generated on your phone using on-device Kokoro voices. Your plan text is not sent to a server to create the audio, and this works offline.</li>
       <li><strong>Calendar (Pro).</strong> If you turn on calendar read-out, the app reads today&rsquo;s events through Android&rsquo;s calendar provider so it can include them in your wake-up plan. Calendar events stay on your phone unless you connect an AI assistant (see below).</li>
-      <li><strong>App usage (Phone down).</strong> If you set app limits, the app uses Android&rsquo;s Usage Access to see how long you&rsquo;ve spent in the apps you chose, so it can show the reminder at the right time and, with Pro, show weekly screen time stats. This usage data never leaves your phone, except as daily totals if you connect an AI assistant.</li>
     </ul>
     <p>If you uninstall the app, Android deletes this on-device data. Some Android backup settings may include app data in your own Google device backup; that backup is controlled by your Google account settings, not by us.</p>
 
@@ -89,21 +88,21 @@
     <ul>
       <li><strong>Alarms, notifications and full-screen alerts</strong> &mdash; to ring your alarm on time, show the Planning reminder and show the wake-up screen.</li>
       <li><strong>Calendar (read only, Pro)</strong> &mdash; to read today&rsquo;s events aloud. We don&rsquo;t change your calendar.</li>
-      <li><strong>Usage Access</strong> &mdash; to measure time spent in the apps you chose for Phone down.</li>
-      <li><strong>Display over other apps</strong> &mdash; to show the full-screen Phone down reminder on top of an app when its time is up. The app doesn&rsquo;t read what&rsquo;s on your screen.</li>
+      <li><strong>Display over other apps</strong> &mdash; so the alarm can take over the screen when it rings, even while you&rsquo;re in another app. The app doesn&rsquo;t read what&rsquo;s on your screen.</li>
       <li><strong>Internet</strong> &mdash; only for optional features: signing in, connecting an AI assistant, and Google Play billing.</li>
     </ul>
 
     <h2 id="account">Accounts and AI assistants</h2>
-    <p>Creating an account is optional. You need one only to connect your own AI assistant (for example Claude, ChatGPT, Perplexity, Grok or Le Chat) through our MCP connector. You can sign in with <strong>Google sign-in</strong> or with your <strong>email address</strong>.</p>
-    <p>When you connect an assistant, it can read and change your alarms, plans and app limits on your behalf, and read your daily app-usage totals and (with Pro calendar turned on) your calendar events so it can plan your day. That information passes through our server to the assistant you connected. The AI provider then handles it under <strong>its own privacy policy and terms</strong>, which we don&rsquo;t control. Please review them before connecting. You can disconnect an assistant at any time.</p>
+    <p>Creating an account is optional. You need one only to connect your own AI assistant (for example Claude, ChatGPT, Perplexity, Grok or Le Chat) through our MCP connector. You sign in with <strong>Google sign-in</strong>.</p>
+    <p>When you connect an assistant, it can read and change your alarms, their messages and follow-up questions, and your plans on your behalf, and read (with Pro calendar turned on) your calendar events so it can plan your day. That information passes through our server to the assistant you connected. The AI provider then handles it under <strong>its own privacy policy and terms</strong>, which we don&rsquo;t control. Please review them before connecting. You can disconnect an assistant at any time.</p>
 
     <h2 id="server">What we store on our server</h2>
     <p>Only if you create an account and connect an AI assistant, we store:</p>
     <ul>
       <li><strong>Account email</strong> (and, if you use Google sign-in, the basic account identifier Google provides).</li>
       <li><strong>Alarms</strong> and <strong>plans</strong>, so your assistant can read and change them and the changes reach your phone.</li>
-      <li><strong>Daily app-usage totals</strong> (for example, &ldquo;Instagram: 34 minutes on Tuesday&rdquo;) &mdash; not a detailed log of when you used each app.</li>
+      <li><strong>Follow-up answers</strong> (for example, &ldquo;Are they crisp? &rarr; No, 9:01 pm&rdquo;), so your assistant can see what happened and follow up.</li>
+      <li><strong>A push token</strong> for your phone, so changes from your assistant arrive in seconds. It identifies the app install, not you.</li>
       <li><strong>A log of what the AI changed</strong> (for example, &ldquo;set alarm 6:30 weekdays&rdquo;), so you can see changes made on your behalf.</li>
     </ul>
     <p>We use this data only to run the features you asked for. We don&rsquo;t use it for advertising or profiling, and we don&rsquo;t use it to train AI models.</p>
@@ -173,8 +172,6 @@
           <li><a href="/compare/">All comparisons</a></li>
           <li><a href="/compare/alarmy">vs Alarmy</a></li>
           <li><a href="/compare/sleep-as-android">vs Sleep as Android</a></li>
-          <li><a href="/compare/one-sec">vs one sec</a></li>
-          <li><a href="/compare/opal">vs Opal</a></li>
         </ul>
       </nav>
       <nav aria-label="Legal">
