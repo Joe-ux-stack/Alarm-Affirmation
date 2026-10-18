@@ -86,7 +86,10 @@ object Brief {
             else -> "Good evening."
         }
 
-        val cached = cachedEvents(c)
+        // Alarms with their own message are for a task (check the oven, take meds): just the greeting and the message.
+        // The calendar is only read on alarms without one, i.e. the normal wake-up.
+        val taskAlarm = alarm != null && alarm.note.isNotBlank()
+        val cached = if (taskAlarm) emptyList() else cachedEvents(c)
         val allDayItems = cached.filter { it.allDay }
         val all = cached.filter { !it.allDay && it.startMillis >= now.time - 5 * 60_000L }
         val chosen = when (scope(c)) {
@@ -105,9 +108,7 @@ object Brief {
         if (allDayItems.isNotEmpty()) {
             parts += "Today: " + allDayItems.joinToString(", ") { it.title } + "."
         }
-        if (all.isEmpty()) {
-            if (allDayItems.isEmpty()) parts += "Nothing on the calendar."
-        } else {
+        if (all.isNotEmpty()) {
             val fmt = SimpleDateFormat("h:mm a", Locale.getDefault())
             chosen.forEach { parts += "${it.title}, at ${fmt.format(Date(it.startMillis)).replace(":00", "")}." }
             if (rest > 0) parts += "And $rest more ${if (rest == 1) "thing" else "things"} later."
