@@ -64,7 +64,8 @@ class AlarmDetailActivity : AppCompatActivity() {
         bind(R.id.sw_brief, alarm.brief) { alarm.brief = it }
         bind(R.id.sw_reminder, alarm.planRemind) { alarm.planRemind = it }
         renderTomorrow(); renderReminder(); renderVibe()
-        findViewById<View>(R.id.row_tomorrow).setOnClickListener { startActivity(android.content.Intent(this, PlanActivity::class.java)) }
+        findViewById<View>(R.id.row_tomorrow).setOnClickListener { messageSheet() }
+        findViewById<View>(R.id.row_date).setOnClickListener { pickDate() }
         findViewById<View>(R.id.row_reminder).setOnClickListener { reminderSheet() }
         renderLabel()
         findViewById<View>(R.id.row_label).setOnClickListener { labelSheet() }
@@ -127,11 +128,50 @@ class AlarmDetailActivity : AppCompatActivity() {
 
     override fun onResume() { super.onResume(); renderTomorrow() }
 
+    /** This alarm's own message; without one, the evening plan is read. */
     private fun renderTomorrow() {
         val t = findViewById<TextView>(R.id.txt_tomorrow)
-        val i = Brief.intention(this)
-        t.text = if (i.isBlank()) "Not set" else i
-        t.setTextColor(if (i.isBlank()) Ui.GREY else Ui.TEXT)
+        val m = alarm.message
+        t.text = if (m.isBlank()) "Uses your evening plan" else m
+        t.setTextColor(if (m.isBlank()) Ui.GREY else Ui.ACCENT)
+    }
+
+    private fun messageSheet() {
+        val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        val input = android.widget.EditText(this).apply {
+            setText(alarm.message); setSelection(text.length); hint = "e.g. Stand-up at 9. Finish the pitch deck before lunch."
+            textSize = 17f; setTextColor(Ui.TEXT); setHintTextColor(Ui.CAPTION); minLines = 3; maxLines = 6; gravity = Gravity.TOP
+            filters = arrayOf(android.text.InputFilter.LengthFilter(400))
+            setBackgroundResource(R.drawable.bg_input); setPadding(dp(16), dp(14), dp(16), dp(14))
+        }
+        col.addView(input, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
+        if (alarm.messageFromAi && alarm.message.isNotBlank())
+            col.addView(Ui.text(this, "Written by your AI · edit anytime", 13f, Ui.GREY).apply { setPadding(0, dp(10), 0, 0) })
+        Sheet.show(this, "Message for this alarm", "Read aloud when this alarm rings. Leave empty to use your evening plan.", col) {
+            val t = input.text.toString().trim()
+            if (t != alarm.message) { alarm.message = t; alarm.messageFromAi = false }
+            renderTomorrow()
+        }
+    }
+
+    private fun renderDate() {
+        val once = alarm.days.none { it }
+        findViewById<View>(R.id.row_date).visibility = if (once) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.line_date).visibility = if (once) View.VISIBLE else View.GONE
+        val tv = findViewById<TextView>(R.id.txt_date)
+        val d = try { if (alarm.date.isEmpty()) null else java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).parse(alarm.date) } catch (_: Throwable) { null }
+        tv.text = if (d == null) "Next time it comes up" else java.text.SimpleDateFormat("EEE d MMM", java.util.Locale.getDefault()).format(d)
+        tv.setTextColor(if (d == null) Ui.GREY else Ui.ACCENT)
+    }
+
+    private fun pickDate() {
+        val c = Calendar.getInstance()
+        android.app.DatePickerDialog(this, { _, y, m, d ->
+            alarm.date = "%04d-%02d-%02d".format(y, m + 1, d); renderDate()
+        }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).apply {
+            datePicker.minDate = System.currentTimeMillis() - 1000
+            setButton(android.content.DialogInterface.BUTTON_NEUTRAL, "Next time") { _, _ -> alarm.date = ""; renderDate() }
+        }.show()
     }
 
     private fun renderLabel() {
@@ -207,6 +247,8 @@ class AlarmDetailActivity : AppCompatActivity() {
     }
 
     private fun renderDays() {
+        if (alarm.days.any { it }) alarm.date = ""
+        renderDate()
         for (i in 0 until 7) {
             val tv = dayViews[i] ?: continue
             val on = alarm.days[i]

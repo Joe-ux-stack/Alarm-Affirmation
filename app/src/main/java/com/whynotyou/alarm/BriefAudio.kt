@@ -85,7 +85,7 @@ object BriefAudio {
             CalendarSync.refreshToday(applicationContext)
             // Brief text for the alarm's trigger time, not for "now".
             val at = alarm.nextTrigger() ?: return@withContext Result.success()
-            val text = Brief.compose(applicationContext, java.util.Date(at))
+            val text = Brief.compose(applicationContext, java.util.Date(at), alarm)
             if (text.isBlank()) return@withContext Result.success()
             if (cached(applicationContext, id, text, alarm.voice) != null) return@withContext Result.success()
             val f = render(applicationContext, id, text, alarm.voice)

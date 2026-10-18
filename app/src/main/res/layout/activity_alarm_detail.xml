@@ -59,6 +59,15 @@
                     android:orientation="horizontal" />
                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#1F2840" />
 
+                <LinearLayout android:id="@+id/row_date" style="@style/Row" android:minHeight="64dp" android:background="?android:attr/selectableItemBackground" android:visibility="gone">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Date" android:textColor="#F2F4F8" android:textSize="16sp" android:textStyle="bold" />
+                        <TextView android:id="@+id/txt_date" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:text="Next time it comes up" android:textColor="#8A93A8" android:textSize="14sp" />
+                    </LinearLayout>
+                    <ImageView android:layout_width="18dp" android:layout_height="18dp" android:src="@drawable/ic_chevron" android:tint="#8A93A8" android:importantForAccessibility="no" />
+                </LinearLayout>
+                <View android:id="@+id/line_date" android:layout_width="match_parent" android:layout_height="1dp" android:background="#1F2840" android:visibility="gone" />
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -145,8 +154,8 @@
 
                 <LinearLayout android:id="@+id/row_tomorrow" style="@style/Row" android:minHeight="64dp" android:background="?android:attr/selectableItemBackground">
                     <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Plan for tomorrow" android:textColor="#F2F4F8" android:textSize="16sp" android:textStyle="bold" />
-                        <TextView android:id="@+id/txt_tomorrow" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:maxLines="2" android:ellipsize="end" android:text="Not set" android:textColor="#8A93A8" android:textSize="14sp" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Message for this alarm" android:textColor="#F2F4F8" android:textSize="16sp" android:textStyle="bold" />
+                        <TextView android:id="@+id/txt_tomorrow" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:maxLines="3" android:ellipsize="end" android:text="Uses your evening plan" android:textColor="#8A93A8" android:textSize="14sp" />
                     </LinearLayout>
                     <ImageView android:layout_width="18dp" android:layout_height="18dp" android:src="@drawable/ic_chevron" android:tint="#8A93A8" android:importantForAccessibility="no" />
                 </LinearLayout>

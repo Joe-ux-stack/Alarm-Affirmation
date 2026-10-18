@@ -113,18 +113,24 @@ object Sync {
         if (!Account.signedIn(c)) return -1
         withContext(Dispatchers.IO) { Push.ensure(c) }
         var r = Account.call(c, "POST", "/api/sync", state(c)) ?: return -1
-        val changes = r.optJSONArray("changes") ?: JSONArray()
-        val applied = JSONArray()
-        withContext(Dispatchers.Main) {
-            for (i in 0 until changes.length()) {
-                val ch = changes.getJSONObject(i)
-                try { apply(c, ch.getString("kind"), ch.getJSONObject("payload")) } catch (_: Throwable) {}
-                applied.put(ch.getLong("id")) // mark as handled even if it couldn't apply, so it doesn't repeat forever
+        var total = 0
+        // The server hands out up to 50 changes at a time (a whole week can be more): keep going until none are left.
+        for (round in 0 until 10) {
+            val changes = r.optJSONArray("changes") ?: JSONArray()
+            if (changes.length() == 0) break
+            val applied = JSONArray()
+            withContext(Dispatchers.Main) {
+                for (i in 0 until changes.length()) {
+                    val ch = changes.getJSONObject(i)
+                    try { apply(c, ch.getString("kind"), ch.getJSONObject("payload")) } catch (_: Throwable) {}
+                    applied.put(ch.getLong("id")) // mark as handled even if it couldn't apply, so it doesn't repeat forever
+                }
             }
+            total += applied.length()
+            r = Account.call(c, "POST", "/api/sync", state(c).put("applied", applied)) ?: break
         }
-        if (applied.length() > 0) r = Account.call(c, "POST", "/api/sync", state(c).put("applied", applied)) ?: r
         Account.saveSync(c, r.optBoolean("pro"), r.optJSONArray("actions"))
-        applied.length()
+        total
     }
 
     private fun state(c: Context): JSONObject {
@@ -160,13 +166,19 @@ object Sync {
             "set_plan" -> { Brief.setIntention(c, p.optString("plan")); Account.setPlanFromAi(c, p.optString("plan")); if (p.optString("plan").isNotBlank()) Mornings.recordPlan(c) }
             "create_alarm" -> {
                 val d = p.optJSONArray("days")
-                AlarmStore.save(c, Alarm(p.getString("id"), p.getInt("h"), p.getInt("m"), BooleanArray(7) { d?.optBoolean(it) ?: false }, p.optBoolean("on", true)).apply { label = p.optString("label", "") })
+                AlarmStore.save(c, Alarm(p.getString("id"), p.getInt("h"), p.getInt("m"), BooleanArray(7) { d?.optBoolean(it) ?: false }, p.optBoolean("on", true)).apply {
+                    label = p.optString("label", ""); date = p.optString("date", "")
+                    message = p.optString("message", ""); messageFromAi = message.isNotBlank()
+                })
             }
             "update_alarm" -> AlarmStore.get(c, p.getString("id"))?.let { a ->
                 if (p.has("h")) { a.hour = p.getInt("h"); a.minute = p.getInt("m") }
                 p.optJSONArray("days")?.let { d -> a.days = BooleanArray(7) { d.optBoolean(it) } }
                 if (p.has("on")) a.enabled = p.getBoolean("on")
                 if (p.has("label")) a.label = p.optString("label", "")
+                if (p.has("message")) { a.message = p.optString("message", ""); a.messageFromAi = a.message.isNotBlank() }
+                if (p.has("date")) a.date = p.optString("date", "")
+                if (p.has("days")) a.date = if (a.isOnce) a.date else ""
                 AlarmStore.save(c, a)
             }
             "delete_alarm" -> if (AlarmStore.get(c, p.getString("id")) != null) AlarmStore.delete(c, p.getString("id"))

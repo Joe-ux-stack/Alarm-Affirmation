@@ -59,7 +59,7 @@ object Brief {
     }
 
     /** The text that gets spoken. Empty string when there's nothing to say. */
-    fun compose(c: Context, now: Date = Date()): String {
+    fun compose(c: Context, now: Date = Date(), alarm: Alarm? = null): String {
         if (!isEnabled(c)) return ""
         val parts = mutableListOf<String>()
 
@@ -98,7 +98,10 @@ object Brief {
             if (rest > 0) parts += "And $rest more ${if (rest == 1) "thing" else "things"} later."
         }
 
-        intention(c).takeIf { it.isNotBlank() }?.let { parts += Phrase.intention(it, now.time) }
+        // This alarm's own message wins (said as written); otherwise the evening plan.
+        val msg = alarm?.message?.trim().orEmpty()
+        if (msg.isNotEmpty()) parts += if (msg.last() in ".!?") msg else "$msg."
+        else intention(c).takeIf { it.isNotBlank() }?.let { parts += Phrase.intention(it, now.time) }
         return parts.joinToString(" ")
     }
 

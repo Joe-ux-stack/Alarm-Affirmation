@@ -24,7 +24,10 @@ data class Alarm(
     var planRemind: Boolean = true,  // remind the night before to write the plan
     var planHour: Int = 21,
     var planMinute: Int = 0,
-    var label: String = ""           // e.g. "Work"; shown on the card and when it rings
+    var label: String = "",          // e.g. "Work"; shown on the card and when it rings
+    var message: String = "",        // read aloud when this alarm rings (instead of the evening plan)
+    var messageFromAi: Boolean = false,
+    var date: String = ""            // one-time alarm on a specific day, "yyyy-MM-dd"; "" = next time it comes up
 ) {
     fun soundFile(c: android.content.Context) = java.io.File(c.filesDir, "sounds/$id.audio")
     fun hasCustomSound(c: android.content.Context) = soundName.isNotEmpty() && soundFile(c).exists()
@@ -42,6 +45,16 @@ data class Alarm(
             set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
         }
         if (cal.timeInMillis <= now + 60_000L) cal.add(Calendar.DAY_OF_YEAR, 1)
+        if (isOnce && date.isNotEmpty()) {
+            val d = try { java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).parse(date) } catch (_: Throwable) { null }
+            if (d != null) {
+                val dc = Calendar.getInstance().apply { time = d }
+                cal.timeInMillis = now
+                cal.set(dc.get(Calendar.YEAR), dc.get(Calendar.MONTH), dc.get(Calendar.DAY_OF_MONTH), hour, minute, 0)
+                cal.set(Calendar.MILLISECOND, 0)
+                return if (cal.timeInMillis > now) cal.timeInMillis else null
+            }
+        }
         if (isOnce) return cal.timeInMillis
         for (i in 0 until 7) {
             val dow = (cal.get(Calendar.DAY_OF_WEEK) + 5) % 7 // Mon=0 … Sun=6
@@ -56,7 +69,7 @@ data class Alarm(
         .put("days", JSONArray().also { a -> days.forEach { a.put(it) } })
         .put("on", enabled).put("vol", volume).put("ramp", ramp).put("vib", vibrate).put("snooze", snooze)
         .put("msg", message).put("brief", brief).put("voice", voice).put("sound", soundName)
-        .put("vibp", vibePattern).put("pr", planRemind).put("ph", planHour).put("pm", planMinute).put("lbl", label)
+        .put("vibp", vibePattern).put("pr", planRemind).put("ph", planHour).put("pm", planMinute).put("lbl", label).put("note", message).put("noteAi", messageFromAi).put("date", date)
 
     companion object {
         fun fromJson(o: JSONObject): Alarm {
@@ -71,7 +84,8 @@ data class Alarm(
                 soundName = o.optString("sound", ""),
                 vibePattern = o.optString("vibp", "pulse"),
                 planRemind = o.optBoolean("pr", true), planHour = o.optInt("ph", 21), planMinute = o.optInt("pm", 0),
-                label = o.optString("lbl", "")
+                label = o.optString("lbl", ""), message = o.optString("note", ""),
+                messageFromAi = o.optBoolean("noteAi", false), date = o.optString("date", "")
             )
         }
         fun new(hour: Int = 7, minute: Int = 0) = Alarm(System.currentTimeMillis().toString(36), hour, minute)
@@ -85,7 +99,8 @@ object AlarmStore {
     fun all(c: Context): List<Alarm> {
         val arr = JSONArray(c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY, "[]") ?: "[]")
         return (0 until arr.length()).map { Alarm.fromJson(arr.getJSONObject(it)) }
-            .sortedWith(compareBy({ it.hour }, { it.minute }))
+            // Soonest first (so a week planned on Sunday reads in order); switched-off alarms after, by time.
+            .sortedWith(compareBy<Alarm>({ it.nextTrigger() ?: Long.MAX_VALUE }, { it.hour }, { it.minute }))
     }
 
     fun get(c: Context, id: String): Alarm? = all(c).firstOrNull { it.id == id }

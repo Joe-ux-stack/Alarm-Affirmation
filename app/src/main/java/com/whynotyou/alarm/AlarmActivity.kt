@@ -275,7 +275,7 @@ class AlarmActivity : AppCompatActivity() {
         phase = Phase.BRIEF
         visualizer?.release(); visualizer = null
         player?.stop()
-        val text = if (alarm.brief) Brief.compose(this) else ""
+        val text = if (alarm.brief) Brief.compose(this, alarm = alarm) else ""
         if (text.isBlank()) { enterDone(); return }
         sub.text = dayLine()
         reveal = SentenceReveal(briefView, text.replace("Phone down.", "").trim())
@@ -314,7 +314,7 @@ class AlarmActivity : AppCompatActivity() {
         ui.post(follow)
         p.addListener(object : Player.Listener {
             override fun onPlaybackStateChanged(state: Int) { if (state == Player.STATE_ENDED && phase == Phase.BRIEF) { p.removeListener(this); enterDone() } }
-            override fun onPlayerError(e: PlaybackException) { if (phase == Phase.BRIEF) { p.removeListener(this); speakWithPhone(Brief.compose(this@AlarmActivity)) } }
+            override fun onPlayerError(e: PlaybackException) { if (phase == Phase.BRIEF) { p.removeListener(this); speakWithPhone(Brief.compose(this@AlarmActivity, alarm = alarm)) } }
         })
     }
 
@@ -346,7 +346,7 @@ class AlarmActivity : AppCompatActivity() {
         phase = Phase.DONE
         reveal?.showAll()
         orb.mode = OrbView.Mode.STILL
-        if (!preview) Brief.clearIntention(this)
+        if (!preview && alarm.message.isBlank()) Brief.clearIntention(this)  // the evening plan was used up; per-alarm messages stay
         val hold = if (reveal != null) 4_000L else 1_500L
         ui.postDelayed({
             findViewById<View>(R.id.alarm_root).animate().alpha(0f).setDuration(900)

@@ -27,6 +27,13 @@ async function state(env: Env, userId: string) {
   };
 }
 
+async function queueOnly(env: Env, userId: string, kind: string, payload: unknown) {
+  await env.DB.prepare("INSERT INTO changes (user_id, kind, payload, created_at) VALUES (?, ?, ?, ?)").bind(userId, kind, JSON.stringify(payload), now()).run();
+}
+async function logAction(env: Env, userId: string, summary: string) {
+  await env.DB.prepare("INSERT INTO actions (user_id, summary, created_at) VALUES (?, ?, ?)").bind(userId, summary, now()).run();
+}
+
 async function queue(env: Env, userId: string, kind: string, payload: unknown, summary: string) {
   await env.DB.batch([
     env.DB.prepare("INSERT INTO changes (user_id, kind, payload, created_at) VALUES (?, ?, ?, ?)").bind(userId, kind, JSON.stringify(payload), now()),
@@ -39,7 +46,7 @@ const fmtAlarm = (a: any) => {
   const h = Number(a.h), m = Number(a.m);
   const t = `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, "0")} ${h < 12 ? "am" : "pm"}`;
   const d: boolean[] = a.days ?? [];
-  const days = d.every(Boolean) ? "every day" : d.slice(0, 5).every(Boolean) && !d[5] && !d[6] ? "weekdays" : d.some(Boolean) ? DAYS.filter((_, i) => d[i]).join(", ") : "once";
+  const days = d.every(Boolean) ? "every day" : d.slice(0, 5).every(Boolean) && !d[5] && !d[6] ? "weekdays" : d.some(Boolean) ? DAYS.filter((_, i) => d[i]).join(", ") : a.date ? `once on ${a.date}` : "once";
   const label = String(a.lbl ?? a.label ?? "").trim();
   return `${label ? `"${label}" · ` : ""}${t} · ${days} · ${a.on === false ? "off" : "on"} (id ${a.id})`;
 };
@@ -55,6 +62,7 @@ const detailAlarm = (a: any) => {
     `  vibration: ${vib} · snooze ${a.snooze === false ? "off" : "on (5 min, max 2)"}`,
     `  after stopping: read the plan aloud ${a.brief === false ? "off" : `on (voice ${a.voice ?? "default"})`}`,
     `  planning reminder: ${remind}`,
+    `  message read aloud: ${String(a.note ?? "").trim() ? `"${a.note}"${a.noteAi ? " (written by AI)" : ""}` : "none (reads the evening plan instead)"}`,
   ].join("\n");
 };
 
@@ -75,6 +83,28 @@ const parseDays = (d?: string[]) => {
   return DAYS.map((x) => [...set].some((s) => s.startsWith(x)));
 };
 
+const parseDate = (s?: string) => {
+  if (!s) return "";
+  const v = String(s).trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(v) || isNaN(Date.parse(v))) throw new Error(`Couldn't read the date "${s}". Use YYYY-MM-DD.`);
+  return v;
+};
+const ALARM_PROPS = {
+  time: { type: "string", description: "\"06:30\" (24 h) or \"6:30 am\"" },
+  days: { type: "array", items: { type: "string" }, description: "Repeat on: any of mon..sun, or \"weekdays\", \"weekends\", \"every day\". Leave out for a one-time alarm." },
+  date: { type: "string", description: "One-time alarm on a specific day, YYYY-MM-DD (use the user's local date). Only without days." },
+  label: { type: "string", maxLength: 40, description: "Short name shown on the alarm, e.g. \"Work\", \"Gym\", \"Flight\"." },
+  message: { type: "string", maxLength: 400, description: "Read aloud when this alarm rings, instead of the evening plan. One to three short spoken sentences in second person." },
+};
+function buildAlarm(a: any, i = 0) {
+  const { h, m } = parseTime(String(a.time));
+  const days = parseDays(a.days) ?? DAYS.map(() => false);
+  const date = days.some(Boolean) ? "" : parseDate(a.date);
+  return { id: "ai" + (now() + i).toString(36), h, m, days, on: true, date,
+    label: String(a.label ?? "").trim().slice(0, 40), message: String(a.message ?? "").trim().slice(0, 400) };
+}
+const asPhone = (x: any) => ({ ...x, lbl: x.label, note: x.message, noteAi: !!x.message });
+
 const tools: Tool[] = [
   {
     name: "get_tomorrow", title: "Get tomorrow", readOnly: true,
@@ -92,7 +122,7 @@ const tools: Tool[] = [
   },
   {
     name: "set_plan", title: "Set tomorrow's plan",
-    description: "Set the plan for tomorrow. It is read aloud to the user when their alarm goes off, so write it as one or two short spoken sentences in second person, e.g. \"Finish the pitch deck before lunch, then go for a run.\" Replaces any existing plan.",
+    description: "Set the general plan for tomorrow (the evening plan). It is read aloud at the next alarm that has no message of its own, then cleared. For a message tied to one alarm or day, set message on that alarm instead (create_alarm / update_alarm). Write one or two short spoken sentences in second person, e.g. \"Finish the pitch deck before lunch, then go for a run.\" Replaces any existing plan.",
     inputSchema: { type: "object", properties: { plan: { type: "string", maxLength: 400 } }, required: ["plan"], additionalProperties: false },
     async run(env, userId, a) {
       const plan = String(a.plan ?? "").trim();
@@ -115,19 +145,30 @@ const tools: Tool[] = [
   },
   {
     name: "create_alarm", title: "Create alarm",
-    description: "Create an alarm. time: \"06:30\" (24 h) or \"6:30 am\". days: any of mon..sun, or \"weekdays\", \"weekends\", \"every day\"; leave empty for a one-time alarm, which rings once and then switches itself off (ask the user whether it should repeat if they didn't say). label: optional short name shown on the alarm, e.g. \"Work\" or \"Gym\".",
-    inputSchema: { type: "object", properties: { time: { type: "string" }, days: { type: "array", items: { type: "string" } }, label: { type: "string", maxLength: 40 } }, required: ["time"], additionalProperties: false },
+    description: "Create one alarm. Without days it's a one-time alarm: it rings once (on date, or the next time that time comes up) and then switches itself off; ask whether it should repeat if the user didn't say. Each alarm can carry its own message that is read aloud when it rings. To set up many alarms at once (e.g. a whole week), use create_alarms.",
+    inputSchema: { type: "object", properties: ALARM_PROPS, required: ["time"], additionalProperties: false },
     async run(env, userId, a) {
-      const { h, m } = parseTime(String(a.time)); const days = parseDays(a.days) ?? DAYS.map(() => false);
-      const alarm = { id: "ai" + now().toString(36), h, m, days, on: true, label: String(a.label ?? "").trim().slice(0, 40) };
-      await queue(env, userId, "create_alarm", alarm, `Added an alarm: ${fmtAlarm(alarm).split(" (id")[0]}`);
-      return `Queued: ${fmtAlarm(alarm)}. It appears on the phone at the next sync (usually within a minute when the app is open).`;
+      const alarm = buildAlarm(a);
+      await queue(env, userId, "create_alarm", alarm, `Added an alarm: ${fmtAlarm(asPhone(alarm)).split(" (id")[0]}`);
+      return `Created: ${fmtAlarm(asPhone(alarm))}${alarm.message ? ` · message: "${alarm.message}"` : ""}. It reaches the phone within seconds.`;
+    },
+  },
+  {
+    name: "create_alarms", title: "Create several alarms",
+    description: "Create up to 50 alarms in one go, e.g. a whole week planned on Sunday, each with its own time, days or date, label and message. Same fields as create_alarm. Check list_alarms first so you don't duplicate existing ones.",
+    inputSchema: { type: "object", properties: { alarms: { type: "array", minItems: 1, maxItems: 50, items: { type: "object", properties: ALARM_PROPS, required: ["time"], additionalProperties: false } } }, required: ["alarms"], additionalProperties: false },
+    async run(env, userId, a) {
+      const list = (a.alarms as any[]).map((x, i) => buildAlarm(x, i));
+      for (const alarm of list) await queueOnly(env, userId, "create_alarm", alarm);
+      await logAction(env, userId, `Added ${list.length} alarms`);
+      await wakePhones(env, userId);
+      return `Created ${list.length} alarms:\n` + list.map((x) => fmtAlarm(asPhone(x)) + (x.message ? ` · "${x.message}"` : "")).join("\n");
     },
   },
   {
     name: "update_alarm", title: "Change alarm",
-    description: "Change an existing alarm by id (from list_alarms): new time, new days, new label (empty string removes it), or turn it on/off.",
-    inputSchema: { type: "object", properties: { id: { type: "string" }, time: { type: "string" }, days: { type: "array", items: { type: "string" } }, label: { type: "string", maxLength: 40 }, on: { type: "boolean" } }, required: ["id"], additionalProperties: false },
+    description: "Change an existing alarm by id (from list_alarms): time, days, date, label or message (an empty string removes the label or message), or turn it on/off.",
+    inputSchema: { type: "object", properties: { id: { type: "string" }, ...ALARM_PROPS, on: { type: "boolean" } }, required: ["id"], additionalProperties: false },
     async run(env, userId, a) {
       const s = await state(env, userId);
       const cur = s.alarms.find((x) => x.id === a.id);
@@ -137,7 +178,9 @@ const tools: Tool[] = [
       const days = parseDays(a.days); if (days) patch.days = days;
       if (typeof a.on === "boolean") patch.on = a.on;
       if (typeof a.label === "string") patch.label = a.label.trim().slice(0, 40);
-      const after = { ...cur, ...patch, ...(patch.label !== undefined ? { lbl: patch.label } : {}) };
+      if (typeof a.message === "string") patch.message = a.message.trim().slice(0, 400);
+      if (typeof a.date === "string") patch.date = parseDate(a.date);
+      const after = { ...cur, ...patch, ...(patch.label !== undefined ? { lbl: patch.label } : {}), ...(patch.message !== undefined ? { note: patch.message, noteAi: true } : {}) };
       await queue(env, userId, "update_alarm", patch, `Changed alarm: ${fmtAlarm(after).split(" (id")[0]}`);
       return `Queued: ${fmtAlarm(after)}.`;
     },
@@ -197,7 +240,7 @@ export async function handleMcp(request: Request, env: Env, props: Props): Promi
         protocolVersion: msg.params?.protocolVersion === "2025-03-26" ? "2025-03-26" : PROTOCOL,
         capabilities: { tools: { listChanged: false } },
         serverInfo: { name: "why-not-you", title: "Why Not You", version: "0.1.0" },
-        instructions: "Why Not You is the user's alarm app. Use get_tomorrow before planning. Plans are read aloud at the alarm, so keep them short and spoken. Changes reach the phone at its next sync.",
+        instructions: "Why Not You is the user's alarm app. Read list_alarms before changing anything. Every alarm can have a label and its own message, which is read aloud when it rings; set_plan is the general plan for the next alarm without a message. Keep messages short and spoken. Use create_alarms to set up many alarms at once. Changes reach the phone within seconds.",
       });
     case "ping":
       return rpc(msg.id, {});

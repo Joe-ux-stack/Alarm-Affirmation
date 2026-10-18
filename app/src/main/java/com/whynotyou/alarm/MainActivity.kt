@@ -148,14 +148,23 @@ class MainActivity : AppCompatActivity() {
             v.findViewById<View>(R.id.row_main).setOnLongClickListener(askDelete)
 
             // The plan (yours or your AI's) sits on the card of the alarm that will read it out next.
+            // Each alarm shows its own message; the next alarm without one shows the evening plan it will read.
             val intent = Brief.intention(this)
-            val showPlan = a.id == nextId && intent.isNotBlank()
+            val own = a.message.isNotBlank()
+            val showPlan = own || (a.id == nextId && intent.isNotBlank())
             plan.visibility = if (showPlan) View.VISIBLE else View.GONE
             v.findViewById<View>(R.id.plan_line).visibility = plan.visibility
             if (showPlan) {
-                planText.text = intent
-                v.findViewById<TextView>(R.id.txt_plan_caption).text = if (Account.planFromAi(this, intent)) "YOUR PLAN · FROM YOUR AI" else "YOUR PLAN"
-                plan.setOnClickListener { startActivity(Intent(this, PlanActivity::class.java)) }
+                planText.text = if (own) a.message else intent
+                v.findViewById<TextView>(R.id.txt_plan_caption).text = when {
+                    own -> if (a.messageFromAi) "MESSAGE · FROM YOUR AI" else "MESSAGE"
+                    Account.planFromAi(this, intent) -> "YOUR PLAN · FROM YOUR AI"
+                    else -> "YOUR PLAN"
+                }
+                plan.setOnClickListener {
+                    if (own) startActivity(Intent(this, AlarmDetailActivity::class.java).putExtra(AlarmDetailActivity.EXTRA_ID, a.id))
+                    else startActivity(Intent(this, PlanActivity::class.java))
+                }
             }
             list.addView(v)
         }
@@ -178,6 +187,8 @@ class MainActivity : AppCompatActivity() {
             val t = a.nextTrigger()
             val s = when {
                 t == null -> "Once · turn on to use again"
+                a.date.isNotEmpty() && !android.text.format.DateUtils.isToday(t) && t - System.currentTimeMillis() > 36 * 3600_000L ->
+                    "Once · " + java.text.SimpleDateFormat("EEE d MMM", java.util.Locale.getDefault()).format(java.util.Date(t))
                 android.text.format.DateUtils.isToday(t) -> "Once · today"
                 else -> "Once · tomorrow"
             }
