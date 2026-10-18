@@ -83,7 +83,7 @@ class AlarmActivity : AppCompatActivity() {
         val clockFmt = SimpleDateFormat(if (android.text.format.DateFormat.is24HourFormat(this)) "H:mm" else "h:mm", Locale.getDefault())
         val clockTick = object : Runnable { override fun run() { clock.text = clockFmt.format(Date()); ui.postDelayed(this, 10_000) } }
         clockTick.run()
-        sub.text = if (timerMode) "Timer" else SimpleDateFormat("EEEE", Locale.getDefault()).format(Date())
+        sub.text = if (timerMode) "Timer" else dayLine()
 
         if (!preview) {
             val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
@@ -277,7 +277,7 @@ class AlarmActivity : AppCompatActivity() {
         player?.stop()
         val text = if (alarm.brief) Brief.compose(this) else ""
         if (text.isBlank()) { enterDone(); return }
-        sub.text = SimpleDateFormat("EEEE", Locale.getDefault()).format(Date())
+        sub.text = dayLine()
         reveal = SentenceReveal(briefView, text.replace("Phone down.", "").trim())
         briefView.visibility = View.VISIBLE
 
@@ -329,6 +329,15 @@ class AlarmActivity : AppCompatActivity() {
     }
 
     // ---- DONE ------------------------------------------------------------------------------
+    /** "Saturday · Work": the day, plus the alarm's label in the accent colour. */
+    private fun dayLine(): CharSequence {
+        val day = SimpleDateFormat("EEEE", Locale.getDefault()).format(Date())
+        val l = alarm.label.trim()
+        if (l.isEmpty()) return day
+        val sp = android.text.SpannableString("$day · $l")
+        sp.setSpan(android.text.style.ForegroundColorSpan(0xFF93AEFF.toInt()), day.length + 3, sp.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        return sp
+    }
     private var reveal: SentenceReveal? = null
 
     /** Everything has been said: settle, then fade the screen out on its own. */

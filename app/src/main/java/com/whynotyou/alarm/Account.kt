@@ -157,14 +157,16 @@ object Sync {
             "set_plan" -> { Brief.setIntention(c, p.optString("plan")); if (p.optString("plan").isNotBlank()) Mornings.recordPlan(c) }
             "create_alarm" -> {
                 val d = p.optJSONArray("days")
-                AlarmStore.save(c, Alarm(p.getString("id"), p.getInt("h"), p.getInt("m"), BooleanArray(7) { d?.optBoolean(it) ?: false }, p.optBoolean("on", true)))
+                AlarmStore.save(c, Alarm(p.getString("id"), p.getInt("h"), p.getInt("m"), BooleanArray(7) { d?.optBoolean(it) ?: false }, p.optBoolean("on", true)).apply { label = p.optString("label", "") })
             }
             "update_alarm" -> AlarmStore.get(c, p.getString("id"))?.let { a ->
                 if (p.has("h")) { a.hour = p.getInt("h"); a.minute = p.getInt("m") }
                 p.optJSONArray("days")?.let { d -> a.days = BooleanArray(7) { d.optBoolean(it) } }
                 if (p.has("on")) a.enabled = p.getBoolean("on")
+                if (p.has("label")) a.label = p.optString("label", "")
                 AlarmStore.save(c, a)
             }
+            "delete_alarm" -> if (AlarmStore.get(c, p.getString("id")) != null) AlarmStore.delete(c, p.getString("id"))
             "set_app_limit" -> {
                 val name = p.optString("app").trim().lowercase(); val min = p.optInt("minutes")
                 val pkgs = PhoneDown.knownApps.filter { it.name.lowercase() == name || (name == "twitter" && it.name == "X") }.map { it.pkg }.toSet()

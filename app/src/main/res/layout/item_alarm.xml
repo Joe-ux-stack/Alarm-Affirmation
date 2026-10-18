@@ -25,6 +25,18 @@
             android:orientation="vertical">
 
             <TextView
+                android:id="@+id/txt_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp"
+                android:fontFamily="sans-serif-medium"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:textColor="#A9B8E8"
+                android:textSize="15sp"
+                android:visibility="gone" />
+
+            <TextView
                 android:id="@+id/txt_time"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

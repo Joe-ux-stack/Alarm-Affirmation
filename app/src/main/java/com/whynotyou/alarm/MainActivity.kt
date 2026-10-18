@@ -125,6 +125,7 @@ class MainActivity : AppCompatActivity() {
             val planText = v.findViewById<TextView>(R.id.txt_plan)
 
             time.text = formatTime(a.hour, a.minute)
+            v.findViewById<TextView>(R.id.txt_label).apply { text = a.label; visibility = if (a.label.isBlank()) View.GONE else View.VISIBLE }
             days.text = daysSpannable(a)
             v.alpha = if (a.enabled) 1f else 0.3f
             sw.isChecked = a.enabled

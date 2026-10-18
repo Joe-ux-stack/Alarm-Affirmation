@@ -11,6 +11,7 @@ type Tool = {
   description: string;
   inputSchema: Record<string, unknown>;
   readOnly?: boolean;
+  destructive?: boolean;
   run: (env: Env, userId: string, args: any) => Promise<string>;
 };
 
@@ -39,7 +40,22 @@ const fmtAlarm = (a: any) => {
   const t = `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, "0")} ${h < 12 ? "am" : "pm"}`;
   const d: boolean[] = a.days ?? [];
   const days = d.every(Boolean) ? "every day" : d.slice(0, 5).every(Boolean) && !d[5] && !d[6] ? "weekdays" : d.some(Boolean) ? DAYS.filter((_, i) => d[i]).join(", ") : "once";
-  return `${t} · ${days} · ${a.on === false ? "off" : "on"} (id ${a.id})`;
+  const label = String(a.lbl ?? a.label ?? "").trim();
+  return `${label ? `"${label}" · ` : ""}${t} · ${days} · ${a.on === false ? "off" : "on"} (id ${a.id})`;
+};
+
+/** Everything about one alarm, for list_alarms. */
+const detailAlarm = (a: any) => {
+  const vib = a.vib === false ? "off" : `on (${a.vibp ?? "pulse"})`;
+  const ph = Number(a.ph ?? 21), pm = Number(a.pm ?? 0);
+  const remind = a.pr === false ? "off" : `${ph % 12 === 0 ? 12 : ph % 12}:${String(pm).padStart(2, "0")} ${ph < 12 ? "am" : "pm"} the evening before`;
+  return [
+    fmtAlarm(a),
+    `  sound: ${a.sound ? a.sound : "Chime (built-in)"} · volume ${a.vol ?? 80}% · ramp up ${a.ramp === false ? "off" : "on"}`,
+    `  vibration: ${vib} · snooze ${a.snooze === false ? "off" : "on (5 min, max 2)"}`,
+    `  after stopping: read the plan aloud ${a.brief === false ? "off" : `on (voice ${a.voice ?? "default"})`}`,
+    `  planning reminder: ${remind}`,
+  ].join("\n");
 };
 
 const parseTime = (s: string) => {
@@ -88,28 +104,30 @@ const tools: Tool[] = [
   },
   {
     name: "list_alarms", title: "List alarms", readOnly: true,
-    description: "List all alarms on the user's phone with their ids, times, days and on/off state.",
+    description: "Read all alarms on the user's phone, on and off, with everything about each: id, label, time, days, sound, volume, vibration, snooze, whether the plan is read aloud (and voice), and the evening planning reminder.",
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
     async run(env, userId) {
       const s = await state(env, userId);
-      return s.alarms.length ? s.alarms.map(fmtAlarm).join("\n") : "No alarms yet.";
+      if (!s.alarms.length) return "No alarms yet.";
+      const sorted = [...s.alarms].sort((x, y) => (x.h * 60 + x.m) - (y.h * 60 + y.m));
+      return `${sorted.length} alarm${sorted.length === 1 ? "" : "s"} (as of the phone's last sync${s.updatedAt ? ", " + new Date(s.updatedAt).toISOString() : ""}):\n\n` + sorted.map(detailAlarm).join("\n\n");
     },
   },
   {
     name: "create_alarm", title: "Create alarm",
-    description: "Create an alarm. time: \"06:30\" (24 h) or \"6:30 am\". days: any of mon..sun, or \"weekdays\", \"weekends\", \"every day\"; leave empty for a one-time alarm.",
-    inputSchema: { type: "object", properties: { time: { type: "string" }, days: { type: "array", items: { type: "string" } } }, required: ["time"], additionalProperties: false },
+    description: "Create an alarm. time: \"06:30\" (24 h) or \"6:30 am\". days: any of mon..sun, or \"weekdays\", \"weekends\", \"every day\"; leave empty for a one-time alarm. label: optional short name shown on the alarm, e.g. \"Work\" or \"Gym\".",
+    inputSchema: { type: "object", properties: { time: { type: "string" }, days: { type: "array", items: { type: "string" } }, label: { type: "string", maxLength: 40 } }, required: ["time"], additionalProperties: false },
     async run(env, userId, a) {
       const { h, m } = parseTime(String(a.time)); const days = parseDays(a.days) ?? DAYS.map(() => false);
-      const alarm = { id: "ai" + now().toString(36), h, m, days, on: true };
+      const alarm = { id: "ai" + now().toString(36), h, m, days, on: true, label: String(a.label ?? "").trim().slice(0, 40) };
       await queue(env, userId, "create_alarm", alarm, `Added an alarm: ${fmtAlarm(alarm).split(" (id")[0]}`);
       return `Queued: ${fmtAlarm(alarm)}. It appears on the phone at the next sync (usually within a minute when the app is open).`;
     },
   },
   {
     name: "update_alarm", title: "Change alarm",
-    description: "Change an existing alarm by id (from list_alarms): new time, new days, or turn it on/off.",
-    inputSchema: { type: "object", properties: { id: { type: "string" }, time: { type: "string" }, days: { type: "array", items: { type: "string" } }, on: { type: "boolean" } }, required: ["id"], additionalProperties: false },
+    description: "Change an existing alarm by id (from list_alarms): new time, new days, new label (empty string removes it), or turn it on/off.",
+    inputSchema: { type: "object", properties: { id: { type: "string" }, time: { type: "string" }, days: { type: "array", items: { type: "string" } }, label: { type: "string", maxLength: 40 }, on: { type: "boolean" } }, required: ["id"], additionalProperties: false },
     async run(env, userId, a) {
       const s = await state(env, userId);
       const cur = s.alarms.find((x) => x.id === a.id);
@@ -118,8 +136,23 @@ const tools: Tool[] = [
       if (a.time) Object.assign(patch, parseTime(String(a.time)));
       const days = parseDays(a.days); if (days) patch.days = days;
       if (typeof a.on === "boolean") patch.on = a.on;
-      await queue(env, userId, "update_alarm", patch, `Changed alarm: ${fmtAlarm({ ...cur, ...patch }).split(" (id")[0]}`);
-      return `Queued: ${fmtAlarm({ ...cur, ...patch })}.`;
+      if (typeof a.label === "string") patch.label = a.label.trim().slice(0, 40);
+      const after = { ...cur, ...patch, ...(patch.label !== undefined ? { lbl: patch.label } : {}) };
+      await queue(env, userId, "update_alarm", patch, `Changed alarm: ${fmtAlarm(after).split(" (id")[0]}`);
+      return `Queued: ${fmtAlarm(after)}.`;
+    },
+  },
+  {
+    name: "delete_alarm", title: "Delete alarm",
+    description: "Delete an alarm by id (from list_alarms). This removes it from the phone completely; to pause it instead, use update_alarm with on: false. Confirm with the user first if it isn't clear which alarm they mean.",
+    inputSchema: { type: "object", properties: { id: { type: "string" } }, required: ["id"], additionalProperties: false },
+    destructive: true,
+    async run(env, userId, a) {
+      const s = await state(env, userId);
+      const cur = s.alarms.find((x) => x.id === a.id);
+      if (!cur) throw new Error(`No alarm with id ${a.id}. Call list_alarms first.`);
+      await queue(env, userId, "delete_alarm", { id: a.id }, `Deleted alarm: ${fmtAlarm(cur).split(" (id")[0]}`);
+      return `Deleted: ${fmtAlarm(cur)}. It disappears from the phone at the next sync.`;
     },
   },
   {
@@ -171,7 +204,7 @@ export async function handleMcp(request: Request, env: Env, props: Props): Promi
     case "tools/list":
       return rpc(msg.id, {
         tools: tools.map((t) => ({ name: t.name, title: t.title, description: t.description, inputSchema: t.inputSchema,
-          annotations: { readOnlyHint: !!t.readOnly, destructiveHint: false, openWorldHint: false } })),
+          annotations: { readOnlyHint: !!t.readOnly, destructiveHint: !!t.destructive, openWorldHint: false } })),
       });
     case "tools/call": {
       const t = tools.find((x) => x.name === msg.params?.name);

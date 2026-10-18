@@ -66,6 +66,8 @@ class AlarmDetailActivity : AppCompatActivity() {
         renderTomorrow(); renderReminder(); renderVibe()
         findViewById<View>(R.id.row_tomorrow).setOnClickListener { startActivity(android.content.Intent(this, PlanActivity::class.java)) }
         findViewById<View>(R.id.row_reminder).setOnClickListener { reminderSheet() }
+        renderLabel()
+        findViewById<View>(R.id.row_label).setOnClickListener { labelSheet() }
         findViewById<View>(R.id.row_vibration).setOnClickListener {
             val ids = listOf("pulse", "heartbeat", "steady", "gentle")
             val opts = listOf("Pulse" to "Short buzz, pause, repeat", "Heartbeat" to "Two quick buzzes", "Steady" to "One long buzz", "Gentle" to "Starts soft, gets stronger")
@@ -130,6 +132,37 @@ class AlarmDetailActivity : AppCompatActivity() {
         val i = Brief.intention(this)
         t.text = if (i.isBlank()) "Not set" else i
         t.setTextColor(if (i.isBlank()) Ui.GREY else Ui.TEXT)
+    }
+
+    private fun renderLabel() {
+        findViewById<TextView>(R.id.txt_label).apply {
+            text = alarm.label.ifBlank { "None" }; setTextColor(if (alarm.label.isBlank()) 0xFF8A93A8.toInt() else 0xFF93AEFF.toInt())
+        }
+    }
+
+    /** Label: a text field plus quick picks. */
+    private fun labelSheet() {
+        val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        val input = android.widget.EditText(this).apply {
+            setText(alarm.label); setSelection(text.length); hint = "e.g. Work"; textSize = 17f
+            setTextColor(Ui.TEXT); setHintTextColor(Ui.CAPTION); setSingleLine(); filters = arrayOf(android.text.InputFilter.LengthFilter(40))
+            setBackgroundResource(R.drawable.bg_input); setPadding(dp(16), 0, dp(16), 0)
+            imeOptions = android.view.inputmethod.EditorInfo.IME_ACTION_DONE
+        }
+        col.addView(input, LinearLayout.LayoutParams(-1, dp(56)).apply { topMargin = dp(10) })
+        val flow = FlowLayout(this, dp(8))
+        listOf("Work", "Gym", "School", "Meds", "Run").forEach { t ->
+            flow.addView(Ui.text(this, t, 15f, 0xFFB8BFCC.toInt()).apply {
+                gravity = Gravity.CENTER; minHeight = dp(40); setPadding(dp(16), 0, dp(16), 0)
+                background = android.graphics.drawable.GradientDrawable().apply { setColor(Ui.SEC); cornerRadius = dp(20).toFloat() }
+                setOnClickListener { input.setText(t); input.setSelection(t.length) }
+            })
+        }
+        col.addView(flow, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(14) })
+        val d = Sheet.show(this, "Label", "Shown on the alarm and when it rings", col) {
+            alarm.label = input.text.toString().trim(); renderLabel()
+        }
+        input.setOnEditorActionListener { _, _, _ -> alarm.label = input.text.toString().trim(); renderLabel(); d.dismiss(); true }
     }
 
     private fun renderReminder() {

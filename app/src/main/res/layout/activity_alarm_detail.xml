@@ -41,6 +41,15 @@
                 android:paddingEnd="16dp"
                 android:paddingBottom="4dp">
 
+                <LinearLayout android:id="@+id/row_label" style="@style/Row" android:minHeight="64dp" android:background="?android:attr/selectableItemBackground">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Label" android:textColor="#F2F4F8" android:textSize="16sp" android:textStyle="bold" />
+                        <TextView android:id="@+id/txt_label" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="2dp" android:maxWidth="260dp" android:singleLine="true" android:ellipsize="end" android:text="None" android:textColor="#8A93A8" android:textSize="14sp" />
+                    </LinearLayout>
+                    <ImageView android:layout_width="18dp" android:layout_height="18dp" android:src="@drawable/ic_chevron" android:tint="#8A93A8" android:importantForAccessibility="no" />
+                </LinearLayout>
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#1F2840" />
+
                 <LinearLayout
                     android:id="@+id/row_days"
                     android:layout_width="match_parent"

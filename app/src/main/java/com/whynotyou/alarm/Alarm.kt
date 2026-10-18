@@ -23,7 +23,8 @@ data class Alarm(
     var vibePattern: String = "pulse", // pulse | heartbeat | steady | gentle
     var planRemind: Boolean = true,  // remind the night before to write the plan
     var planHour: Int = 21,
-    var planMinute: Int = 0
+    var planMinute: Int = 0,
+    var label: String = ""           // e.g. "Work"; shown on the card and when it rings
 ) {
     fun soundFile(c: android.content.Context) = java.io.File(c.filesDir, "sounds/$id.audio")
     fun hasCustomSound(c: android.content.Context) = soundName.isNotEmpty() && soundFile(c).exists()
@@ -55,7 +56,7 @@ data class Alarm(
         .put("days", JSONArray().also { a -> days.forEach { a.put(it) } })
         .put("on", enabled).put("vol", volume).put("ramp", ramp).put("vib", vibrate).put("snooze", snooze)
         .put("msg", message).put("brief", brief).put("voice", voice).put("sound", soundName)
-        .put("vibp", vibePattern).put("pr", planRemind).put("ph", planHour).put("pm", planMinute)
+        .put("vibp", vibePattern).put("pr", planRemind).put("ph", planHour).put("pm", planMinute).put("lbl", label)
 
     companion object {
         fun fromJson(o: JSONObject): Alarm {
@@ -69,7 +70,8 @@ data class Alarm(
                 voice = o.optString("voice", VoiceEngine.DEFAULT_VOICE),
                 soundName = o.optString("sound", ""),
                 vibePattern = o.optString("vibp", "pulse"),
-                planRemind = o.optBoolean("pr", true), planHour = o.optInt("ph", 21), planMinute = o.optInt("pm", 0)
+                planRemind = o.optBoolean("pr", true), planHour = o.optInt("ph", 21), planMinute = o.optInt("pm", 0),
+                label = o.optString("lbl", "")
             )
         }
         fun new(hour: Int = 7, minute: Int = 0) = Alarm(System.currentTimeMillis().toString(36), hour, minute)
