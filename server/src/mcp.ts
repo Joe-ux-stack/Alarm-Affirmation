@@ -23,23 +23,38 @@ async function state(env: Env, userId: string) {
   return {
     alarms: j("alarms", []) as any[], plan: String(s?.plan ?? ""), tomorrow: j("tomorrow", []) as any[],
     usage: j("usage", {}) as Record<string, Record<string, number>>, limits: j("limits", {}) as any,
+    datePlans: (j("limits", {}) as any)?.datePlans as Record<string, string> | undefined,
     updatedAt: Number(s?.updated_at ?? 0),
   };
 }
 
-async function queueOnly(env: Env, userId: string, kind: string, payload: unknown) {
-  await env.DB.prepare("INSERT INTO changes (user_id, kind, payload, created_at) VALUES (?, ?, ?, ?)").bind(userId, kind, JSON.stringify(payload), now()).run();
+async function queueOnly(env: Env, userId: string, kind: string, payload: unknown): Promise<number> {
+  const r = await env.DB.prepare("INSERT INTO changes (user_id, kind, payload, created_at) VALUES (?, ?, ?, ?)").bind(userId, kind, JSON.stringify(payload), now()).run();
+  return Number(r.meta.last_row_id);
+}
+
+/** Wait (up to ~8 s) for the phone to confirm it applied these changes, and say so plainly. */
+async function delivery(env: Env, userId: string, ids: number[]): Promise<string> {
+  if (!ids.length) return "";
+  const q = `SELECT COUNT(*) AS n FROM changes WHERE user_id = ? AND applied_at IS NOT NULL AND id IN (${ids.map(() => "?").join(",")})`;
+  for (let i = 0; i < 16; i++) {
+    const r = await env.DB.prepare(q).bind(userId, ...ids).first<{ n: number }>();
+    if ((r?.n ?? 0) >= ids.length) return "\n\nDelivered: the phone confirmed it has this.";
+    await new Promise((res) => setTimeout(res, 500));
+  }
+  const r = await env.DB.prepare(q).bind(userId, ...ids).first<{ n: number }>();
+  const done = r?.n ?? 0;
+  return `\n\nNot confirmed yet: the phone has applied ${done} of ${ids.length}. It's probably offline or asleep; it will pick this up as soon as it's back online (within 15 minutes of reconnecting, or when the app is opened). Use check_delivery to see if it arrived.`;
 }
 async function logAction(env: Env, userId: string, summary: string) {
   await env.DB.prepare("INSERT INTO actions (user_id, summary, created_at) VALUES (?, ?, ?)").bind(userId, summary, now()).run();
 }
 
-async function queue(env: Env, userId: string, kind: string, payload: unknown, summary: string) {
-  await env.DB.batch([
-    env.DB.prepare("INSERT INTO changes (user_id, kind, payload, created_at) VALUES (?, ?, ?, ?)").bind(userId, kind, JSON.stringify(payload), now()),
-    env.DB.prepare("INSERT INTO actions (user_id, summary, created_at) VALUES (?, ?, ?)").bind(userId, summary, now()),
-  ]);
+async function queue(env: Env, userId: string, kind: string, payload: unknown, summary: string): Promise<string> {
+  const id = await queueOnly(env, userId, kind, payload);
+  await logAction(env, userId, summary);
   await wakePhones(env, userId);
+  return delivery(env, userId, [id]);
 }
 
 const fmtAlarm = (a: any) => {
@@ -121,15 +136,27 @@ const tools: Tool[] = [
     },
   },
   {
-    name: "set_plan", title: "Set tomorrow's plan",
-    description: "Set the general plan for tomorrow (the evening plan). It is read aloud at the next alarm that has no message of its own, then cleared. For a message tied to one alarm or day, set message on that alarm instead (create_alarm / update_alarm). Write one or two short spoken sentences in second person, e.g. \"Finish the pitch deck before lunch, then go for a run.\" Replaces any existing plan.",
-    inputSchema: { type: "object", properties: { plan: { type: "string", maxLength: 400 } }, required: ["plan"], additionalProperties: false },
+    name: "set_plan", title: "Set a plan",
+    description: "Set a plan that is read aloud at an alarm. Attach it to: (a) one alarm with alarm_id (same as that alarm's message; read every time it rings), (b) a date with date YYYY-MM-DD (read by the first alarm that rings that day, unless that alarm has its own message), or (c) neither: the general plan for the next alarm without a message, cleared after it's read. An alarm's own message beats a date plan, which beats the general plan. Write one to three short spoken sentences in second person. An empty plan with alarm_id or date removes it.",
+    inputSchema: { type: "object", properties: { plan: { type: "string", maxLength: 400 }, date: { type: "string", description: "YYYY-MM-DD, the user's local date" }, alarm_id: { type: "string" } }, required: ["plan"], additionalProperties: false },
     async run(env, userId, a) {
       const plan = String(a.plan ?? "").trim();
+      if (a.alarm_id) {
+        const s = await state(env, userId);
+        const cur = s.alarms.find((x) => x.id === a.alarm_id);
+        if (!cur) throw new Error(`No alarm with id ${a.alarm_id}. Call list_alarms first.`);
+        const d = await queue(env, userId, "update_alarm", { id: a.alarm_id, message: plan }, `${plan ? "Set the message" : "Removed the message"} for ${fmtAlarm(cur).split(" (id")[0]}`);
+        return (plan ? `Saved as the message for ${fmtAlarm(cur)}.` : `Removed the message from ${fmtAlarm(cur)}.`) + d;
+      }
+      if (a.date) {
+        const date = parseDate(a.date);
+        const d = await queue(env, userId, "set_plan", { plan, date }, plan ? `Set your plan for ${date}: ${plan.slice(0, 60)}` : `Removed your plan for ${date}`);
+        return (plan ? `Saved the plan for ${date}. The first alarm that day reads it (unless it has its own message).` : `Removed the plan for ${date}.`) + d;
+      }
       if (!plan) throw new Error("The plan is empty.");
       await env.DB.prepare("UPDATE state SET plan = ? WHERE user_id = ?").bind(plan, userId).run();
-      await queue(env, userId, "set_plan", { plan }, `Set your plan: ${plan.slice(0, 80)}`);
-      return "Saved. The phone picks it up the next time it syncs, and reads it out at the alarm.";
+      const d = await queue(env, userId, "set_plan", { plan }, `Set your plan: ${plan.slice(0, 80)}`);
+      return "Saved as the general plan, read at the next alarm without its own message." + d;
     },
   },
   {
@@ -140,7 +167,9 @@ const tools: Tool[] = [
       const s = await state(env, userId);
       if (!s.alarms.length) return "No alarms yet.";
       const sorted = [...s.alarms].sort((x, y) => (x.h * 60 + x.m) - (y.h * 60 + y.m));
-      return `${sorted.length} alarm${sorted.length === 1 ? "" : "s"} (as of the phone's last sync${s.updatedAt ? ", " + new Date(s.updatedAt).toISOString() : ""}):\n\n` + sorted.map(detailAlarm).join("\n\n");
+      const plans = s.datePlans && Object.keys(s.datePlans).length ? "\n\nPlans by date:\n" + Object.entries(s.datePlans).sort().map(([d, p]) => `  ${d}: "${p}"`).join("\n") : "";
+      const general = s.plan ? `\nGeneral plan (next alarm without a message): "${s.plan}"` : "";
+      return `${sorted.length} alarm${sorted.length === 1 ? "" : "s"} (as of the phone's last sync${s.updatedAt ? ", " + new Date(s.updatedAt).toISOString() : ""}):\n\n` + sorted.map(detailAlarm).join("\n\n") + plans + general;
     },
   },
   {
@@ -149,8 +178,8 @@ const tools: Tool[] = [
     inputSchema: { type: "object", properties: ALARM_PROPS, required: ["time"], additionalProperties: false },
     async run(env, userId, a) {
       const alarm = buildAlarm(a);
-      await queue(env, userId, "create_alarm", alarm, `Added an alarm: ${fmtAlarm(asPhone(alarm)).split(" (id")[0]}`);
-      return `Created: ${fmtAlarm(asPhone(alarm))}${alarm.message ? ` · message: "${alarm.message}"` : ""}. It reaches the phone within seconds.`;
+      const d = await queue(env, userId, "create_alarm", alarm, `Added an alarm: ${fmtAlarm(asPhone(alarm)).split(" (id")[0]}`);
+      return `Created: ${fmtAlarm(asPhone(alarm))}${alarm.message ? ` · message: "${alarm.message}"` : ""}.` + d;
     },
   },
   {
@@ -159,10 +188,11 @@ const tools: Tool[] = [
     inputSchema: { type: "object", properties: { alarms: { type: "array", minItems: 1, maxItems: 50, items: { type: "object", properties: ALARM_PROPS, required: ["time"], additionalProperties: false } } }, required: ["alarms"], additionalProperties: false },
     async run(env, userId, a) {
       const list = (a.alarms as any[]).map((x, i) => buildAlarm(x, i));
-      for (const alarm of list) await queueOnly(env, userId, "create_alarm", alarm);
+      const ids: number[] = [];
+      for (const alarm of list) ids.push(await queueOnly(env, userId, "create_alarm", alarm));
       await logAction(env, userId, `Added ${list.length} alarms`);
       await wakePhones(env, userId);
-      return `Created ${list.length} alarms:\n` + list.map((x) => fmtAlarm(asPhone(x)) + (x.message ? ` · "${x.message}"` : "")).join("\n");
+      return `Created ${list.length} alarms:\n` + list.map((x) => fmtAlarm(asPhone(x)) + (x.message ? ` · "${x.message}"` : "")).join("\n") + await delivery(env, userId, ids);
     },
   },
   {
@@ -181,8 +211,24 @@ const tools: Tool[] = [
       if (typeof a.message === "string") patch.message = a.message.trim().slice(0, 400);
       if (typeof a.date === "string") patch.date = parseDate(a.date);
       const after = { ...cur, ...patch, ...(patch.label !== undefined ? { lbl: patch.label } : {}), ...(patch.message !== undefined ? { note: patch.message, noteAi: true } : {}) };
-      await queue(env, userId, "update_alarm", patch, `Changed alarm: ${fmtAlarm(after).split(" (id")[0]}`);
-      return `Queued: ${fmtAlarm(after)}.`;
+      const d = await queue(env, userId, "update_alarm", patch, `Changed alarm: ${fmtAlarm(after).split(" (id")[0]}`);
+      return `Changed: ${fmtAlarm(after)}.` + d;
+    },
+  },
+  {
+    name: "check_delivery", title: "Check what reached the phone", readOnly: true,
+    description: "Shows the recent changes you made and whether the phone has confirmed each one, plus when the phone last synced.",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+    async run(env, userId) {
+      const s = await state(env, userId);
+      const rows = await env.DB.prepare("SELECT kind, payload, created_at, applied_at FROM changes WHERE user_id = ? ORDER BY id DESC LIMIT 25").bind(userId).all<{ kind: string; payload: string; created_at: number; applied_at: number | null }>();
+      if (!rows.results.length) return "No changes sent yet.";
+      const line = (r: any) => {
+        const p = JSON.parse(r.payload);
+        const what = r.kind === "create_alarm" ? `create ${fmtAlarm(asPhone(p)).split(" (id")[0]}` : r.kind === "set_plan" ? `plan${p.date ? " for " + p.date : ""}: ${String(p.plan).slice(0, 50)}` : `${r.kind.replace("_", " ")} ${p.id ?? p.app ?? ""}`;
+        return `${r.applied_at ? "✓ on phone" : "… waiting"} · ${what} (sent ${new Date(r.created_at).toISOString()})`;
+      };
+      return `Phone last synced: ${s.updatedAt ? new Date(s.updatedAt).toISOString() : "never"}\n` + rows.results.map(line).join("\n");
     },
   },
   {
@@ -194,8 +240,8 @@ const tools: Tool[] = [
       const s = await state(env, userId);
       const cur = s.alarms.find((x) => x.id === a.id);
       if (!cur) throw new Error(`No alarm with id ${a.id}. Call list_alarms first.`);
-      await queue(env, userId, "delete_alarm", { id: a.id }, `Deleted alarm: ${fmtAlarm(cur).split(" (id")[0]}`);
-      return `Deleted: ${fmtAlarm(cur)}. It disappears from the phone at the next sync.`;
+      const d = await queue(env, userId, "delete_alarm", { id: a.id }, `Deleted alarm: ${fmtAlarm(cur).split(" (id")[0]}`);
+      return `Deleted: ${fmtAlarm(cur)}.` + d;
     },
   },
   {
@@ -204,8 +250,8 @@ const tools: Tool[] = [
     inputSchema: { type: "object", properties: { app: { type: "string" }, minutes: { type: "integer", minimum: 0, maximum: 60 } }, required: ["app", "minutes"], additionalProperties: false },
     async run(env, userId, a) {
       const app = String(a.app).trim(); const minutes = Number(a.minutes);
-      await queue(env, userId, "set_app_limit", { app, minutes }, minutes ? `Limited ${app} to ${minutes} minutes` : `Stopped limiting ${app}`);
-      return minutes ? `Queued: remind after ${minutes} min in ${app}.` : `Queued: ${app} is no longer limited.`;
+      const d = await queue(env, userId, "set_app_limit", { app, minutes }, minutes ? `Limited ${app} to ${minutes} minutes` : `Stopped limiting ${app}`);
+      return (minutes ? `Set: remind after ${minutes} min in ${app}.` : `${app} is no longer limited.`) + d;
     },
   },
   {

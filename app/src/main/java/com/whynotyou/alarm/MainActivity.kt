@@ -149,9 +149,10 @@ class MainActivity : AppCompatActivity() {
 
             // The plan (yours or your AI's) sits on the card of the alarm that will read it out next.
             // Each alarm shows its own message; the next alarm without one shows the evening plan it will read.
-            val intent = Brief.intention(this)
+            val dated = a.nextTrigger()?.let { Brief.datePlan(this, it) }.orEmpty()
+            val intent = dated.ifBlank { if (a.id == nextId) Brief.intention(this) else "" }
             val own = a.note.isNotBlank()
-            val showPlan = own || (a.id == nextId && intent.isNotBlank())
+            val showPlan = own || intent.isNotBlank()
             plan.visibility = if (showPlan) View.VISIBLE else View.GONE
             v.findViewById<View>(R.id.plan_line).visibility = plan.visibility
             if (showPlan) {

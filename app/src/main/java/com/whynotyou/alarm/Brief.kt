@@ -33,6 +33,21 @@ object Brief {
     }
     fun clearIntention(c: Context) = setIntention(c, "")
 
+    // Plans for a specific date ("2026-10-22" -> text), read by the first alarm that day without its own message.
+    fun datePlans(c: Context): Map<String, String> = try {
+        val o = org.json.JSONObject(prefs(c).getString("date_plans", "{}") ?: "{}")
+        o.keys().asSequence().associateWith { o.getString(it) }
+    } catch (_: Throwable) { emptyMap() }
+    fun datePlan(c: Context, at: Long): String = datePlans(c)[isoDay(at)].orEmpty()
+    fun setDatePlan(c: Context, date: String, plan: String) {
+        val today = isoDay(System.currentTimeMillis())
+        val m = datePlans(c).filterKeys { it >= today }.toMutableMap()   // drop days that have passed
+        if (plan.isBlank()) m.remove(date) else m[date] = plan.trim()
+        prefs(c).edit().putString("date_plans", org.json.JSONObject(m as Map<*, *>).toString()).apply()
+        BriefAudio.refreshNow(c)
+    }
+    fun isoDay(at: Long): String = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date(at))
+
     fun scope(c: Context): String = prefs(c).getString(KEY_SCOPE, "lunch") ?: "lunch"
     fun setScope(c: Context, s: String) = prefs(c).edit().putString(KEY_SCOPE, s).apply()
 
@@ -99,7 +114,7 @@ object Brief {
         }
 
         // This alarm's own message wins (said as written); otherwise the evening plan.
-        val msg = alarm?.note?.trim().orEmpty()
+        val msg = alarm?.note?.trim().orEmpty().ifEmpty { datePlan(c, now.time).trim() }
         if (msg.isNotEmpty()) parts += if (msg.last() in ".!?") msg else "$msg."
         else intention(c).takeIf { it.isNotBlank() }?.let { parts += Phrase.intention(it, now.time) }
         return parts.joinToString(" ")

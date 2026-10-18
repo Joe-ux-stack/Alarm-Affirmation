@@ -140,7 +140,7 @@ object Sync {
             Brief.cachedEvents(c).forEach { e -> a.put(JSONObject().put("time", if (e.allDay) "all day" else f.format(java.util.Date(e.startMillis))).put("title", e.title)) }
         }
         val o = JSONObject().apply { Push.token(c)?.let { put("push", it) } }.put("alarms", alarms).put("plan", Brief.intention(c)).put("tomorrow", tomorrow)
-            .put("limits", JSONObject().put("on", PhoneDown.isEnabled(c)).put("minutes", PhoneDown.limitMin(c)).put("apps", JSONArray(PhoneDown.watchedNames(c))))
+            .put("limits", JSONObject().put("datePlans", JSONObject(Brief.datePlans(c) as Map<*, *>)).put("on", PhoneDown.isEnabled(c)).put("minutes", PhoneDown.limitMin(c)).put("apps", JSONArray(PhoneDown.watchedNames(c))))
         usage(c)?.let { o.put("usage", it) }
         return o
     }
@@ -163,7 +163,7 @@ object Sync {
 
     private fun apply(c: Context, kind: String, p: JSONObject) {
         when (kind) {
-            "set_plan" -> { Brief.setIntention(c, p.optString("plan")); Account.setPlanFromAi(c, p.optString("plan")); if (p.optString("plan").isNotBlank()) Mornings.recordPlan(c) }
+            "set_plan" -> if (p.optString("date").isNotEmpty()) { Brief.setDatePlan(c, p.optString("date"), p.optString("plan")); Account.setPlanFromAi(c, p.optString("plan")) } else { Brief.setIntention(c, p.optString("plan")); Account.setPlanFromAi(c, p.optString("plan")); if (p.optString("plan").isNotBlank()) Mornings.recordPlan(c) }
             "create_alarm" -> {
                 val d = p.optJSONArray("days")
                 AlarmStore.save(c, Alarm(p.getString("id"), p.getInt("h"), p.getInt("m"), BooleanArray(7) { d?.optBoolean(it) ?: false }, p.optBoolean("on", true)).apply {
