@@ -99,7 +99,7 @@ object Brief {
         }
 
         // This alarm's own message wins (said as written); otherwise the evening plan.
-        val msg = alarm?.message?.trim().orEmpty()
+        val msg = alarm?.note?.trim().orEmpty()
         if (msg.isNotEmpty()) parts += if (msg.last() in ".!?") msg else "$msg."
         else intention(c).takeIf { it.isNotBlank() }?.let { parts += Phrase.intention(it, now.time) }
         return parts.joinToString(" ")

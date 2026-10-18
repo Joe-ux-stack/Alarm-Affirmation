@@ -131,7 +131,7 @@ class AlarmDetailActivity : AppCompatActivity() {
     /** This alarm's own message; without one, the evening plan is read. */
     private fun renderTomorrow() {
         val t = findViewById<TextView>(R.id.txt_tomorrow)
-        val m = alarm.message
+        val m = alarm.note
         t.text = if (m.isBlank()) "Uses your evening plan" else m
         t.setTextColor(if (m.isBlank()) Ui.GREY else Ui.ACCENT)
     }
@@ -139,17 +139,17 @@ class AlarmDetailActivity : AppCompatActivity() {
     private fun messageSheet() {
         val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         val input = android.widget.EditText(this).apply {
-            setText(alarm.message); setSelection(text.length); hint = "e.g. Stand-up at 9. Finish the pitch deck before lunch."
+            setText(alarm.note); setSelection(text.length); hint = "e.g. Stand-up at 9. Finish the pitch deck before lunch."
             textSize = 17f; setTextColor(Ui.TEXT); setHintTextColor(Ui.CAPTION); minLines = 3; maxLines = 6; gravity = Gravity.TOP
             filters = arrayOf(android.text.InputFilter.LengthFilter(400))
             setBackgroundResource(R.drawable.bg_input); setPadding(dp(16), dp(14), dp(16), dp(14))
         }
         col.addView(input, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
-        if (alarm.messageFromAi && alarm.message.isNotBlank())
+        if (alarm.noteFromAi && alarm.note.isNotBlank())
             col.addView(Ui.text(this, "Written by your AI · edit anytime", 13f, Ui.GREY).apply { setPadding(0, dp(10), 0, 0) })
         Sheet.show(this, "Message for this alarm", "Read aloud when this alarm rings. Leave empty to use your evening plan.", col) {
             val t = input.text.toString().trim()
-            if (t != alarm.message) { alarm.message = t; alarm.messageFromAi = false }
+            if (t != alarm.note) { alarm.note = t; alarm.noteFromAi = false }
             renderTomorrow()
         }
     }

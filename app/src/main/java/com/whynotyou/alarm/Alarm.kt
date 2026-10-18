@@ -25,8 +25,8 @@ data class Alarm(
     var planHour: Int = 21,
     var planMinute: Int = 0,
     var label: String = "",          // e.g. "Work"; shown on the card and when it rings
-    var message: String = "",        // read aloud when this alarm rings (instead of the evening plan)
-    var messageFromAi: Boolean = false,
+    var note: String = "",           // read aloud when this alarm rings (instead of the evening plan)
+    var noteFromAi: Boolean = false,
     var date: String = ""            // one-time alarm on a specific day, "yyyy-MM-dd"; "" = next time it comes up
 ) {
     fun soundFile(c: android.content.Context) = java.io.File(c.filesDir, "sounds/$id.audio")
@@ -69,7 +69,7 @@ data class Alarm(
         .put("days", JSONArray().also { a -> days.forEach { a.put(it) } })
         .put("on", enabled).put("vol", volume).put("ramp", ramp).put("vib", vibrate).put("snooze", snooze)
         .put("msg", message).put("brief", brief).put("voice", voice).put("sound", soundName)
-        .put("vibp", vibePattern).put("pr", planRemind).put("ph", planHour).put("pm", planMinute).put("lbl", label).put("note", message).put("noteAi", messageFromAi).put("date", date)
+        .put("vibp", vibePattern).put("pr", planRemind).put("ph", planHour).put("pm", planMinute).put("lbl", label).put("note", note).put("noteAi", noteFromAi).put("date", date)
 
     companion object {
         fun fromJson(o: JSONObject): Alarm {
@@ -84,8 +84,8 @@ data class Alarm(
                 soundName = o.optString("sound", ""),
                 vibePattern = o.optString("vibp", "pulse"),
                 planRemind = o.optBoolean("pr", true), planHour = o.optInt("ph", 21), planMinute = o.optInt("pm", 0),
-                label = o.optString("lbl", ""), message = o.optString("note", ""),
-                messageFromAi = o.optBoolean("noteAi", false), date = o.optString("date", "")
+                label = o.optString("lbl", ""), note = o.optString("note", ""),
+                noteFromAi = o.optBoolean("noteAi", false), date = o.optString("date", "")
             )
         }
         fun new(hour: Int = 7, minute: Int = 0) = Alarm(System.currentTimeMillis().toString(36), hour, minute)

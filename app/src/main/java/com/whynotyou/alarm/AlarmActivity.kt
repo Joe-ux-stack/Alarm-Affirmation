@@ -346,7 +346,7 @@ class AlarmActivity : AppCompatActivity() {
         phase = Phase.DONE
         reveal?.showAll()
         orb.mode = OrbView.Mode.STILL
-        if (!preview && alarm.message.isBlank()) Brief.clearIntention(this)  // the evening plan was used up; per-alarm messages stay
+        if (!preview && alarm.note.isBlank()) Brief.clearIntention(this)  // the evening plan was used up; per-alarm messages stay
         val hold = if (reveal != null) 4_000L else 1_500L
         ui.postDelayed({
             findViewById<View>(R.id.alarm_root).animate().alpha(0f).setDuration(900)

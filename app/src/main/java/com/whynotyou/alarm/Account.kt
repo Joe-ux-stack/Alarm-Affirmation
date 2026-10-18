@@ -168,7 +168,7 @@ object Sync {
                 val d = p.optJSONArray("days")
                 AlarmStore.save(c, Alarm(p.getString("id"), p.getInt("h"), p.getInt("m"), BooleanArray(7) { d?.optBoolean(it) ?: false }, p.optBoolean("on", true)).apply {
                     label = p.optString("label", ""); date = p.optString("date", "")
-                    message = p.optString("message", ""); messageFromAi = message.isNotBlank()
+                    note = p.optString("message", ""); noteFromAi = note.isNotBlank()
                 })
             }
             "update_alarm" -> AlarmStore.get(c, p.getString("id"))?.let { a ->
@@ -176,7 +176,7 @@ object Sync {
                 p.optJSONArray("days")?.let { d -> a.days = BooleanArray(7) { d.optBoolean(it) } }
                 if (p.has("on")) a.enabled = p.getBoolean("on")
                 if (p.has("label")) a.label = p.optString("label", "")
-                if (p.has("message")) { a.message = p.optString("message", ""); a.messageFromAi = a.message.isNotBlank() }
+                if (p.has("message")) { a.note = p.optString("message", ""); a.noteFromAi = a.note.isNotBlank() }
                 if (p.has("date")) a.date = p.optString("date", "")
                 if (p.has("days")) a.date = if (a.isOnce) a.date else ""
                 AlarmStore.save(c, a)
