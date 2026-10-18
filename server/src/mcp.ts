@@ -115,7 +115,7 @@ const tools: Tool[] = [
   },
   {
     name: "create_alarm", title: "Create alarm",
-    description: "Create an alarm. time: \"06:30\" (24 h) or \"6:30 am\". days: any of mon..sun, or \"weekdays\", \"weekends\", \"every day\"; leave empty for a one-time alarm. label: optional short name shown on the alarm, e.g. \"Work\" or \"Gym\".",
+    description: "Create an alarm. time: \"06:30\" (24 h) or \"6:30 am\". days: any of mon..sun, or \"weekdays\", \"weekends\", \"every day\"; leave empty for a one-time alarm, which rings once and then switches itself off (ask the user whether it should repeat if they didn't say). label: optional short name shown on the alarm, e.g. \"Work\" or \"Gym\".",
     inputSchema: { type: "object", properties: { time: { type: "string" }, days: { type: "array", items: { type: "string" } }, label: { type: "string", maxLength: 40 } }, required: ["time"], additionalProperties: false },
     async run(env, userId, a) {
       const { h, m } = parseTime(String(a.time)); const days = parseDays(a.days) ?? DAYS.map(() => false);

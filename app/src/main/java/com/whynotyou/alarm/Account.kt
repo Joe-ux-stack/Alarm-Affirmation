@@ -34,6 +34,9 @@ object Account {
     private fun token(c: Context): String? = p(c).getString("token", null)
     fun serverPro(c: Context) = signedIn(c) && p(c).getBoolean("pro", false)
     fun lastSync(c: Context) = p(c).getLong("last_sync", 0L)
+    /** True if this plan text is exactly what the AI last wrote (the user hasn't edited it since). */
+    fun planFromAi(c: Context, plan: String) = plan.isNotBlank() && p(c).getString("plan_ai", null) == plan
+    internal fun setPlanFromAi(c: Context, plan: String) = p(c).edit().putString("plan_ai", plan).apply()
     /** What the AI did recently, newest first. */
     fun actions(c: Context): List<String> = try {
         val a = JSONArray(p(c).getString("actions", "[]")); (0 until a.length()).map { a.getJSONObject(it).optString("summary") }
@@ -154,7 +157,7 @@ object Sync {
 
     private fun apply(c: Context, kind: String, p: JSONObject) {
         when (kind) {
-            "set_plan" -> { Brief.setIntention(c, p.optString("plan")); if (p.optString("plan").isNotBlank()) Mornings.recordPlan(c) }
+            "set_plan" -> { Brief.setIntention(c, p.optString("plan")); Account.setPlanFromAi(c, p.optString("plan")); if (p.optString("plan").isNotBlank()) Mornings.recordPlan(c) }
             "create_alarm" -> {
                 val d = p.optJSONArray("days")
                 AlarmStore.save(c, Alarm(p.getString("id"), p.getInt("h"), p.getInt("m"), BooleanArray(7) { d?.optBoolean(it) ?: false }, p.optBoolean("on", true)).apply { label = p.optString("label", "") })

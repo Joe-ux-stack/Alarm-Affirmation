@@ -115,6 +115,7 @@ class MainActivity : AppCompatActivity() {
 
         list.removeAllViews()
         val inflater = LayoutInflater.from(this)
+        val nextId = AlarmStore.next(this)?.first?.id
         for (a in alarms) {
             val v = inflater.inflate(R.layout.item_alarm, list, false)
             val time = v.findViewById<TextView>(R.id.txt_time)
@@ -126,7 +127,7 @@ class MainActivity : AppCompatActivity() {
 
             time.text = formatTime(a.hour, a.minute)
             v.findViewById<TextView>(R.id.txt_label).apply { text = a.label; visibility = if (a.label.isBlank()) View.GONE else View.VISIBLE }
-            days.text = daysSpannable(a)
+            days.text = daysSpannable(a); days.letterSpacing = if (a.isOnce) 0f else 0.15f
             v.alpha = if (a.enabled) 1f else 0.3f
             sw.isChecked = a.enabled
             sw.setOnCheckedChangeListener { _, on -> AlarmStore.setEnabled(this, a.id, on); refresh() }
@@ -146,7 +147,16 @@ class MainActivity : AppCompatActivity() {
             content.setOnLongClickListener(askDelete)
             v.findViewById<View>(R.id.row_main).setOnLongClickListener(askDelete)
 
-            plan.visibility = View.GONE
+            // The plan (yours or your AI's) sits on the card of the alarm that will read it out next.
+            val intent = Brief.intention(this)
+            val showPlan = a.id == nextId && intent.isNotBlank()
+            plan.visibility = if (showPlan) View.VISIBLE else View.GONE
+            v.findViewById<View>(R.id.plan_line).visibility = plan.visibility
+            if (showPlan) {
+                planText.text = intent
+                v.findViewById<TextView>(R.id.txt_plan_caption).text = if (Account.planFromAi(this, intent)) "YOUR PLAN · FROM YOUR AI" else "YOUR PLAN"
+                plan.setOnClickListener { startActivity(Intent(this, PlanActivity::class.java)) }
+            }
             list.addView(v)
         }
 
@@ -163,6 +173,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun daysSpannable(a: Alarm): CharSequence {
+        if (a.isOnce) {
+            // One-time alarms ring once, then switch off. Say so instead of showing seven grey letters.
+            val t = a.nextTrigger()
+            val s = when {
+                t == null -> "Once · turn on to use again"
+                android.text.format.DateUtils.isToday(t) -> "Once · today"
+                else -> "Once · tomorrow"
+            }
+            return android.text.SpannableString(s).apply { setSpan(android.text.style.ForegroundColorSpan(0xFFA9B8E8.toInt()), 0, s.length, 0) }
+        }
         val letters = "MTWTFSS"
         val sb = android.text.SpannableStringBuilder()
         for (i in 0 until 7) {
