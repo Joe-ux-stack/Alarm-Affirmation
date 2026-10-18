@@ -86,13 +86,13 @@ class MainActivity : AppCompatActivity() {
         if (i == 2) stopwatch?.onShow()
     }
 
-    override fun onResume() { super.onResume(); CalendarSync.refreshToday(this); syncNow(); refresh(); timer?.onShow(); if (tab == 3) phone?.render() }
+    override fun onResume() { super.onResume(); CalendarSync.refreshToday(this); syncNow(); title.removeCallbacks(headerTick); title.postDelayed(headerTick, 15_000L); refresh(); timer?.onShow(); if (tab == 3) phone?.render() }
     /** Pull what the user's AI changed (if signed in) and redraw when something arrived. */
     private fun syncNow() {
         if (!Account.signedIn(this)) return
         lifecycleScope.launch { if (Sync.run(this@MainActivity) > 0) refresh() }
     }
-    override fun onPause() { super.onPause(); stopwatch?.onHide() }
+    override fun onPause() { super.onPause(); stopwatch?.onHide(); title.removeCallbacks(headerTick) }
 
     private fun refresh() {
         val alarms = AlarmStore.all(this)
@@ -103,6 +103,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.row_snoozed).visibility = if (snoozed != null) View.VISIBLE else View.GONE
         val n = AlarmStore.next(this)
         val at = listOfNotNull(snoozed, n?.second).minOrNull()
+        headerAt = at
         when {
             alarms.isEmpty() -> { title.text = "No alarms yet"; next.text = "Your alarms show up here" }
             at == null -> { title.text = "No alarm set"; next.text = "Turn one on below" }
@@ -208,12 +209,23 @@ class MainActivity : AppCompatActivity() {
         return sb
     }
 
+    /** Exact time left: "44 min", "1h 59m", "2h", "1d 3h". Rounded up to the minute, like a countdown. */
     private fun untilText(t: Long): String {
         val mins = ((t - System.currentTimeMillis() + 59_999L) / 60_000L).coerceAtLeast(0)
+        val d = mins / (24 * 60); val h = (mins / 60) % 24; val m = mins % 60
         return when {
-            mins >= 24 * 60 -> "${mins / (24 * 60)} d"
-            mins >= 60 -> "${mins / 60} h"
+            d > 0 -> if (h > 0) "${d}d ${h}h" else "${d}d"
+            h > 0 -> if (m > 0) "${h}h ${m}m" else "${h}h"
             else -> "$mins min"
+        }
+    }
+
+    // Keeps "Alarm in …" correct while the screen is open.
+    private var headerAt: Long? = null
+    private val headerTick = object : Runnable {
+        override fun run() {
+            headerAt?.let { if (it > System.currentTimeMillis()) title.text = "Alarm in " + untilText(it) else refresh() }
+            title.postDelayed(this, 15_000L)
         }
     }
 
