@@ -99,6 +99,8 @@ object Account {
 /** Sends the phone's state up, and applies what the AI changed. Runs on open and every 15 minutes. */
 object Sync {
     const val WORK = "sync"
+    /** Sync in the background as soon as there's a network (e.g. to report a follow-up answer). */
+    fun soon(c: Context) { if (Account.signedIn(c)) Push.fallback(c) }
     private val lock = Mutex()
 
     fun schedule(c: Context) {
@@ -142,6 +144,7 @@ object Sync {
         val o = JSONObject().apply { Push.token(c)?.let { put("push", it) } }.put("alarms", alarms).put("plan", Brief.intention(c)).put("tomorrow", tomorrow)
             .put("limits", JSONObject().put("datePlans", JSONObject(Brief.datePlans(c) as Map<*, *>)).put("on", PhoneDown.isEnabled(c)).put("minutes", PhoneDown.limitMin(c)).put("apps", JSONArray(PhoneDown.watchedNames(c))))
         usage(c)?.let { o.put("usage", it) }
+        o.put("history", AlarmHistory.all(c))
         return o
     }
 
@@ -169,6 +172,7 @@ object Sync {
                 AlarmStore.save(c, Alarm(p.getString("id"), p.getInt("h"), p.getInt("m"), BooleanArray(7) { d?.optBoolean(it) ?: false }, p.optBoolean("on", true)).apply {
                     label = p.optString("label", ""); date = p.optString("date", "")
                     note = p.optString("message", ""); noteFromAi = note.isNotBlank()
+                    followup = p.optJSONObject("followup")?.toString() ?: ""
                 })
             }
             "update_alarm" -> AlarmStore.get(c, p.getString("id"))?.let { a ->
@@ -178,6 +182,7 @@ object Sync {
                 if (p.has("label")) a.label = p.optString("label", "")
                 if (p.has("message")) { a.note = p.optString("message", ""); a.noteFromAi = a.note.isNotBlank() }
                 if (p.has("date")) a.date = p.optString("date", "")
+                if (p.has("followup")) { a.followup = p.optJSONObject("followup")?.toString() ?: ""; a.followupRepeat = 0 }
                 if (p.has("days")) a.date = if (a.isOnce) a.date else ""
                 AlarmStore.save(c, a)
             }

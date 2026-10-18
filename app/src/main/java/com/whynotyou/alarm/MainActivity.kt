@@ -151,12 +151,14 @@ class MainActivity : AppCompatActivity() {
             // Each alarm shows its own message; the next alarm without one shows the evening plan it will read.
             val dated = a.nextTrigger()?.let { Brief.datePlan(this, it) }.orEmpty()
             val intent = dated.ifBlank { if (a.id == nextId) Brief.intention(this) else "" }
-            val own = a.note.isNotBlank()
+            val fq = Followup.question(a)
+            val noteText = listOf(a.note, if (fq.isNotBlank()) "Then asks: $fq · Yes / No" else "").filter { it.isNotBlank() }.joinToString("\n")
+            val own = noteText.isNotBlank()
             val showPlan = own || intent.isNotBlank()
             plan.visibility = if (showPlan) View.VISIBLE else View.GONE
             v.findViewById<View>(R.id.plan_line).visibility = plan.visibility
             if (showPlan) {
-                planText.text = if (own) a.note else intent
+                planText.text = if (own) noteText else intent
                 v.findViewById<TextView>(R.id.txt_plan_caption).text = when {
                     own -> if (a.noteFromAi) "MESSAGE · FROM YOUR AI" else "MESSAGE"
                     Account.planFromAi(this, intent) -> "YOUR PLAN · FROM YOUR AI"

@@ -89,6 +89,12 @@ object BriefAudio {
             if (text.isBlank()) return@withContext Result.success()
             if (cached(applicationContext, id, text, alarm.voice) != null) return@withContext Result.success()
             val f = render(applicationContext, id, text, alarm.voice)
+            // Follow-up answers are spoken in the same voice: render them ahead too.
+            for (yes in listOf(true, false)) {
+                val say = Followup.say(alarm, yes)
+                val bid = id + if (yes) "_y" else "_n"
+                if (say.isNotBlank() && cached(applicationContext, bid, say, alarm.voice) == null) render(applicationContext, bid, say, alarm.voice)
+            }
             if (f != null) Result.success() else Result.retry()
         }
     }

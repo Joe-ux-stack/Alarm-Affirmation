@@ -117,6 +117,8 @@ object Brief {
         val msg = alarm?.note?.trim().orEmpty().ifEmpty { datePlan(c, now.time).trim() }
         if (msg.isNotEmpty()) parts += if (msg.last() in ".!?") msg else "$msg."
         else intention(c).takeIf { it.isNotBlank() }?.let { parts += Phrase.intention(it, now.time) }
+        // A follow-up question is asked right after the message; the answer buttons appear when it's said.
+        alarm?.let { Followup.question(it) }?.takeIf { it.isNotBlank() }?.let { parts += if (it.last() in ".!?") it else "$it?" }
         return parts.joinToString(" ")
     }
 

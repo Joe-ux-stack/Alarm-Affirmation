@@ -132,7 +132,8 @@ class AlarmDetailActivity : AppCompatActivity() {
     private fun renderTomorrow() {
         val t = findViewById<TextView>(R.id.txt_tomorrow)
         val m = alarm.note
-        t.text = if (m.isBlank()) "Uses your evening plan" else m
+        val fq = Followup.question(alarm)
+        t.text = (if (m.isBlank()) "Uses your evening plan" else m) + (if (fq.isNotBlank()) "\nThen asks: $fq" else "")
         t.setTextColor(if (m.isBlank()) Ui.GREY else Ui.ACCENT)
     }
 
@@ -147,6 +148,15 @@ class AlarmDetailActivity : AppCompatActivity() {
         col.addView(input, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
         if (alarm.noteFromAi && alarm.note.isNotBlank())
             col.addView(Ui.text(this, "Written by your AI · edit anytime", 13f, Ui.GREY).apply { setPadding(0, dp(10), 0, 0) })
+        val fq = Followup.question(alarm)
+        if (fq.isNotBlank()) {
+            col.addView(Ui.caption(this, "Follow-up", 22))
+            col.addView(Ui.text(this, "Asks \"$fq\" and waits for Yes or No.\nYes: ${Followup.say(alarm, true).ifBlank { "done" }}\nNo: ${Followup.say(alarm, false).ifBlank { "done" }}", 15f, Ui.TEXT).apply { setLineSpacing(0f, 1.3f) })
+            col.addView(Ui.text(this, "Remove follow-up", 15f, 0xFFFF8A8A.toInt()).apply {
+                minHeight = dp(44); gravity = Gravity.CENTER_VERTICAL
+                setOnClickListener { alarm.followup = ""; alarm.followupRepeat = 0; visibility = View.GONE; text = "" }
+            })
+        }
         Sheet.show(this, "Message for this alarm", "Read aloud when this alarm rings. Leave empty to use your evening plan.", col) {
             val t = input.text.toString().trim()
             if (t != alarm.note) { alarm.note = t; alarm.noteFromAi = false }

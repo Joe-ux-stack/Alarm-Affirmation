@@ -340,9 +340,84 @@ class AlarmActivity : AppCompatActivity() {
     }
     private var reveal: SentenceReveal? = null
 
+    // ---- FOLLOW-UP (yes/no tree the AI attached) ----------------------------------------------
+    private var asked = false
+    private var answerRow: View? = null
+    private var answered = false
+    private val answerTimeout = Runnable { answer(null) }
+
+    /** The question has been said: show Yes / No. No answer in 3 minutes counts as No. */
+    private fun ask() {
+        val q = Followup.question(alarm)
+        phase = Phase.BRIEF
+        reveal?.showAll()
+        if (reveal == null) { briefView.visibility = View.VISIBLE; briefView.text = q; speakWithPhoneThen(q) {} }
+        val host = briefView.parent as? android.widget.LinearLayout ?: return answer(null)
+        val row = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.HORIZONTAL
+            setPadding(dp(4), dp(28), dp(4), 0)
+            fun b(t: String, primary: Boolean, yes: Boolean) = Ui.button(this@AlarmActivity, t, primary, 72) { answer(yes) }.apply {
+                textSize = 20f; layoutParams = android.widget.LinearLayout.LayoutParams(0, dp(72), 1f).apply { if (primary) marginEnd = dp(6) else marginStart = dp(6) }
+            }
+            addView(b("Yes", true, true)); addView(b("No", false, false))
+        }
+        val hint = Ui.text(this, "No answer in 3 min counts as No", 13f, Ui.GREY).apply { gravity = android.view.Gravity.CENTER; setPadding(0, dp(14), 0, 0) }
+        val box = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.VERTICAL; addView(row); addView(hint) }
+        host.addView(box, android.widget.LinearLayout.LayoutParams(-1, -2))
+        answerRow = box
+        ui.postDelayed(answerTimeout, Followup.ANSWER_TIMEOUT_MS)
+    }
+
+    /** yes = true / false, null = no answer (treated as No). Logs it, says the branch line, schedules what's next. */
+    private fun answer(yes: Boolean?) {
+        if (answered || phase == Phase.DONE) return
+        answered = true
+        ui.removeCallbacks(answerTimeout)
+        (answerRow?.parent as? android.view.ViewGroup)?.removeView(answerRow); answerRow = null
+        val q = Followup.question(alarm)
+        val chosen = yes ?: false
+        val result = if (preview) "" else try { Followup.run(this, alarm, chosen) } catch (_: Throwable) { "" }
+        if (!preview) AlarmHistory.add(this, alarm, q, when (yes) { true -> "yes"; false -> "no"; null -> "no answer" }, result)
+        if (!preview) Sync.soon(this)
+        val say = Followup.say(alarm, chosen)
+        reveal = null
+        briefView.visibility = View.VISIBLE
+        briefView.textSize = 26f
+        briefView.text = say.ifBlank { if (chosen) "OK." else "OK." }
+        sub.text = android.text.SpannableString("$q · ${when (yes) { true -> "Yes"; false -> "No"; null -> "No answer" }}")
+        if (result.isNotBlank()) {
+            (briefView.parent as? android.widget.LinearLayout)?.addView(Ui.text(this, result, 15f, Ui.ACCENT).apply {
+                gravity = android.view.Gravity.CENTER; setPadding(0, dp(20), 0, 0)
+            })
+        }
+        val cached = if (say.isBlank()) null else BriefAudio.cached(this, alarm.id + if (chosen) "_y" else "_n", say, alarm.voice)
+        val then = { enterDone() }
+        when {
+            say.isBlank() -> then()
+            cached != null -> playThen(cached, say, then)
+            else -> speakWithPhoneThen(say, then)
+        }
+    }
+
+    private fun playThen(f: java.io.File, text: String, after: () -> Unit) {
+        val p = player ?: return speakWithPhoneThen(text, after)
+        p.repeatMode = Player.REPEAT_MODE_OFF; p.volume = 1f
+        p.setMediaItem(MediaItem.fromUri(Uri.fromFile(f))); p.playWhenReady = true; p.prepare()
+        p.addListener(object : Player.Listener {
+            override fun onPlaybackStateChanged(state: Int) { if (state == Player.STATE_ENDED) { p.removeListener(this); after() } }
+            override fun onPlayerError(e: PlaybackException) { p.removeListener(this); after() }
+        })
+    }
+
+    private fun speakWithPhoneThen(text: String, after: () -> Unit) {
+        speaker?.release()
+        speaker = BriefSpeaker(this) { runOnUiThread { after() } }.also { it.speak(text) }
+    }
+
     /** Everything has been said: settle, then fade the screen out on its own. */
     private fun enterDone() {
         if (phase == Phase.DONE) return
+        if (!asked && Followup.question(alarm).isNotBlank()) { asked = true; ask(); return }
         phase = Phase.DONE
         reveal?.showAll()
         orb.mode = OrbView.Mode.STILL
@@ -359,6 +434,7 @@ class AlarmActivity : AppCompatActivity() {
         if (!preview && !timerMode && realDismiss) {
             try { Mornings.recordWake(this, AlarmScheduler.snoozesLeft(this) == AlarmScheduler.MAX_SNOOZES) } catch (_: Throwable) {}
             AlarmScheduler.onDismissed(this, alarm.id)
+            if (alarm.auto) AlarmStore.delete(this, alarm.id)   // follow-up checks clean up after themselves
         }
         finishAndRemoveTask()
     }

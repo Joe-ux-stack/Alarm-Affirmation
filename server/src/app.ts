@@ -70,7 +70,7 @@ export const appHandler = {
 
       // Phone → server: latest state. Server → phone: changes the AI asked for, plus Pro status.
       if (p === "/api/sync" && request.method === "POST") {
-        const b = (await request.json()) as { push?: string; alarms?: unknown; plan?: string; tomorrow?: unknown; usage?: unknown; limits?: unknown; applied?: number[] };
+        const b = (await request.json()) as { history?: unknown[]; push?: string; alarms?: unknown; plan?: string; tomorrow?: unknown; usage?: unknown; limits?: unknown; applied?: number[] };
         await env.DB.prepare(`UPDATE state SET alarms = COALESCE(?, alarms), plan = COALESCE(?, plan), tomorrow = COALESCE(?, tomorrow),
           usage = COALESCE(?, usage), limits = COALESCE(?, limits), updated_at = ? WHERE user_id = ?`)
           .bind(b.alarms ? JSON.stringify(b.alarms) : null, b.plan ?? null, b.tomorrow ? JSON.stringify(b.tomorrow) : null,
@@ -79,6 +79,7 @@ export const appHandler = {
           await env.DB.prepare(`INSERT INTO devices (token, user_id, updated_at) VALUES (?, ?, ?)
             ON CONFLICT(token) DO UPDATE SET user_id = excluded.user_id, updated_at = excluded.updated_at`).bind(b.push, userId, now()).run();
         }
+        if (Array.isArray(b.history)) await env.OAUTH_KV.put("history:" + userId, JSON.stringify(b.history.slice(-100)));
         if (b.applied?.length) {
           const ids = b.applied.filter((n) => Number.isInteger(n)).slice(0, 200);
           await env.DB.prepare(`UPDATE changes SET applied_at = ? WHERE user_id = ? AND id IN (${ids.map(() => "?").join(",")})`)
@@ -107,6 +108,7 @@ export const appHandler = {
       // Delete everything we hold for this person (Settings → Delete account).
       if (p === "/api/account" && request.method === "DELETE") {
         await env.DB.prepare("DELETE FROM users WHERE id = ?").bind(userId).run();
+        await env.OAUTH_KV.delete("history:" + userId); await env.OAUTH_KV.delete("pushlog:" + userId);
         return json({ deleted: true });
       }
       return json({ error: "not_found" }, 404);

@@ -7,7 +7,7 @@ import java.util.Calendar
 
 /** One alarm. days[0]=Mon … days[6]=Sun. */
 data class Alarm(
-    val id: String,
+    var id: String,
     var hour: Int,
     var minute: Int,
     var days: BooleanArray = BooleanArray(7) { it < 5 },
@@ -27,7 +27,11 @@ data class Alarm(
     var label: String = "",          // e.g. "Work"; shown on the card and when it rings
     var note: String = "",           // read aloud when this alarm rings (instead of the evening plan)
     var noteFromAi: Boolean = false,
-    var date: String = ""            // one-time alarm on a specific day, "yyyy-MM-dd"; "" = next time it comes up
+    var date: String = "",           // one-time alarm on a specific day, "yyyy-MM-dd"; "" = next time it comes up
+    var followup: String = "",       // yes/no follow-up tree as JSON (see Followup.kt); "" = none
+    var followupRepeat: Int = 0,     // how many times this follow-up has already repeated
+    var followupDepth: Int = 0,      // 0 = set by the AI; 1..3 = created by a follow-up branch
+    var auto: Boolean = false        // made by a follow-up; removed after it rings
 ) {
     fun soundFile(c: android.content.Context) = java.io.File(c.filesDir, "sounds/$id.audio")
     fun hasCustomSound(c: android.content.Context) = soundName.isNotEmpty() && soundFile(c).exists()
@@ -70,6 +74,7 @@ data class Alarm(
         .put("on", enabled).put("vol", volume).put("ramp", ramp).put("vib", vibrate).put("snooze", snooze)
         .put("msg", message).put("brief", brief).put("voice", voice).put("sound", soundName)
         .put("vibp", vibePattern).put("pr", planRemind).put("ph", planHour).put("pm", planMinute).put("lbl", label).put("note", note).put("noteAi", noteFromAi).put("date", date)
+        .put("fu", followup).put("fuN", followupRepeat).put("fuD", followupDepth).put("auto", auto)
 
     companion object {
         fun fromJson(o: JSONObject): Alarm {
@@ -85,7 +90,8 @@ data class Alarm(
                 vibePattern = o.optString("vibp", "pulse"),
                 planRemind = o.optBoolean("pr", true), planHour = o.optInt("ph", 21), planMinute = o.optInt("pm", 0),
                 label = o.optString("lbl", ""), note = o.optString("note", ""),
-                noteFromAi = o.optBoolean("noteAi", false), date = o.optString("date", "")
+                noteFromAi = o.optBoolean("noteAi", false), date = o.optString("date", ""),
+                followup = o.optString("fu", ""), followupRepeat = o.optInt("fuN", 0), followupDepth = o.optInt("fuD", 0), auto = o.optBoolean("auto", false)
             )
         }
         fun new(hour: Int = 7, minute: Int = 0) = Alarm(System.currentTimeMillis().toString(36), hour, minute)
