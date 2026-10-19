@@ -133,8 +133,15 @@ class AlarmDetailActivity : AppCompatActivity() {
         val t = findViewById<TextView>(R.id.txt_tomorrow)
         val m = alarm.note
         val fq = Followup.question(alarm)
-        t.text = (if (m.isBlank()) "Uses your evening plan" else m) + (if (fq.isNotBlank()) "\nThen asks: $fq" else "")
-        t.setTextColor(if (m.isBlank()) Ui.GREY else Ui.ACCENT)
+        val days = if (alarm.isOnce) 0 else alarm.nextRings(7).count { alarm.dayNotes[Brief.isoDay(it)].orEmpty().isNotBlank() }
+        val perDay = when (days) { 0 -> ""; 1 -> "1 day has its own message"; else -> "$days days have their own message" }
+        val main = when {
+            m.isNotBlank() -> m
+            perDay.isNotBlank() -> perDay
+            else -> "Uses your evening plan"
+        }
+        t.text = main + (if (m.isNotBlank() && perDay.isNotBlank()) "\n$perDay" else "") + (if (fq.isNotBlank()) "\nThen asks: $fq" else "")
+        t.setTextColor(if (m.isBlank() && perDay.isBlank()) Ui.GREY else Ui.ACCENT)
     }
 
     private fun messageSheet() {
@@ -145,9 +152,30 @@ class AlarmDetailActivity : AppCompatActivity() {
             filters = arrayOf(android.text.InputFilter.LengthFilter(400))
             setBackgroundResource(R.drawable.bg_input); setPadding(dp(16), dp(14), dp(16), dp(14))
         }
+        val repeating = !alarm.isOnce
+        if (repeating) col.addView(Ui.caption(this, "Every time", 6))
         col.addView(input, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(10) })
         if (alarm.noteFromAi && alarm.note.isNotBlank())
             col.addView(Ui.text(this, "Written by your AI · edit anytime", 13f, Ui.GREY).apply { setPadding(0, dp(10), 0, 0) })
+        // Repeating alarm: a message for each of the next 7 rings. That day's message replaces the one above.
+        val dayInputs = mutableListOf<Pair<String, android.widget.EditText>>()
+        if (repeating) {
+            col.addView(Ui.caption(this, "Just for one day", 22))
+            col.addView(Ui.text(this, "Replaces the message above on that day.", 13f, Ui.GREY).apply { setPadding(0, dp(4), 0, dp(4)) })
+            val fmt = java.text.SimpleDateFormat("EEE d MMM", java.util.Locale.getDefault())
+            alarm.nextRings(7).forEach { at ->
+                val key = Brief.isoDay(at)
+                col.addView(Ui.text(this, fmt.format(java.util.Date(at)), 14f, Ui.TEXT).apply { setPadding(0, dp(12), 0, dp(6)) })
+                val e = android.widget.EditText(this).apply {
+                    setText(alarm.dayNotes[key].orEmpty()); hint = "Same as every time"
+                    textSize = 16f; setTextColor(Ui.TEXT); setHintTextColor(Ui.CAPTION); minLines = 1; maxLines = 4; gravity = Gravity.TOP
+                    filters = arrayOf(android.text.InputFilter.LengthFilter(400))
+                    setBackgroundResource(R.drawable.bg_input); setPadding(dp(16), dp(12), dp(16), dp(12))
+                }
+                col.addView(e, LinearLayout.LayoutParams(-1, -2))
+                dayInputs += key to e
+            }
+        }
         val fq = Followup.question(alarm)
         if (fq.isNotBlank()) {
             col.addView(Ui.caption(this, "Follow-up", 22))
@@ -157,9 +185,20 @@ class AlarmDetailActivity : AppCompatActivity() {
                 setOnClickListener { alarm.followup = ""; alarm.followupRepeat = 0; visibility = View.GONE; text = "" }
             })
         }
-        Sheet.show(this, "Message for this alarm", "Read aloud when this alarm rings. Leave empty to use your evening plan.", col) {
+        // Seven day boxes don't fit on screen: scroll them inside the sheet, keeping Done visible.
+        val maxH = (resources.displayMetrics.heightPixels * 0.55f).toInt()
+        val body: View = if (!repeating) col else object : androidx.core.widget.NestedScrollView(this) {
+            override fun onMeasure(w: Int, h: Int) = super.onMeasure(w, View.MeasureSpec.makeMeasureSpec(maxH, View.MeasureSpec.AT_MOST))
+        }.apply { addView(col) }
+        Sheet.show(this, "Message for this alarm",
+            if (alarm.isOnce) "Read aloud when this alarm rings. Leave empty to use your evening plan."
+            else "Read aloud when this alarm rings. Leave both empty to use your evening plan.", body) {
             val t = input.text.toString().trim()
             if (t != alarm.note) { alarm.note = t; alarm.noteFromAi = false }
+            dayInputs.forEach { (key, e) ->
+                val v = e.text.toString().trim()
+                if (v.isEmpty()) alarm.dayNotes.remove(key) else alarm.dayNotes[key] = v
+            }
             renderTomorrow()
         }
     }

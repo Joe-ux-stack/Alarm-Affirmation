@@ -114,8 +114,8 @@ object Brief {
             if (rest > 0) parts += "And $rest more ${if (rest == 1) "thing" else "things"} later."
         }
 
-        // This alarm's own message wins (said as written); otherwise the evening plan.
-        val msg = alarm?.note?.trim().orEmpty().ifEmpty { datePlan(c, now.time).trim() }
+        // That day's message on this alarm, else the alarm's own message (said as written); otherwise the evening plan.
+        val msg = alarm?.messageFor(now.time)?.trim().orEmpty().ifEmpty { datePlan(c, now.time).trim() }
         if (msg.isNotEmpty()) parts += if (msg.last() in ".!?") msg else "$msg."
         else intention(c).takeIf { it.isNotBlank() }?.let { parts += Phrase.intention(it, now.time) }
         // A follow-up question is asked right after the message; the answer buttons appear when it's said.

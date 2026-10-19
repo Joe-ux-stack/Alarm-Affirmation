@@ -38,7 +38,9 @@ object EveningPlan {
                     timeInMillis = t; add(Calendar.DAY_OF_YEAR, -1)
                     set(Calendar.HOUR_OF_DAY, a.planHour); set(Calendar.MINUTE, a.planMinute); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
                 }.timeInMillis
-                if (eve > from) { if (best == null || eve < best!!) best = eve; break }
+                // No reminder for a morning that already has its message (per-day, the alarm's own, or a date plan).
+                val hasMessage = a.messageFor(t).isNotBlank() || Brief.datePlan(c, t).isNotBlank()
+                if (eve > from && !hasMessage) { if (best == null || eve < best!!) best = eve; break }
                 t = a.nextTrigger(t) ?: break
             }
         }

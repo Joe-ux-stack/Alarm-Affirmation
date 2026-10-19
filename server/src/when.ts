@@ -67,8 +67,8 @@ export function repeatWords(a: any): string {
 /** The one line the AI should repeat to the user. */
 export function describe(a: any, now: LocalNow): string {
   const label = String(a.lbl ?? a.label ?? "").trim();
-  const msg = String(a.note ?? a.message ?? "").trim();
   const next = nextRing(a, now);
+  const msg = String((next && a.dn?.[next.date]) || a.note || a.message || "").trim();
   const when = next ? next.label : `${clock(Number(a.h), Number(a.m))} (off${a.on === false ? "" : ", already rang"})`;
   return [when, label ? `"${label}"` : "", repeatWords(a), msg ? `says: "${msg}"` : "", next ? `rings in ${inWords(next.inMin)}` : ""]
     .filter(Boolean).join(" · ") + ` (id ${a.id})`;

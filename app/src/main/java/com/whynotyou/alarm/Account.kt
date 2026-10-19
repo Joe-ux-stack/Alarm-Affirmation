@@ -164,6 +164,12 @@ object Sync {
         }
     } catch (_: Throwable) { null }
 
+    /** day_messages: {"2026-10-21": "text"}; an empty text removes that day's message. */
+    private fun applyDayMessages(a: Alarm, p: JSONObject) {
+        val m = p.optJSONObject("day_messages") ?: return
+        m.keys().forEach { k -> val v = m.optString(k).trim(); if (v.isEmpty()) a.dayNotes.remove(k) else a.dayNotes[k] = v }
+    }
+
     private fun apply(c: Context, kind: String, p: JSONObject) {
         when (kind) {
             "set_plan" -> if (p.optString("date").isNotEmpty()) { Brief.setDatePlan(c, p.optString("date"), p.optString("plan")); Account.setPlanFromAi(c, p.optString("plan")) } else { Brief.setIntention(c, p.optString("plan")); Account.setPlanFromAi(c, p.optString("plan")); if (p.optString("plan").isNotBlank()) Mornings.recordPlan(c) }
@@ -173,6 +179,7 @@ object Sync {
                     label = p.optString("label", ""); date = p.optString("date", "")
                     note = p.optString("message", ""); noteFromAi = note.isNotBlank()
                     followup = p.optJSONObject("followup")?.toString() ?: ""
+                    applyDayMessages(this, p)
                 })
             }
             "update_alarm" -> AlarmStore.get(c, p.getString("id"))?.let { a ->
@@ -184,6 +191,7 @@ object Sync {
                 if (p.has("date")) a.date = p.optString("date", "")
                 if (p.has("followup")) { a.followup = p.optJSONObject("followup")?.toString() ?: ""; a.followupRepeat = 0 }
                 if (p.has("days")) a.date = if (a.isOnce) a.date else ""
+                applyDayMessages(a, p)
                 AlarmStore.save(c, a)
             }
             "delete_alarm" -> if (AlarmStore.get(c, p.getString("id")) != null) AlarmStore.delete(c, p.getString("id"))

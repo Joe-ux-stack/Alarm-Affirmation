@@ -31,8 +31,19 @@ data class Alarm(
     var followup: String = "",       // yes/no follow-up tree as JSON (see Followup.kt); "" = none
     var followupRepeat: Int = 0,     // how many times this follow-up has already repeated
     var followupDepth: Int = 0,      // 0 = set by the AI; 1..3 = created by a follow-up branch
-    var auto: Boolean = false        // made by a follow-up; removed after it rings
+    var auto: Boolean = false,       // made by a follow-up; removed after it rings
+    var dayNotes: MutableMap<String, String> = mutableMapOf()  // repeating alarm: "yyyy-MM-dd" → message for that ring only
 ) {
+    /** What this alarm says when it rings at [at]: that day's message, else its own message. */
+    fun messageFor(at: Long): String = dayNotes[Brief.isoDay(at)]?.takeIf { it.isNotBlank() } ?: note
+
+    /** The next [n] times this alarm rings (for the per-day message editor). */
+    fun nextRings(n: Int, from: Long = System.currentTimeMillis()): List<Long> {
+        val out = ArrayList<Long>(); var t = from
+        repeat(n) { val x = nextTrigger(t) ?: return out; out += x; t = x }
+        return out
+    }
+
     fun soundFile(c: android.content.Context) = java.io.File(c.filesDir, "sounds/$id.audio")
     fun hasCustomSound(c: android.content.Context) = soundName.isNotEmpty() && soundFile(c).exists()
 
@@ -75,6 +86,7 @@ data class Alarm(
         .put("msg", message).put("brief", brief).put("voice", voice).put("sound", soundName)
         .put("vibp", vibePattern).put("pr", planRemind).put("ph", planHour).put("pm", planMinute).put("lbl", label).put("note", note).put("noteAi", noteFromAi).put("date", date)
         .put("fu", followup).put("fuN", followupRepeat).put("fuD", followupDepth).put("auto", auto)
+        .put("dn", JSONObject(dayNotes as Map<*, *>))
 
     companion object {
         fun fromJson(o: JSONObject): Alarm {
@@ -91,8 +103,16 @@ data class Alarm(
                 planRemind = o.optBoolean("pr", true), planHour = o.optInt("ph", 21), planMinute = o.optInt("pm", 0),
                 label = o.optString("lbl", ""), note = o.optString("note", ""),
                 noteFromAi = o.optBoolean("noteAi", false), date = o.optString("date", ""),
-                followup = o.optString("fu", ""), followupRepeat = o.optInt("fuN", 0), followupDepth = o.optInt("fuD", 0), auto = o.optBoolean("auto", false)
+                followup = o.optString("fu", ""), followupRepeat = o.optInt("fuN", 0), followupDepth = o.optInt("fuD", 0), auto = o.optBoolean("auto", false),
+                dayNotes = readDayNotes(o.optJSONObject("dn"))
             )
+        }
+        /** Day messages from JSON, dropping days that have passed. */
+        fun readDayNotes(o: JSONObject?): MutableMap<String, String> {
+            val m = mutableMapOf<String, String>(); if (o == null) return m
+            val today = Brief.isoDay(System.currentTimeMillis())
+            o.keys().forEach { k -> val v = o.optString(k).trim(); if (k >= today && v.isNotEmpty()) m[k] = v }
+            return m
         }
         fun new(hour: Int = 7, minute: Int = 0) = Alarm(System.currentTimeMillis().toString(36), hour, minute)
     }
