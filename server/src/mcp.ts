@@ -141,16 +141,6 @@ const ALARM_PROPS = {
   date: { type: "string", description: "One-time alarm on a specific day, YYYY-MM-DD (use the user's local date). Only without days." },
   label: { type: "string", maxLength: 40, description: "Short name shown on the alarm, e.g. \"Work\", \"Gym\", \"Flight\"." },
   message: { type: "string", maxLength: 400, description: "Read aloud when this alarm rings, instead of the evening plan. One to three short spoken sentences in second person. ALWAYS use this when the alarm is for something specific (what to do when it rings)." },
-  followup: {
-    type: "object",
-    description: "Optional yes/no follow-up, run on the phone when the alarm rings (no AI needed then): after the message it asks question; the user taps Yes or No (no answer in 3 min = No); the phone says that branch's say, then: \"done\", or rings this alarm again in_minutes later (repeat_this_alarm + max_repeats required), or starts a new alarm in_minutes later. Times are minutes after the answer. Max 3 levels. " + FOLLOWUP_EXAMPLE,
-    properties: {
-      question: { type: "string" },
-      yes: { type: "object", properties: { say: { type: "string" }, then: {} } },
-      no: { type: "object", properties: { say: { type: "string" }, then: {} } },
-    },
-    required: ["question", "yes", "no"],
-  },
 };
 function buildAlarm(a: any, i = 0) {
   const { h, m } = parseTime(String(a.time));
@@ -158,7 +148,7 @@ function buildAlarm(a: any, i = 0) {
   const date = days.some(Boolean) ? "" : parseDate(a.date);
   return { id: "ai" + (now() + i).toString(36), h, m, days, on: true, date,
     label: String(a.label ?? "").trim().slice(0, 40), message: String(a.message ?? "").trim().slice(0, 400),
-    ...(a.followup ? { followup: checkFollowup(a.followup) } : {}) };
+    /* followup is parked for v1 (checkFollowup kept for later) */ };
 }
 const asPhone = (x: any) => ({ ...x, lbl: x.label, note: x.message, noteAi: !!x.message, fu: x.followup ? JSON.stringify(x.followup) : "" });
 
@@ -216,7 +206,7 @@ const tools: Tool[] = [
   },
   {
     name: "create_alarm", title: "Create alarm",
-    description: "Create one alarm. Without days it's a one-time alarm: it rings once (on date, or the next time that time comes up) and then switches itself off; ask whether it should repeat if the user didn't say. Each alarm can carry its own message that is read aloud when it rings, and an optional yes/no followup. To set up many alarms at once (e.g. a whole week), use create_alarms. " + FOLLOWUP_EXAMPLE,
+    description: "Create one alarm. Without days it's a one-time alarm: it rings once (on date, or the next time that time comes up) and then switches itself off; ask whether it should repeat if the user didn't say. Each alarm can carry its own message that is read aloud when it rings. To set up many alarms at once (e.g. a whole week), use create_alarms. ",
     inputSchema: { type: "object", properties: ALARM_PROPS, required: ["time"], additionalProperties: false },
     async run(env, userId, a) {
       const alarm = buildAlarm(a);
@@ -239,7 +229,7 @@ const tools: Tool[] = [
   },
   {
     name: "update_alarm", title: "Change alarm",
-    description: "Change an existing alarm by id (from list_alarms): time, days, date, label, message or followup (an empty string removes label/message; followup null removes it), or turn it on/off. " + FOLLOWUP_EXAMPLE,
+    description: "Change an existing alarm by id (from list_alarms): time, days, date, label or message (an empty string removes label/message), or turn it on/off. ",
     inputSchema: { type: "object", properties: { id: { type: "string" }, ...ALARM_PROPS, on: { type: "boolean" } }, required: ["id"], additionalProperties: false },
     async run(env, userId, a) {
       const s = await state(env, userId);
@@ -252,7 +242,6 @@ const tools: Tool[] = [
       if (typeof a.label === "string") patch.label = a.label.trim().slice(0, 40);
       if (typeof a.message === "string") patch.message = a.message.trim().slice(0, 400);
       if (typeof a.date === "string") patch.date = parseDate(a.date);
-      if (a.followup !== undefined) patch.followup = a.followup === null || a.followup === "" ? null : checkFollowup(a.followup);
       const after = { ...cur, ...patch, ...(patch.label !== undefined ? { lbl: patch.label } : {}), ...(patch.message !== undefined ? { note: patch.message, noteAi: true } : {}) };
       const d = await queue(env, userId, "update_alarm", patch, `Changed alarm: ${fmtAlarm(after).split(" (id")[0]}`);
       return `Changed: ${fmtAlarm(after)}.` + d;
@@ -322,7 +311,7 @@ const tools: Tool[] = [
 ];
 
 // Phone down (app limits, screen time) is off for v1; the tools stay in the code for later.
-const OFF = new Set(["set_app_limit", "get_screen_time"]);
+const OFF = new Set(["set_app_limit", "get_screen_time", "get_alarm_history"]); // + follow-ups parked
 const live = () => tools.filter((t) => !OFF.has(t.name));
 
 const rpc = (id: unknown, result: unknown) => Response.json({ jsonrpc: "2.0", id, result });
@@ -344,7 +333,7 @@ export async function handleMcp(request: Request, env: Env, props: Props): Promi
         protocolVersion: msg.params?.protocolVersion === "2025-03-26" ? "2025-03-26" : PROTOCOL,
         capabilities: { tools: { listChanged: false } },
         serverInfo: { name: "why-not-you", title: "Why Not You", version: "0.1.0" },
-        instructions: "Why Not You is the user's alarm app. Read list_alarms before changing anything. Every alarm can have a label, its own message (read aloud when it rings) and an optional yes/no followup that the phone runs by itself (ask, then say + done / check again later / start another alarm). When the user wants an alarm for a task, put what to do in that alarm's message, not in set_plan. set_plan is only the general plan for the next alarm without a message, or a plan for a date. Keep spoken text short. Use create_alarms for many alarms at once. Each change reports whether the phone confirmed it; get_alarm_history shows follow-up answers.",
+        instructions: "Why Not You is the user's alarm app. Read list_alarms before changing anything. Every alarm can have a label and its own message (read aloud when it rings). For something that needs checking again later, create the later alarms too, each with its own message. When the user wants an alarm for a task, put what to do in that alarm's message, not in set_plan. set_plan is only the general plan for the next alarm without a message, or a plan for a date. Keep spoken text short. Use create_alarms for many alarms at once. Each change reports whether the phone confirmed it.",
       });
     case "ping":
       return rpc(msg.id, {});

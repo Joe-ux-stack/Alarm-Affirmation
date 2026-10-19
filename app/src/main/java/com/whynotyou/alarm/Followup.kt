@@ -17,10 +17,12 @@ import java.util.Calendar
  * `then` is "done", a repeat of this alarm, or { "in_minutes": N, "alarm": { label, message, followup } }.
  */
 object Followup {
+    /** Parked for v1: the yes/no logic needs more thought. Off = no question, no buttons, no branches. */
+    const val ENABLED = false
     const val MAX_DEPTH = 3
     const val ANSWER_TIMEOUT_MS = 3 * 60_000L
 
-    fun tree(a: Alarm): JSONObject? = try { if (a.followup.isBlank()) null else JSONObject(a.followup) } catch (_: Throwable) { null }
+    fun tree(a: Alarm): JSONObject? = try { if (!ENABLED || a.followup.isBlank()) null else JSONObject(a.followup) } catch (_: Throwable) { null }
     fun question(a: Alarm): String = tree(a)?.optString("question").orEmpty().trim()
     fun say(a: Alarm, yes: Boolean): String = tree(a)?.optJSONObject(if (yes) "yes" else "no")?.optString("say").orEmpty().trim()
 
