@@ -201,7 +201,7 @@ const tools: Tool[] = [
   },
   {
     name: "set_plan", title: "Set a plan",
-    description: "Set a plan that is read aloud at an alarm. Attach it to: (a) one alarm with alarm_id (same as that alarm's message; read every time it rings), (b) a date with date YYYY-MM-DD (read by the first alarm that rings that day, unless that alarm has its own message), or (c) neither: the general plan for the next alarm without a message, cleared after it's read. An alarm's own message beats a date plan, which beats the general plan. Write one to three short spoken sentences in second person. An empty plan with alarm_id or date removes it.",
+    description: "Set a plan that is read aloud at an alarm. Attach it to: (a) one alarm with alarm_id (same as that alarm's message; read every time it rings); with alarm_id AND date on a repeating alarm it's that alarm's message for that one day only (use this for a different message each day of the week), (b) a date with date YYYY-MM-DD (read by the first alarm that rings that day, unless that alarm has its own message), or (c) neither: the general plan for the next alarm without a message, cleared after it's read. An alarm's own message beats a date plan, which beats the general plan. Write one to three short spoken sentences in second person. An empty plan with alarm_id or date removes it.",
     inputSchema: { type: "object", properties: { plan: { type: "string", maxLength: 400 }, date: { type: "string", description: "YYYY-MM-DD, the user's local date" }, alarm_id: { type: "string" } }, required: ["plan"], additionalProperties: false },
     async run(env, userId, a) {
       const plan = String(a.plan ?? "").trim();
@@ -209,6 +209,12 @@ const tools: Tool[] = [
         const s = await state(env, userId);
         const cur = s.alarms.find((x) => x.id === a.alarm_id);
         if (!cur) throw new Error(`No alarm with id ${a.alarm_id}. Call list_alarms first.`);
+        // alarm_id + date on a repeating alarm: a message for that one day (other days keep the alarm's message).
+        if (a.date && (cur.days ?? []).some(Boolean)) {
+          const date = parseDate(a.date);
+          const d = await queue(env, userId, "update_alarm", { id: a.alarm_id, day_messages: { [date]: plan } }, `${plan ? "Set" : "Removed"} the ${date} message for ${fmtAlarm(cur).split(" (id")[0]}`);
+          return (plan ? `Saved as the ${date} message for ${fmtAlarm(cur)}. Other days keep its usual message.` : `Removed the ${date} message from ${fmtAlarm(cur)}.`) + d;
+        }
         const d = await queue(env, userId, "update_alarm", { id: a.alarm_id, message: plan }, `${plan ? "Set the message" : "Removed the message"} for ${fmtAlarm(cur).split(" (id")[0]}`);
         return (plan ? `Saved as the message for ${fmtAlarm(cur)}.` : `Removed the message from ${fmtAlarm(cur)}.`) + d;
       }
@@ -381,8 +387,8 @@ export async function handleMcp(request: Request, env: Env, props: Props): Promi
     case "initialize":
       return rpc(msg.id, {
         protocolVersion: msg.params?.protocolVersion === "2025-03-26" ? "2025-03-26" : PROTOCOL,
-        capabilities: { tools: { listChanged: false } },
-        serverInfo: { name: "why-not-you", title: "Why Not You", version: "0.1.0" },
+        capabilities: { tools: { listChanged: true } },
+        serverInfo: { name: "why-not-you", title: "Why Not You", version: "0.2.0" },
         instructions: "Why Not You is the user's alarm app. Read list_alarms before changing anything. Every alarm can have a label and its own message (read aloud when it rings). For something that needs checking again later, create the later alarms too, each with its own message. When the user wants an alarm for a task, put what to do in that alarm's message, not in set_plan. For a repeating alarm with a different message on different days (e.g. a weekday wake-up with each day's plan), use one alarm with day_messages, not an alarm per day. Results come back as one plain line per alarm (day, date, time, label, repeat, message, time left): repeat them to the user so they can check. Ask only when needed: unclear am/pm, before deleting, and before creating more than 5 alarms. set_plan is only the general plan for the next alarm without a message, or a plan for a date. Keep spoken text short. Use create_alarms for many alarms at once. Each change reports whether the phone confirmed it.",
       });
     case "ping":
