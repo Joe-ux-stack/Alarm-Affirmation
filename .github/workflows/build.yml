@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -93,8 +97,13 @@ jobs:
           cp app/build/outputs/apk/release/app-release.apk "$NAME"
           AAB="WhyNotYou-${GITHUB_RUN_NUMBER}.aab"
           cp app/build/outputs/bundle/release/app-release.aab "$AAB" 2>/dev/null || AAB=""
-          gh release delete "$TAG" --yes --cleanup-tag || true
-          gh release create "$TAG" "$NAME" $AAB --target "${GITHUB_SHA}" \
-            --title "Build ${GITHUB_RUN_NUMBER} (${GITHUB_SHA::7})" \
-            --notes "Built from commit ${GITHUB_SHA}. Tap the .apk to download and install. The .aab is for the Play Console."
+          R="repos/${GITHUB_REPOSITORY}"
+          OLD=$(gh api "$R/releases/tags/$TAG" --jq .id 2>/dev/null || true)
+          [ -n "$OLD" ] && gh api -X DELETE "$R/releases/$OLD" || true
+          gh api -X DELETE "$R/git/refs/tags/$TAG" 2>/dev/null || true
+          gh api -X POST "$R/releases" -f tag_name="$TAG" -f target_commitish="$GITHUB_SHA" \
+            -f name="Build ${GITHUB_RUN_NUMBER} (${GITHUB_SHA::7})" \
+            -f body="Built from commit ${GITHUB_SHA}. Tap the .apk to download and install. The .aab is for the Play Console." > /dev/null
+          gh release upload "$TAG" "$NAME"
+          [ -n "$AAB" ] && gh release upload "$TAG" "$AAB" || true
 
