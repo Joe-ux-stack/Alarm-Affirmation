@@ -108,7 +108,7 @@ class WelcomeActivity : ScreenActivity() {
             startActivity(Intent(this, SetupActivity::class.java)); finish()
         })
     }
-    @Deprecated("Deprecated in Java") override fun onBackPressed() { finishAffinity() }
+    init { onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) { override fun handleOnBackPressed() { finishAffinity() } }) }
 }
 
 /** 1.3 Try Pro (paywall). Billing is not connected yet. */

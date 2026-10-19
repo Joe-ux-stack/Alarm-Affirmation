@@ -8,14 +8,14 @@ if (file("google-services.json").exists()) apply(plugin = "com.google.gms.google
 
 android {
     namespace = "com.whynotyou.alarm"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.whynotyou.alarm"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 75
-        versionName = "0.75"
+        targetSdk = 36
+        versionCode = 76
+        versionName = "0.76"
         ndk { abiFilters += listOf("arm64-v8a") }
         // Google sign-in: the Web OAuth client ID (public). CI passes it from the GOOGLE_CLIENT_ID repo variable.
         buildConfigField("String", "WEB_CLIENT_ID", "\"${System.getenv("GOOGLE_CLIENT_ID") ?: ""}\"")
