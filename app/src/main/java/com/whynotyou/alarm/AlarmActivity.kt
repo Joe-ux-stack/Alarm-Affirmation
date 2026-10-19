@@ -453,7 +453,6 @@ class AlarmActivity : AppCompatActivity() {
         wakeLock?.let { if (it.isHeld) it.release() }
     }
 
-    @Deprecated("Deprecated in Java")
     // Back never dismisses a real alarm (Android 16: onBackPressed is no longer called, so use the dispatcher).
     init { onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) { override fun handleOnBackPressed() { if (preview || timerMode) finishAlarm(false) } }) }
 
