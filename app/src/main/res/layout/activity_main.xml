@@ -200,6 +200,15 @@
         android:layout_height="match_parent"
         android:visibility="gone" />
 
+    <!-- Fade above the nav so cards never sit under the icons -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="190dp"
+        android:layout_gravity="bottom"
+        android:background="@drawable/bg_nav_fade_tall"
+        android:clickable="false"
+        android:importantForAccessibility="no" />
+
     <ImageButton
         android:id="@+id/fab_add"
         android:layout_width="64dp"

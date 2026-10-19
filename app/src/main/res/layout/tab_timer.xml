@@ -16,21 +16,21 @@
         android:paddingTop="40dp"
         android:paddingBottom="100dp">
 
-        <LinearLayout
+        <!-- Same spot, size and colour as the settings icon on the home screen -->
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="44dp"
-            android:gravity="end|center_vertical"
-            android:orientation="horizontal"
-            android:paddingEnd="12dp">
+            android:layout_height="44dp">
             <ImageButton
                 android:id="@+id/timer_gear"
                 android:layout_width="44dp"
                 android:layout_height="44dp"
+                android:layout_gravity="end"
+                android:layout_marginEnd="-6dp"
                 android:background="@android:color/transparent"
                 android:contentDescription="Timer settings"
                 android:src="@drawable/ic_gear"
-                android:tint="#8A93A8" />
-        </LinearLayout>
+                android:tint="#C9D4FF" />
+        </FrameLayout>
 
         <LinearLayout
             android:layout_width="match_parent"

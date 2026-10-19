@@ -54,7 +54,7 @@ class SwipeDismissView @JvmOverloads constructor(context: Context, attrs: Attrib
 
         // idle halo, then the drag ring that follows the finger
         halo.alpha = (0x0A + 0x18 * progress).toInt()
-        c.drawCircle(cx, cy, max(haloR, baseR + drag), halo)
+        c.drawCircle(cx, cy, min(max(haloR, baseR + drag), min(width, height) / 2f - 1f), halo)
         if (drag > 0f) {
             ring.alpha = (0x40 + 0xBF * progress).toInt()
             c.drawCircle(cx, cy, baseR + drag, ring)
@@ -79,7 +79,7 @@ class SwipeDismissView @JvmOverloads constructor(context: Context, attrs: Attrib
                 return true
             }
             MotionEvent.ACTION_MOVE -> if (dragging) {
-                drag = (dist - baseR).coerceIn(0f, threshold() + 8 * d)
+                drag = (dist - baseR).coerceIn(0f, threshold() + 4 * d)  // ring stays inside the view, never clipped
                 val nowArmed = drag >= threshold()
                 if (nowArmed && !armed) performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
                 armed = nowArmed
