@@ -98,7 +98,6 @@ const detailAlarm = (a: any, n: LocalNow) => {
     `  after stopping: read the plan aloud ${a.brief === false ? "off" : `on (voice ${a.voice ?? "default"})`}`,
     `  planning reminder: ${remind}`,
     `  message read aloud: ${String(a.note ?? "").trim() ? `"${a.note}"${a.noteAi ? " (written by AI)" : ""}` : "none (reads the evening plan instead)"}`,
-    ...(a.fu ? [`  follow-up: ${a.fu}${a.fuN ? ` (repeat ${a.fuN})` : ""}`] : []),
     ...(a.auto ? ["  (created by a follow-up; removed after it rings)"] : []),
   ].join("\n");
 };
