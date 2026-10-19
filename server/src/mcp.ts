@@ -2,6 +2,7 @@
 // Every request arrives already authenticated by the OAuth provider; ctx.props.userId says whose data.
 import { type Env, type Props, now, isPro } from "./env";
 import { wakePhones, pushStatus } from "./push";
+import { localNow, describe, nextRing, clock, type LocalNow } from "./when";
 
 const PROTOCOL = "2025-06-18";
 
@@ -25,8 +26,27 @@ async function state(env: Env, userId: string) {
     usage: j("usage", {}) as Record<string, Record<string, number>>, limits: j("limits", {}) as any,
     datePlans: (j("limits", {}) as any)?.datePlans as Record<string, string> | undefined,
     updatedAt: Number(s?.updated_at ?? 0),
+    tz: String((j("limits", {}) as any)?.tz || "UTC"),
   };
 }
+
+const nowLine = (n: LocalNow) => {
+  const fake = { h: Math.floor(n.min / 60), m: n.min % 60 };
+  return `Now for the user: ${["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][n.wd]} ${n.y}-${String(n.mo).padStart(2, "0")}-${String(n.d).padStart(2, "0")}, ${clock(fake.h, fake.m)} (${n.tz}).`;
+};
+
+/** Same time and it would ring on the same day as an existing alarm. */
+function duplicateOf(cand: any, alarms: any[], now: LocalNow): any | undefined {
+  const cd: boolean[] = cand.days ?? [];
+  const cNext = nextRing(cand, now)?.date;
+  return alarms.find((x) => {
+    if (x.on === false || Number(x.h) !== cand.h || Number(x.m) !== cand.m) return false;
+    const xd: boolean[] = x.days ?? [];
+    if (cd.some(Boolean) && xd.some(Boolean)) return cd.some((v, i) => v && xd[i]);
+    return !!cNext && nextRing(x, now)?.date === cNext;
+  });
+}
+const READ_BACK = "\nTell the user this line as it is, so they can check the day, time and message.";
 
 async function queueOnly(env: Env, userId: string, kind: string, payload: unknown): Promise<number> {
   const r = await env.DB.prepare("INSERT INTO changes (user_id, kind, payload, created_at) VALUES (?, ?, ?, ?)").bind(userId, kind, JSON.stringify(payload), now()).run();
@@ -67,12 +87,12 @@ const fmtAlarm = (a: any) => {
 };
 
 /** Everything about one alarm, for list_alarms. */
-const detailAlarm = (a: any) => {
+const detailAlarm = (a: any, n: LocalNow) => {
   const vib = a.vib === false ? "off" : `on (${a.vibp ?? "pulse"})`;
   const ph = Number(a.ph ?? 21), pm = Number(a.pm ?? 0);
   const remind = a.pr === false ? "off" : `${ph % 12 === 0 ? 12 : ph % 12}:${String(pm).padStart(2, "0")} ${ph < 12 ? "am" : "pm"} the evening before`;
   return [
-    fmtAlarm(a),
+    describe(a, n),
     `  sound: ${a.sound ? a.sound : "Chime (built-in)"} · volume ${a.vol ?? 80}% · ramp up ${a.ramp === false ? "off" : "on"}`,
     `  vibration: ${vib} · snooze ${a.snooze === false ? "off" : "on (5 min, max 2)"}`,
     `  after stopping: read the plan aloud ${a.brief === false ? "off" : `on (voice ${a.voice ?? "default"})`}`,
@@ -138,10 +158,13 @@ const FOLLOWUP_EXAMPLE = `Example (drying fruit): {"time":"21:00","label":"Citru
 const ALARM_PROPS = {
   time: { type: "string", description: "\"06:30\" (24 h) or \"6:30 am\"" },
   days: { type: "array", items: { type: "string" }, description: "Repeat on: any of mon..sun, or \"weekdays\", \"weekends\", \"every day\". Leave out for a one-time alarm." },
-  date: { type: "string", description: "One-time alarm on a specific day, YYYY-MM-DD (use the user's local date). Only without days." },
+  date: { type: "string", description: "One-time alarm on a specific day, YYYY-MM-DD in the user's time zone. list_alarms starts with today's date for the user; use it to turn 'tomorrow' or 'Friday' into a date. Only without days." },
   label: { type: "string", maxLength: 40, description: "Short name shown on the alarm, e.g. \"Work\", \"Gym\", \"Flight\"." },
   message: { type: "string", maxLength: 400, description: "Read aloud when this alarm rings, instead of the evening plan. One to three short spoken sentences in second person. ALWAYS use this when the alarm is for something specific (what to do when it rings)." },
 };
+function oddHourNote(raw: string, h: number) {
+  return !/am|pm/i.test(raw) && h >= 1 && h <= 4 ? `\nNote: that's ${clock(h, 0).replace(":00", "")} at night. If the user meant the afternoon, change it with update_alarm.` : "";
+}
 function buildAlarm(a: any, i = 0) {
   const { h, m } = parseTime(String(a.time));
   const days = parseDays(a.days) ?? DAYS.map(() => false);
@@ -161,7 +184,7 @@ const tools: Tool[] = [
       const s = await state(env, userId);
       const on = s.alarms.filter((a) => a.on !== false);
       return JSON.stringify({
-        alarms: on.map(fmtAlarm), plan: s.plan || null,
+        now: nowLine(localNow(s.tz)), alarms: on.map((x) => describe(x, localNow(s.tz))), plan: s.plan || null,
         calendar: s.tomorrow, lastSyncedFromPhone: s.updatedAt ? new Date(s.updatedAt).toISOString() : null,
         instantSync: await pushStatus(env, userId),
       });
@@ -198,10 +221,11 @@ const tools: Tool[] = [
     async run(env, userId) {
       const s = await state(env, userId);
       if (!s.alarms.length) return "No alarms yet.";
-      const sorted = [...s.alarms].sort((x, y) => (x.h * 60 + x.m) - (y.h * 60 + y.m));
+      const n = localNow(s.tz);
+      const sorted = [...s.alarms].sort((x, y) => (nextRing(x, n)?.inMin ?? 1e9) - (nextRing(y, n)?.inMin ?? 1e9) || (x.h * 60 + x.m) - (y.h * 60 + y.m));
       const plans = s.datePlans && Object.keys(s.datePlans).length ? "\n\nPlans by date:\n" + Object.entries(s.datePlans).sort().map(([d, p]) => `  ${d}: "${p}"`).join("\n") : "";
       const general = s.plan ? `\nGeneral plan (next alarm without a message): "${s.plan}"` : "";
-      return `${sorted.length} alarm${sorted.length === 1 ? "" : "s"} (as of the phone's last sync${s.updatedAt ? ", " + new Date(s.updatedAt).toISOString() : ""}):\n\n` + sorted.map(detailAlarm).join("\n\n") + plans + general;
+      return nowLine(n) + "\n" + `${sorted.length} alarm${sorted.length === 1 ? "" : "s"}, soonest first (as of the phone's last sync${s.updatedAt ? ", " + new Date(s.updatedAt).toISOString() : ""}):\n\n` + sorted.map((x) => detailAlarm(x, n)).join("\n\n") + plans + general;
     },
   },
   {
@@ -209,22 +233,35 @@ const tools: Tool[] = [
     description: "Create one alarm. Without days it's a one-time alarm: it rings once (on date, or the next time that time comes up) and then switches itself off; ask whether it should repeat if the user didn't say. Each alarm can carry its own message that is read aloud when it rings. To set up many alarms at once (e.g. a whole week), use create_alarms. ",
     inputSchema: { type: "object", properties: ALARM_PROPS, required: ["time"], additionalProperties: false },
     async run(env, userId, a) {
+      const s = await state(env, userId); const n = localNow(s.tz);
       const alarm = buildAlarm(a);
-      const d = await queue(env, userId, "create_alarm", alarm, `Added an alarm: ${fmtAlarm(asPhone(alarm)).split(" (id")[0]}`);
-      return `Created: ${fmtAlarm(asPhone(alarm))}${alarm.message ? ` · message: "${alarm.message}"` : ""}.` + d;
+      if (!nextRing(alarm, n)) throw new Error(`That time has already passed. ${nowLine(n)}`);
+      const dup = !a.allow_duplicate && duplicateOf(alarm, s.alarms, n);
+      if (dup) return `Not created: there's already an alarm then: ${describe(dup, n)}. Ask the user whether to change that one (update_alarm) or really add a second (allow_duplicate: true).`;
+      const d = await queue(env, userId, "create_alarm", alarm, `Added: ${describe(asPhone(alarm), n).split(" (id")[0]}`);
+      return `Created: ${describe(asPhone(alarm), n)}` + oddHourNote(String(a.time), alarm.h) + d + READ_BACK;
     },
   },
   {
     name: "create_alarms", title: "Create several alarms",
-    description: "Create up to 50 alarms in one go, e.g. a whole week planned on Sunday, each with its own time, days or date, label and message. Same fields as create_alarm. Check list_alarms first so you don't duplicate existing ones.",
-    inputSchema: { type: "object", properties: { alarms: { type: "array", minItems: 1, maxItems: 50, items: { type: "object", properties: ALARM_PROPS, required: ["time"], additionalProperties: false } } }, required: ["alarms"], additionalProperties: false },
+    description: "Create up to 50 alarms in one go, e.g. a whole week planned on Sunday, each with its own time, days or date, label and message. Same fields as create_alarm. Read list_alarms first. For more than 5 alarms, show the user the list and get a yes before calling this. Alarms at the same time as an existing one are skipped and listed. Repeat the result lines to the user.",
+    inputSchema: { type: "object", properties: { allow_duplicate: { type: "boolean" }, alarms: { type: "array", minItems: 1, maxItems: 50, items: { type: "object", properties: ALARM_PROPS, required: ["time"], additionalProperties: false } } }, required: ["alarms"], additionalProperties: false },
     async run(env, userId, a) {
+      const s = await state(env, userId); const n = localNow(s.tz);
       const list = (a.alarms as any[]).map((x, i) => buildAlarm(x, i));
+      const ok: any[] = []; const skipped: string[] = [];
+      for (const [i, x] of list.entries()) {
+        if (!nextRing(x, n)) { skipped.push(`${clock(x.h, x.m)}${x.date ? " on " + x.date : ""}: already passed`); continue; }
+        const dup = !a.allow_duplicate && duplicateOf(x, [...s.alarms, ...ok.map(asPhone)], n);
+        if (dup) { skipped.push(`${clock(x.h, x.m)}: same time as ${describe(dup, n)}`); continue; }
+        ok.push(x); void i;
+      }
       const ids: number[] = [];
-      for (const alarm of list) ids.push(await queueOnly(env, userId, "create_alarm", alarm));
-      await logAction(env, userId, `Added ${list.length} alarms`);
-      await wakePhones(env, userId);
-      return `Created ${list.length} alarms:\n` + list.map((x) => fmtAlarm(asPhone(x)) + (x.message ? ` · "${x.message}"` : "")).join("\n") + await delivery(env, userId, ids);
+      for (const alarm of ok) ids.push(await queueOnly(env, userId, "create_alarm", alarm));
+      if (ok.length) { await logAction(env, userId, `Added ${ok.length} alarms`); await wakePhones(env, userId); }
+      return `Created ${ok.length} alarm${ok.length === 1 ? "" : "s"}:\n` + ok.map((x) => "• " + describe(asPhone(x), n) + oddHourNote(String((a.alarms as any[])[list.indexOf(x)]?.time ?? ""), x.h)).join("\n")
+        + (skipped.length ? `\n\nNot created (${skipped.length}):\n` + skipped.map((t) => "• " + t).join("\n") : "")
+        + await delivery(env, userId, ids) + READ_BACK;
     },
   },
   {
@@ -243,8 +280,9 @@ const tools: Tool[] = [
       if (typeof a.message === "string") patch.message = a.message.trim().slice(0, 400);
       if (typeof a.date === "string") patch.date = parseDate(a.date);
       const after = { ...cur, ...patch, ...(patch.label !== undefined ? { lbl: patch.label } : {}), ...(patch.message !== undefined ? { note: patch.message, noteAi: true } : {}) };
-      const d = await queue(env, userId, "update_alarm", patch, `Changed alarm: ${fmtAlarm(after).split(" (id")[0]}`);
-      return `Changed: ${fmtAlarm(after)}.` + d;
+      const n = localNow(s.tz);
+      const d = await queue(env, userId, "update_alarm", patch, `Changed: ${describe(after, n).split(" (id")[0]}`);
+      return `Changed: ${describe(after, n)}` + (a.time ? oddHourNote(String(a.time), Number(after.h)) : "") + d + READ_BACK;
     },
   },
   {
@@ -276,15 +314,16 @@ const tools: Tool[] = [
   },
   {
     name: "delete_alarm", title: "Delete alarm",
-    description: "Delete an alarm by id (from list_alarms). This removes it from the phone completely; to pause it instead, use update_alarm with on: false. Confirm with the user first if it isn't clear which alarm they mean.",
+    description: "Delete an alarm by id (from list_alarms). This removes it from the phone completely; to pause it instead, use update_alarm with on: false. Always confirm with the user first, naming the alarm (day, time, label).",
     inputSchema: { type: "object", properties: { id: { type: "string" } }, required: ["id"], additionalProperties: false },
     destructive: true,
     async run(env, userId, a) {
       const s = await state(env, userId);
       const cur = s.alarms.find((x) => x.id === a.id);
       if (!cur) throw new Error(`No alarm with id ${a.id}. Call list_alarms first.`);
-      const d = await queue(env, userId, "delete_alarm", { id: a.id }, `Deleted alarm: ${fmtAlarm(cur).split(" (id")[0]}`);
-      return `Deleted: ${fmtAlarm(cur)}.` + d;
+      const n = localNow(s.tz);
+      const d = await queue(env, userId, "delete_alarm", { id: a.id }, `Deleted: ${describe(cur, n).split(" (id")[0]}`);
+      return `Deleted: ${describe(cur, n)}` + d;
     },
   },
   {
@@ -333,7 +372,7 @@ export async function handleMcp(request: Request, env: Env, props: Props): Promi
         protocolVersion: msg.params?.protocolVersion === "2025-03-26" ? "2025-03-26" : PROTOCOL,
         capabilities: { tools: { listChanged: false } },
         serverInfo: { name: "why-not-you", title: "Why Not You", version: "0.1.0" },
-        instructions: "Why Not You is the user's alarm app. Read list_alarms before changing anything. Every alarm can have a label and its own message (read aloud when it rings). For something that needs checking again later, create the later alarms too, each with its own message. When the user wants an alarm for a task, put what to do in that alarm's message, not in set_plan. set_plan is only the general plan for the next alarm without a message, or a plan for a date. Keep spoken text short. Use create_alarms for many alarms at once. Each change reports whether the phone confirmed it.",
+        instructions: "Why Not You is the user's alarm app. Read list_alarms before changing anything. Every alarm can have a label and its own message (read aloud when it rings). For something that needs checking again later, create the later alarms too, each with its own message. When the user wants an alarm for a task, put what to do in that alarm's message, not in set_plan. Results come back as one plain line per alarm (day, date, time, label, repeat, message, time left): repeat them to the user so they can check. Ask only when needed: unclear am/pm, before deleting, and before creating more than 5 alarms. set_plan is only the general plan for the next alarm without a message, or a plan for a date. Keep spoken text short. Use create_alarms for many alarms at once. Each change reports whether the phone confirmed it.",
       });
     case "ping":
       return rpc(msg.id, {});

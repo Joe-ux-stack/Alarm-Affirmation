@@ -142,7 +142,7 @@ object Sync {
             Brief.cachedEvents(c).forEach { e -> a.put(JSONObject().put("time", if (e.allDay) "all day" else f.format(java.util.Date(e.startMillis))).put("title", e.title)) }
         }
         val o = JSONObject().apply { Push.token(c)?.let { put("push", it) } }.put("alarms", alarms).put("plan", Brief.intention(c)).put("tomorrow", tomorrow)
-            .put("limits", JSONObject().put("datePlans", JSONObject(Brief.datePlans(c) as Map<*, *>)).put("on", PhoneDown.isEnabled(c)).put("minutes", PhoneDown.limitMin(c)).put("apps", JSONArray(PhoneDown.watchedNames(c))))
+            .put("limits", JSONObject().put("tz", java.util.TimeZone.getDefault().id).put("datePlans", JSONObject(Brief.datePlans(c) as Map<*, *>)).put("on", PhoneDown.isEnabled(c)).put("minutes", PhoneDown.limitMin(c)).put("apps", JSONArray(PhoneDown.watchedNames(c))))
         usage(c)?.let { o.put("usage", it) }
         o.put("history", AlarmHistory.all(c))
         return o
