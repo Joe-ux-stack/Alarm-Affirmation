@@ -1,13 +1,16 @@
 // Google helpers: sign-in verification and the Play Developer API (service-account JWT, WebCrypto).
 import type { Env } from "./env";
 
+/** The phone signs in with the Firebase project's web client (it holds the Play signing key's Android client). */
+const APP_CLIENT_ID = "758653362763-nsirs4ip6tdhn5a2c01d8lv9rqr1uord.apps.googleusercontent.com";
+
 /** Verify a Google ID token (from the phone's "Continue with Google") and return the account. */
 export async function verifyIdToken(env: Env, idToken: string): Promise<{ sub: string; email: string } | null> {
   const r = await fetch("https://oauth2.googleapis.com/tokeninfo?id_token=" + encodeURIComponent(idToken));
   if (!r.ok) return null;
   const t = (await r.json()) as Record<string, string>;
   const okIss = t.iss === "accounts.google.com" || t.iss === "https://accounts.google.com";
-  if (!okIss || t.aud !== env.GOOGLE_CLIENT_ID || Number(t.exp) * 1000 < Date.now()) return null;
+  if (!okIss || (t.aud !== env.GOOGLE_CLIENT_ID && t.aud !== APP_CLIENT_ID) || Number(t.exp) * 1000 < Date.now()) return null;
   if (t.email_verified !== "true" && t.email_verified !== (true as unknown as string)) return null;
   return { sub: t.sub, email: t.email };
 }

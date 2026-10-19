@@ -14,11 +14,12 @@ android {
         applicationId = "com.whynotyou.alarm"
         minSdk = 26
         targetSdk = 36
-        versionCode = 76
-        versionName = "0.76"
+        versionCode = 77
+        versionName = "0.77"
         ndk { abiFilters += listOf("arm64-v8a") }
         // Google sign-in: the Web OAuth client ID (public). CI passes it from the GOOGLE_CLIENT_ID repo variable.
-        buildConfigField("String", "WEB_CLIENT_ID", "\"${System.getenv("GOOGLE_CLIENT_ID") ?: ""}\"")
+        // Firebase project's web client: its project has the Android clients for both the Play and the CI signing keys.
+        buildConfigField("String", "WEB_CLIENT_ID", "\"758653362763-nsirs4ip6tdhn5a2c01d8lv9rqr1uord.apps.googleusercontent.com\"")
     }
 
     // Stable dev key: CI decodes it from a repo secret into keystore/whynotyou-dev.jks.
