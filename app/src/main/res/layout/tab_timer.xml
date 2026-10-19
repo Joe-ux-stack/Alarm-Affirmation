@@ -123,7 +123,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal">
             <Button
-            android:letterSpacing="0" android:id="@+id/timer_cancel" style="@style/BigRoundOutline" android:text="Cancel" />
+            android:letterSpacing="0" android:id="@+id/timer_cancel" style="@style/BigRoundRed" android:text="Stop" />
             <Button
             android:letterSpacing="0" android:id="@+id/timer_pause" style="@style/BigRoundAmber" android:layout_marginStart="48dp" android:text="Pause" />
         </LinearLayout>

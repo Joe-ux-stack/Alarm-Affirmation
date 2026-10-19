@@ -63,6 +63,15 @@
             android:layout_height="wrap_content"
             android:minWidth="48dp"
             android:minHeight="48dp" />
+
+        <ImageView
+            android:id="@+id/sel_check"
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            android:layout_marginStart="12dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_check_off"
+            android:visibility="gone" />
     </LinearLayout>
 
     <View

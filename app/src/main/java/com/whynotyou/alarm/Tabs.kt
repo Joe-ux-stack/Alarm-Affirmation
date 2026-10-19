@@ -97,8 +97,14 @@ class StopwatchTab(private val a: Activity, root: View) {
 
     private fun elapsed() = base + if (running) System.currentTimeMillis() - startedAt else 0L
 
-    private fun go() { running = true; startedAt = System.currentTimeMillis(); start.text = "Stop"; lap.text = "Lap"; ui.post(tick) }
-    private fun stop() { base = elapsed(); running = false; start.text = "Start"; lap.text = "Reset"; ui.removeCallbacks(tick); render() }
+    private fun go() { running = true; startedAt = System.currentTimeMillis(); start.text = "Stop"; tintStart(); lap.text = "Lap"; ui.post(tick) }
+    private fun stop() { base = elapsed(); running = false; start.text = "Start"; tintStart(); lap.text = "Reset"; ui.removeCallbacks(tick); render() }
+    /** Start is blue, Stop is red. */
+    private fun tintStart() {
+        val red = running
+        start.backgroundTintList = android.content.res.ColorStateList.valueOf(if (red) 0xFFF0414F.toInt() else 0xFF3461FF.toInt())
+        if (android.os.Build.VERSION.SDK_INT >= 28) start.outlineSpotShadowColor = if (red) 0xFFFF4D5E.toInt() else 0xFF2D5BFF.toInt()
+    }
     private fun reset() { base = 0; lapTimes.clear(); laps.removeAllViews(); lap.text = "Lap"; render() }
 
     private fun addLap() {

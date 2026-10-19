@@ -37,6 +37,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        onBackPressedDispatcher.addCallback(this, backInSelect)
         try { VoiceWarmup.start(this) } catch (_: Throwable) {}
         // Phone down is off for v1 (kept in the code): stop the watcher if an older version started it.
         try { stopService(android.content.Intent(this, GuardService::class.java)); PhoneDown.setEnabled(this, false) } catch (_: Throwable) {}
@@ -71,6 +72,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showTab(i: Int) {
+        if (selecting && i != 0) { selecting = false; selected.clear(); backInSelect.isEnabled = false; selectBar?.visibility = View.GONE; findViewById<View>(R.id.nav).visibility = View.VISIBLE }
         tab = i
         tabAlarm.visibility = if (i == 0) View.VISIBLE else View.GONE
         tabPhone.visibility = if (i == 3) View.VISIBLE else View.GONE
@@ -98,7 +100,10 @@ class MainActivity : AppCompatActivity() {
     private fun refresh() {
         val alarms = AlarmStore.all(this)
         empty.visibility = if (alarms.isEmpty()) View.VISIBLE else View.GONE
-        fab.visibility = if (alarms.isEmpty() || tab != 0) View.GONE else View.VISIBLE
+        fab.visibility = if (alarms.isEmpty() || tab != 0 || selecting) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.nav).visibility = if (selecting) View.INVISIBLE else View.VISIBLE
+        selectBar?.visibility = if (selecting) View.VISIBLE else View.GONE
+        if (selecting && ::selectDelete.isInitialized) selectDelete.text = "Delete ${selected.size}"
 
         val snoozed = AlarmScheduler.snoozedUntil(this)
         findViewById<View>(R.id.row_snoozed).visibility = if (snoozed != null) View.VISIBLE else View.GONE
@@ -113,6 +118,7 @@ class MainActivity : AppCompatActivity() {
                 next.text = SimpleDateFormat("EEE, h:mm a", Locale.getDefault()).format(Date(at)).replace("AM", "am").replace("PM", "pm")
             }
         }
+        if (selecting) { title.text = "${selected.size} selected"; next.text = "Tap alarms to select" }
         if (snoozed != null) findViewById<TextView>(R.id.txt_snoozed).text = "Rings again at " + SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(snoozed)).replace("AM", "am").replace("PM", "pm")
 
         list.removeAllViews()
@@ -140,14 +146,19 @@ class MainActivity : AppCompatActivity() {
             content.setOnClickListener {
                 startActivity(Intent(this, AlarmDetailActivity::class.java).putExtra(AlarmDetailActivity.EXTRA_ID, a.id))
             }
-            val askDelete = View.OnLongClickListener {
-                androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Delete this alarm?")
-                    .setPositiveButton("Delete") { _, _ -> AlarmStore.delete(this, a.id); refresh() }
-                    .setNegativeButton("Cancel", null).show()
-                true
+            // Long press starts selecting (to delete several at once).
+            val startSelect = View.OnLongClickListener { it.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS); enterSelect(a.id); true }
+            content.setOnLongClickListener(startSelect)
+            v.findViewById<View>(R.id.row_main).setOnLongClickListener(startSelect)
+            if (selecting) {
+                val on = a.id in selected
+                sw.visibility = View.GONE
+                v.findViewById<android.widget.ImageView>(R.id.sel_check).apply { visibility = View.VISIBLE; setImageResource(if (on) R.drawable.ic_check_on else R.drawable.ic_check_off) }
+                v.alpha = if (on) 1f else 0.55f
+                val toggle = View.OnClickListener { if (!selected.remove(a.id)) selected.add(a.id); if (selected.isEmpty()) exitSelect() else refresh() }
+                v.findViewById<View>(R.id.row_main).setOnClickListener(toggle); content.setOnClickListener(toggle); plan.setOnClickListener(toggle)
+                v.setOnClickListener(toggle)
             }
-            content.setOnLongClickListener(askDelete)
-            v.findViewById<View>(R.id.row_main).setOnLongClickListener(askDelete)
 
             // The plan (yours or your AI's) sits on the card of the alarm that will read it out next.
             // Each alarm shows its own message; the next alarm without one shows the evening plan it will read.
@@ -208,6 +219,57 @@ class MainActivity : AppCompatActivity() {
             sb.setSpan(android.text.style.ForegroundColorSpan(col), start, start + 1, 0)
         }
         return sb
+    }
+
+    // ---- Select to delete (long press a card) ----------------------------------------------
+    private var selecting = false
+    private val selected = linkedSetOf<String>()
+    private var selectBar: View? = null
+    private lateinit var selectDelete: com.google.android.material.button.MaterialButton
+    private val backInSelect = object : androidx.activity.OnBackPressedCallback(false) { override fun handleOnBackPressed() { exitSelect() } }
+
+    private fun enterSelect(id: String) {
+        if (selecting) return
+        selecting = true; selected.clear(); selected.add(id); backInSelect.isEnabled = true
+        ensureSelectBar(); refresh()
+    }
+
+    private fun exitSelect() {
+        selecting = false; selected.clear(); backInSelect.isEnabled = false; refresh()
+    }
+
+    /** Cancel / Delete N, in a floating sheet at the bottom (design C). */
+    private fun ensureSelectBar() {
+        if (selectBar != null) return
+        val root = findViewById<android.view.ViewGroup>(android.R.id.content).getChildAt(0) as android.widget.FrameLayout
+        val bar = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL; setBackgroundResource(R.drawable.bg_sheet)
+            setPadding(Ui.dp(this@MainActivity, 16), Ui.dp(this@MainActivity, 16), Ui.dp(this@MainActivity, 16), Ui.dp(this@MainActivity, 16))
+            elevation = Ui.dp(this@MainActivity, 12).toFloat(); isClickable = true
+        }
+        val cancel = Ui.button(this, "Cancel", false, 56) { exitSelect() }.apply { layoutParams = LinearLayout.LayoutParams(0, Ui.dp(this@MainActivity, 56), 1f).apply { marginEnd = Ui.dp(this@MainActivity, 10) } }
+        selectDelete = Ui.button(this, "Delete", false, 56) { deleteSelected() }.apply {
+            layoutParams = LinearLayout.LayoutParams(0, Ui.dp(this@MainActivity, 56), 1.4f)
+            backgroundTintList = android.content.res.ColorStateList.valueOf(0x2EFF4D5E); setTextColor(0xFFFF4D5E.toInt())
+        }
+        bar.addView(cancel); bar.addView(selectDelete)
+        root.addView(bar, android.widget.FrameLayout.LayoutParams(-1, -2, android.view.Gravity.BOTTOM).apply {
+            val m = Ui.dp(this@MainActivity, 12); setMargins(m, 0, m, m + Ui.dp(this@MainActivity, 8))
+        })
+        selectBar = bar
+    }
+
+    /** Deletes right away (no confirmation), with Undo for a few seconds. */
+    private fun deleteSelected() {
+        val gone = selected.mapNotNull { AlarmStore.get(this, it) }.map { it.toJson().toString() }
+        selected.toList().forEach { AlarmStore.delete(this, it) }
+        window.decorView.performHapticFeedback(android.view.HapticFeedbackConstants.CONFIRM)
+        exitSelect()
+        com.google.android.material.snackbar.Snackbar.make(list, "${gone.size} alarm${if (gone.size == 1) "" else "s"} deleted", 5000)
+            .setAction("Undo") { gone.forEach { AlarmStore.save(this, Alarm.fromJson(org.json.JSONObject(it))) }; refresh() }
+            .setActionTextColor(Ui.ACCENT)
+            .setAnchorView(findViewById(R.id.nav))
+            .show()
     }
 
     /** Exact time left: "44 min", "1h 59m", "2h", "1d 3h". Rounded up to the minute, like a countdown. */

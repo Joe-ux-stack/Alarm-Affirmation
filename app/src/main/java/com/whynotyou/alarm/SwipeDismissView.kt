@@ -24,12 +24,14 @@ class SwipeDismissView @JvmOverloads constructor(context: Context, attrs: Attrib
     var onDismiss: (() -> Unit)? = null
 
     private val d = resources.displayMetrics.density
-    private val baseR = 42f * d
-    private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL; color = 0x14FFFFFF }
-    private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 1f * d; color = 0x4DFFFFFF }
-    private val halo = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL; color = 0x0AFFFFFF }
-    private val ring = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 1.5f * d; color = 0x66FFFFFF }
-    private val xPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 2f * d; strokeCap = Paint.Cap.ROUND; color = 0xE6F2F4F8.toInt() }
+    private val baseR = 44f * d
+    // Blue, solid: a filled button with a soft glow, inside a faint ring that breathes.
+    private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
+    private val glow = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL; color = 0x402D5BFF; maskFilter = android.graphics.BlurMaskFilter(14f * d, android.graphics.BlurMaskFilter.Blur.NORMAL) }
+    private val halo = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL; color = 0x1A2D5BFF }
+    private val haloEdge = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 1.5f * d; color = 0x734A74FF }
+    private val ring = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 2f * d; color = 0xFF4A74FF.toInt() }
+    private val xPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 2.4f * d; strokeCap = Paint.Cap.ROUND; color = 0xFFFFFFFF.toInt() }
 
     private var drag = 0f          // current ring radius beyond the circle, px
     private var dragging = false
@@ -48,22 +50,21 @@ class SwipeDismissView @JvmOverloads constructor(context: Context, attrs: Attrib
 
     override fun onDraw(c: Canvas) {
         val cx = width / 2f; val cy = height / 2f
+        val maxR = min(width, height) / 2f - 2 * d
         val breathe = (sin(t * 2 * PI / 2.4).toFloat() + 1f) / 2f
-        val haloR = baseR + 8 * d + 6 * d * breathe
+        val haloR = min(maxR, 75f * d + 4 * d * breathe)
         val progress = if (threshold() > 0) (drag / threshold()).coerceIn(0f, 1f) else 0f
 
-        // idle halo, then the drag ring that follows the finger
-        halo.alpha = (0x0A + 0x18 * progress).toInt()
-        c.drawCircle(cx, cy, min(max(haloR, baseR + drag), min(width, height) / 2f - 1f), halo)
-        if (drag > 0f) {
-            ring.alpha = (0x40 + 0xBF * progress).toInt()
-            c.drawCircle(cx, cy, baseR + drag, ring)
-        }
-        // glass button
-        fill.alpha = (0x14 + 0x24 * progress).toInt()
+        // faint breathing ring, then the drag ring that follows the finger (stays inside the view)
+        c.drawCircle(cx, cy, max(haloR, baseR + drag), halo)
+        if (drag <= 0f) c.drawCircle(cx, cy, haloR, haloEdge)
+        else { ring.alpha = (0x80 + 0x7F * progress).toInt(); c.drawCircle(cx, cy, min(maxR, baseR + drag), ring) }
+        // glow + solid blue button
+        glow.alpha = (0x40 + 0x40 * progress).toInt()
+        c.drawCircle(cx, cy + 6 * d, baseR + 8 * d, glow)
+        fill.shader = android.graphics.LinearGradient(cx, cy - baseR, cx, cy + baseR, 0xFF4A74FF.toInt(), 0xFF2347F0.toInt(), android.graphics.Shader.TileMode.CLAMP)
         c.drawCircle(cx, cy, baseR, fill)
-        c.drawCircle(cx, cy, baseR, stroke)
-        val s = 9 * d
+        val s = 10 * d
         c.drawLine(cx - s, cy - s, cx + s, cy + s, xPaint)
         c.drawLine(cx + s, cy - s, cx - s, cy + s, xPaint)
     }
