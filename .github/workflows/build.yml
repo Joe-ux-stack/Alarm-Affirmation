@@ -67,6 +67,8 @@ jobs:
           ./gradlew assembleRelease --no-daemon 2>&1 | tee build.log || true
           grep -E "^e: |error:|FAILURE|What went wrong|Could not|Unresolved" build.log | head -60 > build-errors.txt || true
           test -f app/build/outputs/apk/release/app-release.apk
+          # Play Store upload: the same build as an app bundle, signed with the upload key (= dev key)
+          ./gradlew bundleRelease --no-daemon 2>&1 | tail -20 || true
 
       - name: Publish build errors to the apk branch
         if: failure()
@@ -89,8 +91,10 @@ jobs:
           TAG=latest; [ "${GITHUB_REF_NAME}" = "main" ] || TAG=beta
           NAME="WhyNotYou-${GITHUB_RUN_NUMBER}.apk"
           cp app/build/outputs/apk/release/app-release.apk "$NAME"
+          AAB="WhyNotYou-${GITHUB_RUN_NUMBER}.aab"
+          cp app/build/outputs/bundle/release/app-release.aab "$AAB" 2>/dev/null || AAB=""
           gh release delete "$TAG" --yes --cleanup-tag || true
-          gh release create "$TAG" "$NAME" --target "${GITHUB_SHA}" \
+          gh release create "$TAG" "$NAME" $AAB --target "${GITHUB_SHA}" \
             --title "Build ${GITHUB_RUN_NUMBER} (${GITHUB_SHA::7})" \
-            --notes "Built from commit ${GITHUB_SHA}. Tap the .apk to download and install."
+            --notes "Built from commit ${GITHUB_SHA}. Tap the .apk to download and install. The .aab is for the Play Console."
 
