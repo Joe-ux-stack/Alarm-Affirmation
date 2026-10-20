@@ -34,6 +34,7 @@ export async function upsertUser(env: Env, sub: string, email: string): Promise<
 export async function isPro(env: Env, userId: string): Promise<boolean> {
   const u = await env.DB.prepare("SELECT pro_until, email FROM users WHERE id = ?").bind(userId).first<{ pro_until: number; email: string }>();
   if (!u) return false;
-  const testers = (env.PRO_EMAILS ?? "").toLowerCase().split(",").map((e) => e.trim()).filter(Boolean);
+  // Google Play's review account always gets Pro, so reviewers can test every feature.
+  const testers = ["whynotyou.review@gmail.com", ...(env.PRO_EMAILS ?? "").toLowerCase().split(",").map((e) => e.trim()).filter(Boolean)];
   return u.pro_until > now() || testers.includes((u.email ?? "").toLowerCase());
 }
