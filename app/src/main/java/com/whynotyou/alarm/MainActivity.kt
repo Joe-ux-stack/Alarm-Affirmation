@@ -89,7 +89,7 @@ class MainActivity : AppCompatActivity() {
         if (i == 2) stopwatch?.onShow()
     }
 
-    override fun onResume() { super.onResume(); CalendarSync.refreshToday(this); syncNow(); title.removeCallbacks(headerTick); title.postDelayed(headerTick, 15_000L); refresh(); timer?.onShow(); if (tab == 3) phone?.render() }
+    override fun onResume() { super.onResume(); CalendarSync.refreshToday(this); syncNow(); Feedback.maybeAsk(this); title.removeCallbacks(headerTick); title.postDelayed(headerTick, 15_000L); refresh(); timer?.onShow(); if (tab == 3) phone?.render() }
     /** Pull what the user's AI changed (if signed in) and redraw when something arrived. */
     private fun syncNow() {
         if (!Account.signedIn(this)) return

@@ -11,7 +11,7 @@ import android.widget.LinearLayout
  */
 object Pro {
     private fun p(c: Context) = c.getSharedPreferences("pro", Context.MODE_PRIVATE)
-    fun isPro(c: Context) = p(c).getBoolean("test_pro", false) || Account.serverPro(c)
+    fun isPro(c: Context) = Billing.hasPlayPro(c) || Account.serverPro(c)
     fun setTestPro(c: Context, on: Boolean) { p(c).edit().putBoolean("test_pro", on).apply() }
 
     /** The "with Pro" pop-up shown when a free user taps a Pro feature. */

@@ -129,13 +129,17 @@ class TrialActivity : ScreenActivity() {
         col.addView(head)
         add(bullet("Your calendar, read to you", "Tomorrow's events in your wake-up plan", 6), 4)
         col.addView(bullet("Your AI plans your day", "Works with Claude, ChatGPT and more", 6))
-        col.addView(bullet("Follow-up questions", "\"Are they crisp?\" Yes or No decides what's next", 6))
         col.addView(bullet("Plan the whole week", "Every alarm and message, set in one go", 6))
-        val plans = listOf(Triple("Yearly", "$39.99", "$3.33 a month · 7 days free"), Triple("Monthly", "$6.99", "7 days free"), Triple("Lifetime", "$79", "Early supporters only · pay once"))
+        col.addView(bullet("Confirmed on your phone", "Your AI knows each change arrived", 6))
+        val ids = listOf(Billing.YEARLY, Billing.MONTHLY, Billing.LIFETIME)
+        fun plans() = listOf(
+            Triple("Yearly", Billing.price(Billing.YEARLY, "$39.99"), if (Billing.hasTrial(Billing.YEARLY)) "Save 50% · 7 days free" else "Save 50% vs monthly"),
+            Triple("Monthly", Billing.price(Billing.MONTHLY, "$6.99"), if (Billing.hasTrial(Billing.MONTHLY)) "7 days free" else "Cancel anytime"),
+            Triple("Lifetime", Billing.price(Billing.LIFETIME, "$79"), "Early supporters only · pay once"))
         val holder = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         fun render() {
             holder.removeAllViews()
-            plans.forEachIndexed { i, (n, price, sub) ->
+            plans().forEachIndexed { i, (n, price, sub) ->
                 val on = i == plan
                 holder.addView(LinearLayout(this).apply {
                     orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(16), dp(12), dp(16), dp(12))
@@ -150,14 +154,33 @@ class TrialActivity : ScreenActivity() {
                     c.addView(nr); c.addView(Ui.text(this@TrialActivity, sub, 14f, Ui.GREY))
                     addView(c, LinearLayout.LayoutParams(0, -2, 1f))
                     addView(Ui.text(this@TrialActivity, price, 16f).apply { typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL) })
-                    setOnClickListener { plan = i; render() }
+                    setOnClickListener { plan = i; (holder.tag as? () -> Unit)?.invoke() ?: render() }
                 }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
             }
         }
-        render(); add(holder, 4)
-        pinned(Ui.button(this, "Start free trial", true, 64) { soon("Buying Pro") })
-        pinned(Ui.text(this, "Free for 7 days, then $39.99 a year. Cancel anytime in Google Play.", 13f, Ui.GREY).apply { gravity = Gravity.CENTER }, 8)
+        val note = Ui.text(this, "", 13f, Ui.GREY).apply { gravity = Gravity.CENTER }
+        val buy = Ui.button(this, "Start free trial", true, 64) {
+            if (Pro.isPro(this)) { finish(); return@button }
+            if (!Billing.buy(this, ids[plan])) Toast.makeText(this, "Google Play isn't ready yet. Try again in a moment.", Toast.LENGTH_SHORT).show()
+        }
+        fun renderNote() {
+            val id = ids[plan]; val price = plans()[plan].second
+            val trial = id != Billing.LIFETIME && Billing.hasTrial(id)
+            (buy as? TextView)?.text = when { Pro.isPro(this) -> "You have Pro"; id == Billing.LIFETIME -> "Buy for $price"; trial -> "Start free trial"; else -> "Subscribe" }
+            note.text = when {
+                id == Billing.LIFETIME -> "One payment, Pro forever."
+                trial -> "Free for 7 days, then $price ${if (id == Billing.YEARLY) "a year" else "a month"}. Cancel anytime in Google Play."
+                else -> "$price ${if (id == Billing.YEARLY) "a year" else "a month"}. Cancel anytime in Google Play."
+            }
+        }
+        val rerender = { render(); renderNote() }
+        holder.tag = rerender
+        render(); renderNote(); add(holder, 4)
+        Billing.onChange { runOnUiThread { if (Pro.isPro(this)) { Toast.makeText(this, "Welcome to Pro", Toast.LENGTH_SHORT).show() }; rerender() } }
+        pinned(buy)
+        pinned(note, 8)
     }
+    override fun onDestroy() { Billing.onChange(null); super.onDestroy() }
 }
 
 /** 5.7 This week (Pro) */
@@ -349,15 +372,24 @@ class SubscriptionActivity : ScreenActivity() {
         card.addView(OrbView(this).apply { mode = OrbView.Mode.BREATHE }, LinearLayout.LayoutParams(dp(64), dp(64)).apply { marginEnd = dp(16) })
         val c = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         c.addView(Ui.text(this, if (pro) "Pro" else "Free", 20f, Ui.TEXT, true))
-        c.addView(Ui.text(this, if (pro) "Test mode · billing isn't connected yet" else "Alarms, plans and a message on every alarm", 14f, Ui.GREY))
+        val how = when {
+            Billing.hasPlayPro(this) -> "Through Google Play"
+            Account.serverPro(this) -> "Included with your account"
+            pro -> "Test mode"
+            else -> "Alarms, plans and a message on every alarm"
+        }
+        c.addView(Ui.text(this, how, 14f, Ui.GREY))
         card.addView(c, LinearLayout.LayoutParams(0, -2, 1f))
         add(card, 16)
         col.addView(Ui.caption(this, if (pro) "Included" else "With Pro", 28))
         col.addView(bullet("Your calendar, read to you")); col.addView(bullet("Your AI plans your day"))
-        col.addView(bullet("Follow-up questions")); col.addView(bullet("Plan the whole week in one go"))
+        col.addView(bullet("Plan the whole week in one go")); col.addView(bullet("Confirmed on your phone"))
         add(boxOf(
             row(if (pro) "Change plan" else "Try Pro free") { startActivity(Intent(this, TrialActivity::class.java)) },
             row("Manage in Google Play") { try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/account/subscriptions"))) } catch (_: Exception) {} },
-            row("Restore purchase") { soon("Restoring purchases") }), 20)
+            row("Restore purchase") {
+                Toast.makeText(this, "Checking Google Play…", Toast.LENGTH_SHORT).show()
+                Billing.refresh { ok -> runOnUiThread { Toast.makeText(this, if (ok) "Pro restored" else "No Pro purchase found on this Google account", Toast.LENGTH_LONG).show(); recreate() } }
+            }), 20)
     }
 }

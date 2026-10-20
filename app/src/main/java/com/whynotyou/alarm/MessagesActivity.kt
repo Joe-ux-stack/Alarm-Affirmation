@@ -18,7 +18,7 @@ class MessagesActivity : ScreenActivity() {
         val pro = Pro.isPro(this)
 
         if (!pro) {
-            val card = row("Try Pro free", sub = "Calendar, your AI, follow-up questions") { startActivity(Intent(this, TrialActivity::class.java)) }.apply {
+            val card = row("Try Pro free", sub = "Calendar, your AI, plan the whole week") { startActivity(Intent(this, TrialActivity::class.java)) }.apply {
                 setBackgroundResource(R.drawable.bg_snooze); setPadding(dp(16), dp(18), dp(16), dp(18))
                 ((getChildAt(0) as LinearLayout).getChildAt(1) as? android.widget.TextView)?.setTextColor(Ui.ACCENT)
             }
@@ -45,20 +45,14 @@ class MessagesActivity : ScreenActivity() {
             row("Permissions", if (Permissions.allGranted(this)) "All set ✓" else "${Permissions.missingCount(this)} missing") { startActivity(Intent(this, SetupActivity::class.java)) }
         ), if (pro) 20 else 14)
 
-        col.addView(Ui.caption(this, "Test", 28))
-        val proRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; minimumHeight = dp(56) }
-        val pl = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        pl.addView(Ui.text(this, "Pretend I have Pro", 16f, Ui.TEXT, true))
-        pl.addView(Ui.text(this, "Until buying is set up", 14f, Ui.GREY))
-        proRow.addView(pl, LinearLayout.LayoutParams(0, -2, 1f))
-        proRow.addView(SwitchCompat(this).apply { isChecked = pro; setOnCheckedChangeListener { _, on -> Pro.setTestPro(this@MessagesActivity, on); rebuild() } })
+        col.addView(Ui.caption(this, "Help", 28))
         add(boxOf(
+            row("Send feedback", sub = "Bugs, ideas, anything") { Feedback.send(this) },
             row("Preview wake-up") { startActivity(Intent(this, AlarmActivity::class.java).putExtra(AlarmActivity.EXTRA_PREVIEW, true)) },
             row("Test alarm in 1 min") {
                 AlarmScheduler.scheduleTestInMinutes(this, 1)
                 Toast.makeText(this, "Lock the phone. Firing in 60 s.", Toast.LENGTH_LONG).show()
-            },
-            proRow
+            }
         ), 0)
         AlarmScheduler.lastFireLog(this)?.let { log ->
             add(Ui.text(this, log, 12f, Ui.GREY).apply { typeface = android.graphics.Typeface.MONOSPACE; setPadding(dp(4), 0, dp(4), 0); setTextIsSelectable(true) }, 12)

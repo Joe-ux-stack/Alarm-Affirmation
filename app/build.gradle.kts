@@ -14,8 +14,8 @@ android {
         applicationId = "com.whynotyou.alarm"
         minSdk = 26
         targetSdk = 36
-        versionCode = 79
-        versionName = "0.79"
+        versionCode = 80
+        versionName = "0.80"
         ndk { abiFilters += listOf("arm64-v8a") }
         // Google sign-in: the Web OAuth client ID (public). CI passes it from the GOOGLE_CLIENT_ID repo variable.
         // Firebase project's web client: its project has the Android clients for both the Play and the CI signing keys.
@@ -63,6 +63,7 @@ android {
 }
 
 dependencies {
+    implementation("com.android.billingclient:billing:7.1.1")
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("androidx.activity:activity-ktx:1.9.3")
