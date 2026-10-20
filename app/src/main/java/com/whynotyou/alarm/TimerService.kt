@@ -1,97 +1,63 @@
 package com.whynotyou.alarm
 
 import android.app.AlarmManager
-import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.os.Handler
-import android.os.IBinder
-import android.os.Looper
 import androidx.core.app.NotificationCompat
 
 /**
- * Countdown as a foreground service so it survives the app being backgrounded. When it ends,
- * an exact alarm fires TimerEndReceiver which opens AlarmActivity in timer mode.
+ * Countdown without a background service: the end is an AlarmClock alarm (fires even in Doze), and the
+ * ongoing notification counts down by itself (chronometer), so nothing has to keep running.
  */
-class TimerService : Service() {
+object TimerService {
+    const val CHANNEL = "timer"; const val NOTIF_ID = 77
 
-    private val ui = Handler(Looper.getMainLooper())
-
-    override fun onBind(intent: Intent?): IBinder? = null
-
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        when (intent?.action) {
-            ACTION_START -> {
-                val endAt = intent.getLongExtra(EXTRA_END_AT, 0L)
-                if (!TimerState.isActive(this)) TimerState.start(this, endAt)
-                armEnd(endAt)
-                if (android.os.Build.VERSION.SDK_INT >= 34)
-                    startForeground(NOTIF_ID, notification(), android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
-                else startForeground(NOTIF_ID, notification())
-                ui.removeCallbacks(tick); ui.post(tick)
-            }
-            ACTION_PAUSE -> { TimerState.pause(this); disarmEnd(); nm().notify(NOTIF_ID, notification()) }
-            ACTION_RESUME -> { val endAt = TimerState.resume(this); armEnd(endAt); nm().notify(NOTIF_ID, notification()) }
-            ACTION_CANCEL -> { TimerState.clear(this); disarmEnd(); stopSelf() }
-        }
-        return START_STICKY
+    fun start(c: Context, durationMs: Long) {
+        val endAt = System.currentTimeMillis() + durationMs
+        TimerState.start(c, endAt)
+        armEnd(c, endAt); notifyState(c)
     }
+    fun pause(c: Context) { TimerState.pause(c); disarmEnd(c); notifyState(c) }
+    fun resume(c: Context) { val endAt = TimerState.resume(c); armEnd(c, endAt); notifyState(c) }
+    fun cancel(c: Context) { TimerState.clear(c); disarmEnd(c); nm(c).cancel(NOTIF_ID) }
 
-    private val tick = object : Runnable {
-        override fun run() {
-            if (!TimerState.isActive(this@TimerService)) { stopSelf(); return }
-            nm().notify(NOTIF_ID, notification())
-            ui.postDelayed(this, 1000)
-        }
-    }
-
-    private fun notification(): Notification {
-        nm().createNotificationChannel(NotificationChannel(CHANNEL, "Timer", NotificationManager.IMPORTANCE_LOW))
-        val open = PendingIntent.getActivity(this, 1, Intent(this, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        val remaining = TimerState.remainingMs(this) / 1000
-        return NotificationCompat.Builder(this, CHANNEL)
+    private fun notifyState(c: Context) {
+        nm(c).createNotificationChannel(NotificationChannel(CHANNEL, "Timer", NotificationManager.IMPORTANCE_LOW))
+        val open = PendingIntent.getActivity(c, 1, Intent(c, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val stop = PendingIntent.getBroadcast(c, 3, Intent(c, TimerStopReceiver::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val paused = TimerState.isPaused(c)
+        val remaining = TimerState.remainingMs(c)
+        val b = NotificationCompat.Builder(c, CHANNEL)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-            .setContentTitle(if (TimerState.isPaused(this)) "Timer paused" else "Timer")
-            .setContentText("%d:%02d".format(remaining / 60, remaining % 60))
+            .setContentTitle(if (paused) "Timer paused" else "Timer")
             .setOngoing(true).setOnlyAlertOnce(true).setContentIntent(open)
-            .build()
+            .addAction(0, "Stop", stop)
+        if (paused) b.setContentText("%d:%02d left".format(remaining / 60000, remaining / 1000 % 60)).setShowWhen(false)
+        else b.setUsesChronometer(true).setChronometerCountDown(true).setWhen(System.currentTimeMillis() + remaining).setShowWhen(true)
+        try { nm(c).notify(NOTIF_ID, b.build()) } catch (_: SecurityException) {}
     }
 
-    private fun armEnd(endAt: Long) {
-        val am = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        am.setAlarmClock(AlarmManager.AlarmClockInfo(endAt, null), endPendingIntent())
+    private fun armEnd(c: Context, endAt: Long) {
+        val am = c.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        am.setAlarmClock(AlarmManager.AlarmClockInfo(endAt, null), endPendingIntent(c))
     }
-    private fun disarmEnd() { (getSystemService(Context.ALARM_SERVICE) as AlarmManager).cancel(endPendingIntent()) }
-    private fun endPendingIntent() = PendingIntent.getBroadcast(this, 2002, Intent(this, TimerEndReceiver::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-    private fun nm() = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    private fun disarmEnd(c: Context) { (c.getSystemService(Context.ALARM_SERVICE) as AlarmManager).cancel(endPendingIntent(c)) }
+    private fun endPendingIntent(c: Context) = PendingIntent.getBroadcast(c, 2002, Intent(c, TimerEndReceiver::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+    fun nm(c: Context) = c.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+}
 
-    override fun onDestroy() { ui.removeCallbacksAndMessages(null); super.onDestroy() }
-
-    companion object {
-        const val ACTION_START = "start"; const val ACTION_PAUSE = "pause"; const val ACTION_RESUME = "resume"; const val ACTION_CANCEL = "cancel"
-        const val EXTRA_END_AT = "end_at"
-        const val CHANNEL = "timer"; const val NOTIF_ID = 77
-
-        fun start(c: Context, durationMs: Long) {
-            val endAt = System.currentTimeMillis() + durationMs
-            TimerState.start(c, endAt)   // UI can switch immediately; the service re-reads this
-            c.startForegroundService(Intent(c, TimerService::class.java).setAction(ACTION_START).putExtra(EXTRA_END_AT, endAt))
-        }
-        fun pause(c: Context) = c.startService(Intent(c, TimerService::class.java).setAction(ACTION_PAUSE))
-        fun resume(c: Context) = c.startService(Intent(c, TimerService::class.java).setAction(ACTION_RESUME))
-        fun cancel(c: Context) = c.startService(Intent(c, TimerService::class.java).setAction(ACTION_CANCEL))
-    }
+class TimerStopReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) = TimerService.cancel(context)
 }
 
 class TimerEndReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         TimerState.clear(context)
-        context.stopService(Intent(context, TimerService::class.java))
+        TimerService.nm(context).cancel(TimerService.NOTIF_ID)
         context.startActivity(
             Intent(context, AlarmActivity::class.java).putExtra(AlarmActivity.EXTRA_TIMER, true)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
